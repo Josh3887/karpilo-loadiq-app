@@ -1,24 +1,25 @@
 export type PublicPlanId = "free" | "pro-monthly" | "pro-annual";
-export type InternalPlanTier = "free" | "pro" | "founder";
+export type InternalPlanTier = "free" | "pro" | "founder" | "pilot" | "launch500";
 export type BillingInterval = "month" | "year";
 
 export const FOUNDER_ACCESS = {
-  name: "Founding Operator Access",
+  name: "Legacy Launch Operator Access",
   maxSeats: 500,
-  publicTeaser: "First 500 operators may qualify for Founding Operator Access.",
+  publicTeaser: "First 500 launch operators may qualify for lifetime legacy pricing.",
   hiddenPricingEnabled: false,
   inviteCodeRequired: true,
   monthlyPrice: 19.99,
-  annualPrice: 149.99,
+  annualPrice: 159.99,
 } as const;
 
 export const PILOT_ACCESS = {
-  name: "Pilot Operator Access",
+  name: "Founding Operator Pilot Access",
   publicTeaser:
     "Pilot Operator Access may be available for approved early-access users.",
-  maxSeats: 25,
+  maxSeats: 50,
   durationDays: 45,
   monthlyPrice: 14.99,
+  annualPrice: 129.99,
   lifetimeLockRule:
     "Pilot pricing remains locked while the subscription stays active and is lost if canceled, deleted, or transferred.",
 } as const;
@@ -78,15 +79,30 @@ export const PUBLIC_PRICING_PLANS = [
 
 export const INTERNAL_FOUNDER_PLANS = [
   {
-    tier: "founder",
-    name: "Founder Monthly",
+    tier: "launch500",
+    name: "Legacy Launch Monthly",
     price: FOUNDER_ACCESS.monthlyPrice,
     interval: "month" as BillingInterval,
   },
   {
-    tier: "founder",
-    name: "Founder Annual",
+    tier: "launch500",
+    name: "Legacy Launch Annual",
     price: FOUNDER_ACCESS.annualPrice,
+    interval: "year" as BillingInterval,
+  },
+] as const;
+
+export const INTERNAL_PILOT_PLANS = [
+  {
+    tier: "pilot",
+    name: "Pilot Monthly",
+    price: PILOT_ACCESS.monthlyPrice,
+    interval: "month" as BillingInterval,
+  },
+  {
+    tier: "pilot",
+    name: "Pilot Annual",
+    price: PILOT_ACCESS.annualPrice,
     interval: "year" as BillingInterval,
   },
 ] as const;

@@ -19,7 +19,14 @@ function monthStartIso() {
 }
 
 function normalizeTier(tier: unknown): PlanTier {
-  if (tier === "pro" || tier === "founder") return tier;
+  if (
+    tier === "pro" ||
+    tier === "founder" ||
+    tier === "pilot" ||
+    tier === "launch500"
+  ) {
+    return tier;
+  }
   return "free";
 }
 

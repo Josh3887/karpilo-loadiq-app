@@ -34,6 +34,18 @@ const legalLinks = [
     description:
       "Recurring billing, auto-renewal, cancellation effects, failed payments, and plan access.",
   },
+  {
+    title: "Account Deletion",
+    href: "/account-deletion",
+    description:
+      "Request account and app data deletion, with subscription cancellation and retention guidance.",
+  },
+  {
+    title: "In-App Legal Hub",
+    href: "/dashboard/legal",
+    description:
+      "Signed-in access to legal acceptance, restore purchase guidance, support contact, and deletion requests.",
+  },
 ];
 
 export default function LegalCenterPage() {

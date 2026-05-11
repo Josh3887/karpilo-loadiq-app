@@ -55,6 +55,28 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     throw new Error(formatSupabaseError(profileError));
   }
 
+  const { data: subscription, error: subscriptionError } = await supabase
+    .from("subscriptions")
+    .select("tier,status")
+    .eq("user_id", user.id)
+    .in("status", ["active", "trialing"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (subscriptionError) {
+    throw new Error(formatSupabaseError(subscriptionError));
+  }
+
+  if (
+    subscription?.tier !== "pro" &&
+    subscription?.tier !== "founder" &&
+    subscription?.tier !== "pilot" &&
+    subscription?.tier !== "launch500"
+  ) {
+    throw new Error("Free users cannot save loads. Upgrade to Pro to save history.");
+  }
+
   const { count } = await supabase
     .from("saved_loads")
     .select("id", { count: "exact", head: true })

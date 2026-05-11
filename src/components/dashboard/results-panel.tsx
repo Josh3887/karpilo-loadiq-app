@@ -28,7 +28,7 @@ type ResultsPanelProps = {
 export function ResultsPanel({
   result,
   input,
-  canSaveLoad = true,
+  canSaveLoad = false,
   canCompareScenarios = false,
   onLoadSaved,
 }: ResultsPanelProps) {

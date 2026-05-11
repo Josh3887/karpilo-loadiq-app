@@ -3,6 +3,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   createPayTemplate,
@@ -17,6 +19,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import { LearnMore } from "@/components/ui/learn-more";
 import { EDUCATION_TOPICS } from "@/config/education";
 import { PayStructure } from "@/types/load";
+import { saveOnboardingState } from "@/services/onboarding";
 import { formatCurrency } from "@/utils/format";
 
 const defaultPayForm = {
@@ -31,12 +34,14 @@ const defaultPayForm = {
 };
 
 export function OperationalProfileForm() {
+  const router = useRouter();
   const [profile, setProfile] = useState<OperationalProfile>(
     defaultOperationalProfile
   );
   const [payTemplates, setPayTemplates] = useState<PayTemplate[]>([]);
   const [payForm, setPayForm] = useState(defaultPayForm);
   const [status, setStatus] = useState("");
+  const [profileSaved, setProfileSaved] = useState(false);
 
   async function loadProfile() {
     try {
@@ -60,7 +65,14 @@ export function OperationalProfileForm() {
     try {
       setStatus("Saving profile...");
       await saveOperationalProfile(profile);
-      setStatus("Operational profile saved.");
+      await saveOnboardingState({
+        currentStep: "pay",
+        completedSteps: ["profile", "targets", "costs"],
+        isComplete: false,
+      });
+      setProfileSaved(true);
+      setStatus("Operational profile saved. You can review or finish setup.");
+      router.refresh();
     } catch (error) {
       setStatus(
         error instanceof Error
@@ -394,13 +406,24 @@ export function OperationalProfileForm() {
           />
         </div>
 
-        <button
-          type="button"
-          onClick={handleSaveProfile}
-          className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
-        >
-          Save Profile
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleSaveProfile}
+            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
+          >
+            Save Profile
+          </button>
+
+          {profileSaved && (
+            <Link
+              href="/dashboard/onboarding"
+              className="flex items-center justify-center rounded-xl bg-sky-400 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-[#060B14] transition hover:bg-sky-300"
+            >
+              Review Setup
+            </Link>
+          )}
+        </div>
       </section>
 
       <section className="space-y-5">

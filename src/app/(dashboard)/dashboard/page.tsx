@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { LOADIQ_DISCLAIMER_VERSION } from "@/config/legal";
+import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
 import DashboardClientPage from "./page.client";
@@ -48,11 +49,14 @@ export default async function DashboardPage({
     }
   }
 
+  const operatorStatus = await getOperatorProgramStatus(user.id);
+
   return (
     <DashboardClientPage
       editLoadId={edit}
       templateId={template}
       requiresDisclaimer={requiresDisclaimer}
+      operatorStatus={operatorStatus}
     />
   );
 }

@@ -23,6 +23,12 @@ export const EDUCATION_TOPICS = {
     detail:
       "Break-even RPM estimates the rate needed to cover modeled fuel, overhead, reserves, and load-specific costs.",
   },
+  profitPerHour: {
+    title: "Profit per hour",
+    summary: "A guardrail for time, not just miles.",
+    detail:
+      "A load can look acceptable per mile and still be weak when appointment windows, detention risk, dwell time, and dispatch days stretch the clock.",
+  },
   targetMargins: {
     title: "LoadIQ operating guardrails",
     summary: "A practical way to read margin pressure.",

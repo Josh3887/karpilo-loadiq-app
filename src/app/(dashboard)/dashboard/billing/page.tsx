@@ -2,18 +2,23 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CheckoutAcknowledgement } from "@/components/billing/checkout-acknowledgement";
+import { CustomerPortalButton } from "@/components/billing/customer-portal-button";
+import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import {
   FOUNDER_ACCESS,
   INTERNAL_FOUNDER_PLANS,
+  INTERNAL_PILOT_PLANS,
   PILOT_ACCESS,
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
+import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import {
   canClaimFounderAccess,
   founderSeatLabel,
 } from "@/domains/billing/founder-access";
 import { PLAN_LIMITS } from "@/domains/billing/plan-limits";
+import { StripeCheckoutPlanId } from "@/config/stripe";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function BillingPage() {
@@ -33,11 +38,12 @@ export default async function BillingPage() {
     founderClaimCount,
     calculationCount,
     savedLoadCount,
+    operatorStatus,
   ] =
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("tier,status,current_period_end")
+        .select("tier,status,current_period_end,provider_customer_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -61,10 +67,14 @@ export default async function BillingPage() {
         .from("saved_loads")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
+      getOperatorProgramStatus(user.id),
     ]);
 
   const activeTier =
-    subscription?.tier === "pro" || subscription?.tier === "founder"
+    subscription?.tier === "pro" ||
+    subscription?.tier === "founder" ||
+    subscription?.tier === "pilot" ||
+    subscription?.tier === "launch500"
       ? subscription.tier
       : "free";
   const canSeeFounderPricing = activeTier === "founder" || Boolean(founderAccess);
@@ -88,6 +98,7 @@ export default async function BillingPage() {
             <h1 className="text-3xl font-black tracking-tight md:text-5xl">
               Billing & Plan
             </h1>
+            <OperatorBadges badges={operatorStatus.badges} />
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
               Keep the app survivable while protecting serious driver workflows.
@@ -110,6 +121,23 @@ export default async function BillingPage() {
           />
           <Metric label="Saved Loads" value={String(savedLoadCount.count ?? 0)} />
         </section>
+
+        {subscription?.provider_customer_id && (
+          <section className="mb-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+                  Stripe Billing
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  Manage payment methods, invoices, renewals, and cancellation
+                  through Stripe customer portal.
+                </p>
+              </div>
+              <CustomerPortalButton />
+            </div>
+          </section>
+        )}
 
         <section className="grid gap-5 lg:grid-cols-3">
           {PUBLIC_PRICING_PLANS.map((publicPlan) => {
@@ -189,7 +217,10 @@ export default async function BillingPage() {
                     modeled here without faking payment processing.
                   </div>
 
-                  <CheckoutAcknowledgement label="Agree Before Checkout" />
+                  <CheckoutAcknowledgement
+                    label="Agree & Open Checkout"
+                    planId={publicPlan.id as StripeCheckoutPlanId}
+                  />
                 </>
               )}
             </div>
@@ -232,9 +263,14 @@ export default async function BillingPage() {
                     {formatPriceLabel(plan.price, plan.interval)}
                   </div>
                   {canClaimFounder && (
-                    <p className="mt-2 text-xs uppercase tracking-[0.16em] text-sky-300">
-                      Eligible when checkout is wired
-                    </p>
+                    <CheckoutAcknowledgement
+                      label="Agree & Open Checkout"
+                      planId={
+                        plan.interval === "month"
+                          ? "launch500-monthly"
+                          : "launch500-annual"
+                      }
+                    />
                   )}
                 </div>
               ))}
@@ -250,13 +286,32 @@ export default async function BillingPage() {
             {PILOT_ACCESS.name}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            {PILOT_ACCESS.publicTeaser} Approved pilot operators receive a
-            45-day pre-release path at ${PILOT_ACCESS.monthlyPrice}/month, with
+            {PILOT_ACCESS.publicTeaser} Approved pilot operators receive
+            locked pricing at ${PILOT_ACCESS.monthlyPrice}/month for the first{" "}
+            {PILOT_ACCESS.maxSeats} approved users, with
             pricing locked while the subscription remains active. It is not
             transferable and is lost if canceled or deleted.
           </p>
-          <div className="mt-5">
-            <CheckoutAcknowledgement label="Agree Before Pilot Checkout" />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {INTERNAL_PILOT_PLANS.map((plan) => (
+              <div
+                key={plan.name}
+                className="rounded-xl border border-sky-400/20 bg-[#060B14] p-4"
+              >
+                <div className="text-sm font-bold text-slate-100">
+                  {plan.name}
+                </div>
+                <div className="mt-2 text-2xl font-black text-sky-200">
+                  {formatPriceLabel(plan.price, plan.interval)}
+                </div>
+                <CheckoutAcknowledgement
+                  label="Agree & Open Pilot Checkout"
+                  planId={
+                    plan.interval === "month" ? "pilot-monthly" : "pilot-annual"
+                  }
+                />
+              </div>
+            ))}
           </div>
           <div className="mt-4 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
             Internal cap: {PILOT_ACCESS.maxSeats} operators.

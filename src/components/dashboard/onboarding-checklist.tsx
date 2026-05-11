@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { LearnMore } from "@/components/ui/learn-more";
+import { LegalAcceptancePanel } from "@/components/legal/legal-acceptance-panel";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { EDUCATION_TOPICS } from "@/config/education";
 import {
@@ -21,6 +23,7 @@ const setupSteps = [
 ];
 
 export function OnboardingChecklist() {
+  const router = useRouter();
   const [operatorType, setOperatorType] = useState("leased_owner_operator");
   const [status, setStatus] = useState("");
 
@@ -40,7 +43,9 @@ export function OnboardingChecklist() {
         ],
         isComplete: true,
       });
-      setStatus("Onboarding complete. You can enter the dashboard.");
+      setStatus("Onboarding complete. Opening the dashboard...");
+      router.push("/dashboard");
+      router.refresh();
     } catch (error) {
       setStatus(
         error instanceof Error
@@ -114,7 +119,10 @@ export function OnboardingChecklist() {
       </div>
 
       <aside className="space-y-4">
+        <LegalAcceptancePanel />
         <LearnMore {...EDUCATION_TOPICS.trueRpm} />
+        <LearnMore {...EDUCATION_TOPICS.deadhead} />
+        <LearnMore {...EDUCATION_TOPICS.profitPerHour} />
         <LearnMore {...EDUCATION_TOPICS.overhead} />
         <LearnMore {...EDUCATION_TOPICS.payStructures} />
         <LearnMore {...EDUCATION_TOPICS.targetMargins} />

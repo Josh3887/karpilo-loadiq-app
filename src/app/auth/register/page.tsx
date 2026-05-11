@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase-client";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
@@ -16,9 +19,12 @@ export default function RegisterPage() {
     setStatus("Creating account...");
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard/onboarding`,
+      },
     });
 
     if (error) {
@@ -26,7 +32,16 @@ export default function RegisterPage() {
       return;
     }
 
-    setStatus("Account created. Check your email if confirmation is required.");
+    if (data.session) {
+      setStatus("Account created. Opening profile setup...");
+      router.push("/dashboard/onboarding");
+      router.refresh();
+      return;
+    }
+
+    setStatus(
+      "Account created. Check your email, then sign in to finish profile setup."
+    );
   }
 
   return (

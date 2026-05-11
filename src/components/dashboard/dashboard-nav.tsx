@@ -5,6 +5,7 @@ const navItems = [
   ["Templates", "/dashboard/templates"],
   ["Billing", "/dashboard/billing"],
   ["Support", "/dashboard/support"],
+  ["Legal", "/dashboard/legal"],
   ["Settings", "/dashboard/settings"],
 ] as const;
 

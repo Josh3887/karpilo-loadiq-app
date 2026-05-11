@@ -77,6 +77,31 @@ export default async function SupportPage() {
           <SupportTicketForm />
         </div>
 
+        <section className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
+          <h2 className="text-lg font-bold text-slate-100">
+            Legal, privacy, and account requests
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-300">
+            For privacy, data retention, restore purchase, subscription, or
+            account deletion requests, use the legal hub or email
+            Josh.karpilo@karpiloendeavortechnologies.com.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/legal"
+              className="rounded-xl border border-sky-400/30 bg-[#060B14] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300"
+            >
+              Legal Hub
+            </Link>
+            <Link
+              href="/account-deletion"
+              className="rounded-xl border border-red-300/25 bg-[#060B14] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-200"
+            >
+              Account Deletion
+            </Link>
+          </div>
+        </section>
+
         <section className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
           <h2 className="text-lg font-bold text-red-200">
             Escalation Preparation

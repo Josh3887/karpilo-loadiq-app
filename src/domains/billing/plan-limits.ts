@@ -1,6 +1,6 @@
 import { FOUNDER_ACCESS } from "@/config/pricing";
 
-export type PlanTier = "free" | "pro" | "founder";
+export type PlanTier = "free" | "pro" | "founder" | "pilot" | "launch500";
 
 export type PlanLimits = {
   tier: PlanTier;
@@ -20,7 +20,7 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     monthlyPrice: 0,
     annualPrice: 0,
     monthlyCalculations: 10,
-    savedLoads: 5,
+    savedLoads: 0,
     exports: false,
     advancedAnalytics: false,
     comparisons: false,
@@ -41,6 +41,28 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     tier: "founder",
     monthlyPrice: FOUNDER_ACCESS.monthlyPrice,
     annualPrice: FOUNDER_ACCESS.annualPrice,
+    monthlyCalculations: "unlimited",
+    savedLoads: "unlimited",
+    exports: true,
+    advancedAnalytics: true,
+    comparisons: true,
+    laneTemplates: true,
+  },
+  launch500: {
+    tier: "launch500",
+    monthlyPrice: FOUNDER_ACCESS.monthlyPrice,
+    annualPrice: FOUNDER_ACCESS.annualPrice,
+    monthlyCalculations: "unlimited",
+    savedLoads: "unlimited",
+    exports: true,
+    advancedAnalytics: true,
+    comparisons: true,
+    laneTemplates: true,
+  },
+  pilot: {
+    tier: "pilot",
+    monthlyPrice: 14.99,
+    annualPrice: 129.99,
     monthlyCalculations: "unlimited",
     savedLoads: "unlimited",
     exports: true,

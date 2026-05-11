@@ -26,6 +26,22 @@ export const SUBSCRIPTION_TERMS_SECTIONS: LegalSection[] = [
     ],
   },
   {
+    id: "restore-purchases",
+    title: "Restore Purchases and Cross-Platform Access",
+    paragraphs: [
+      "For future native Apple App Store and Google Play builds, users should be able to restore eligible purchases using the same Apple ID or Google account used for purchase, subject to platform rules and app implementation.",
+      "For the web MVP and Stripe billing, users restore access by signing in with the same LoadIQ account. If a paid entitlement is missing after purchase, contact support with the account email and receipt or invoice details.",
+    ],
+  },
+  {
+    id: "cancellation-instructions",
+    title: "How to Cancel or Manage Subscriptions",
+    paragraphs: [
+      "Stripe-billed website subscriptions can be managed through the Stripe customer portal when available in the Billing or Legal Hub screens.",
+      "Apple App Store subscriptions must be managed through Apple account subscriptions. Google Play subscriptions must be managed through Google Play subscriptions. Uninstalling the app does not automatically cancel an Apple or Google Play subscription.",
+    ],
+  },
+  {
     id: "failed-payments",
     title: "Failed Payments and Suspension",
     paragraphs: [

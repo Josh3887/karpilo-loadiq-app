@@ -48,6 +48,12 @@ export function SiteFooter() {
             >
               Legal
             </Link>
+            <Link
+              href="/account-deletion"
+              className="font-bold text-slate-400 transition hover:text-sky-300"
+            >
+              Account Deletion
+            </Link>
             <a
               href="https://www.eia.gov/opendata/"
               target="_blank"

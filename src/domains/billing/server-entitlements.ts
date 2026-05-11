@@ -3,7 +3,14 @@ import { PlanTier } from "@/domains/billing/plan-limits";
 import { createClient } from "@/lib/supabase-server";
 
 function normalizeTier(tier: unknown): PlanTier {
-  if (tier === "pro" || tier === "founder") return tier;
+  if (
+    tier === "pro" ||
+    tier === "founder" ||
+    tier === "pilot" ||
+    tier === "launch500"
+  ) {
+    return tier;
+  }
   return "free";
 }
 

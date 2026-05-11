@@ -254,7 +254,7 @@ insert into public.usage_limits (
   templates_allowed
 )
 values
-  ('free', 10, 5, false, false, false, false),
+  ('free', 10, 0, false, false, false, false),
   ('pro', null, null, true, true, true, true),
   ('founder', null, null, true, true, true, true)
 on conflict (tier) do update set
@@ -386,12 +386,28 @@ create table if not exists public.onboarding_states (
 create table if not exists public.support_tickets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  category text not null default 'support',
+  category text not null default 'support'
+    check (category in ('support', 'bug', 'refund', 'billing', 'feature', 'privacy', 'account_deletion')),
   subject text not null,
   message text not null,
   related_load_id uuid references public.saved_loads(id) on delete set null,
   status text not null default 'open',
   created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.account_deletion_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  contact_email text,
+  requested_scope text not null default 'account_and_data'
+    check (requested_scope in ('account_and_data', 'data_only')),
+  reason text,
+  status text not null default 'open'
+    check (status in ('open', 'in_review', 'completed', 'rejected', 'canceled')),
+  metadata jsonb not null default '{}'::jsonb,
+  requested_at timestamptz not null default now(),
+  completed_at timestamptz,
   updated_at timestamptz default now()
 );
 
@@ -475,6 +491,9 @@ on public.onboarding_states (user_id, is_complete);
 create index if not exists idx_support_tickets_user_created
 on public.support_tickets (user_id, created_at desc);
 
+create index if not exists idx_account_deletion_requests_user_status
+on public.account_deletion_requests (user_id, status, requested_at desc);
+
 create index if not exists idx_entity_notes_user_entity
 on public.entity_notes (user_id, entity_type, created_at desc);
 
@@ -528,6 +547,7 @@ alter table public.disclaimer_acceptances enable row level security;
 alter table public.accessorial_items enable row level security;
 alter table public.onboarding_states enable row level security;
 alter table public.support_tickets enable row level security;
+alter table public.account_deletion_requests enable row level security;
 alter table public.entity_notes enable row level security;
 alter table public.review_prompt_tracking enable row level security;
 alter table public.pilot_access enable row level security;
@@ -616,6 +636,14 @@ begin
 
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='support_tickets' and policyname='Users can manage own support tickets') then
     create policy "Users can manage own support tickets" on public.support_tickets for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='account_deletion_requests' and policyname='Users can view own account deletion requests') then
+    create policy "Users can view own account deletion requests" on public.account_deletion_requests for select using (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='account_deletion_requests' and policyname='Users can insert own account deletion requests') then
+    create policy "Users can insert own account deletion requests" on public.account_deletion_requests for insert with check (auth.uid() = user_id);
   end if;
 
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='entity_notes' and policyname='Users can manage own entity notes') then

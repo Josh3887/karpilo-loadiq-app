@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
+import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function OnboardingPage() {
@@ -14,6 +16,8 @@ export default async function OnboardingPage() {
     redirect("/auth/login");
   }
 
+  const operatorStatus = await getOperatorProgramStatus(user.id);
+
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
       <div className="mx-auto max-w-5xl">
@@ -25,6 +29,7 @@ export default async function OnboardingPage() {
             <h1 className="text-3xl font-black tracking-tight md:text-5xl">
               Operator Setup
             </h1>
+            <OperatorBadges badges={operatorStatus.badges} />
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
               A short setup makes the calculator faster and keeps recurring
               business assumptions out of the load screen.

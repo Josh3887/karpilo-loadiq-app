@@ -29,7 +29,9 @@ export default function LoginPage() {
       return;
     }
 
+    setStatus("Signed in. Checking setup...");
     router.push("/dashboard");
+    router.refresh();
   }
 
   return (

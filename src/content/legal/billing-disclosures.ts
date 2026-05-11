@@ -12,11 +12,17 @@ export type LegalSection = {
   links?: LegalLink[];
 };
 
-export const LEGAL_CONTACT_EMAIL = "support@karpiloloadiq.com";
+export const LEGAL_CONTACT_EMAIL =
+  "Josh.karpilo@karpiloendeavortechnologies.com";
 
 export const APPLE_BILLING_LINKS: LegalLink[] = [
   {
     label: "Manage Apple subscriptions",
+    href: "https://apps.apple.com/account/subscriptions",
+    external: true,
+  },
+  {
+    label: "Apple billing support",
     href: "https://support.apple.com/billing",
     external: true,
   },

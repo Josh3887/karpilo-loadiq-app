@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LoadInputForm } from "@/components/calculator/load-input-form";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { FounderWelcomeModal } from "@/components/dashboard/founder-welcome-modal";
+import { OperatorBadges } from "@/components/dashboard/operator-badges";
+import { PilotStatusCard } from "@/components/dashboard/pilot-status-card";
 import { DisclaimerModal } from "@/components/legal/disclaimer-modal";
 import { ReviewPrompt } from "@/components/dashboard/review-prompt";
 import { ResultsPanel } from "@/components/dashboard/results-panel";
@@ -26,17 +29,20 @@ import { getSavedLoadInput } from "@/services/saved-load-input";
 import { LoadInputFormValues } from "@/lib/load-schema";
 import { createClient } from "@/lib/supabase-client";
 import { LoadInput } from "@/types/load";
+import { OperatorProgramStatus } from "@/types/operator-program";
 
 type DashboardClientPageProps = {
   editLoadId?: string;
   templateId?: string;
   requiresDisclaimer?: boolean;
+  operatorStatus: OperatorProgramStatus;
 };
 
 export default function DashboardClientPage({
   editLoadId,
   templateId,
   requiresDisclaimer = false,
+  operatorStatus,
 }: DashboardClientPageProps) {
   const router = useRouter();
   const {
@@ -219,6 +225,10 @@ export default function DashboardClientPage({
         />
       )}
 
+      {!showDisclaimer && operatorStatus.shouldShowFounderWelcome && (
+        <FounderWelcomeModal status={operatorStatus} />
+      )}
+
       <div
         className={
           showDisclaimer
@@ -236,6 +246,7 @@ export default function DashboardClientPage({
             <h1 className="text-3xl font-black tracking-tight text-slate-100 md:text-5xl">
               Freight Profitability Command Center
             </h1>
+            <OperatorBadges badges={operatorStatus.badges} />
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
               Analyze load viability, deadhead exposure, fuel pressure,
@@ -248,6 +259,8 @@ export default function DashboardClientPage({
             <LogoutButton />
           </div>
         </header>
+
+        {!showDisclaimer && <PilotStatusCard status={operatorStatus} />}
 
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <div className="lg:col-span-2">
@@ -291,7 +304,7 @@ export default function DashboardClientPage({
           <ResultsPanel
             result={result}
             input={lastInput}
-            canSaveLoad={entitlementState?.entitlements.canSaveLoad ?? true}
+            canSaveLoad={entitlementState?.entitlements.canSaveLoad ?? false}
             canCompareScenarios={
               entitlementState?.entitlements.canCompareScenarios ?? false
             }

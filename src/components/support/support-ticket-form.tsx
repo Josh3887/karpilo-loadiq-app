@@ -13,12 +13,24 @@ const ticketCategories = [
   { label: "Bug or Glitch", value: "bug" },
   { label: "Refund Request", value: "refund" },
   { label: "Billing", value: "billing" },
+  { label: "Privacy or Data", value: "privacy" },
+  { label: "Account Deletion", value: "account_deletion" },
   { label: "Feature Request", value: "feature" },
 ];
 
-export function SupportTicketForm() {
+type SupportTicketFormProps = {
+  title?: string;
+  description?: string;
+  initialCategory?: SupportTicketPayload["category"];
+};
+
+export function SupportTicketForm({
+  title = "Contact Support",
+  description = "Use this for support, refund requests, billing questions, privacy, account deletion, bugs, or product feedback. Email fallback: Josh.karpilo@karpiloendeavortechnologies.com.",
+  initialCategory = "support",
+}: SupportTicketFormProps) {
   const [ticket, setTicket] = useState<SupportTicketPayload>({
-    category: "support",
+    category: initialCategory,
     subject: "",
     message: "",
   });
@@ -28,8 +40,10 @@ export function SupportTicketForm() {
     try {
       setStatus("Sending support request...");
       await createSupportTicket(ticket);
-      setTicket({ category: "support", subject: "", message: "" });
-      setStatus("Support request received. We will reply through support@karpiloloadiq.com.");
+      setTicket({ category: initialCategory, subject: "", message: "" });
+      setStatus(
+        "Support request received. We will reply through Josh.karpilo@karpiloendeavortechnologies.com."
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to send support request.");
     }
@@ -37,10 +51,9 @@ export function SupportTicketForm() {
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
-      <h2 className="text-lg font-bold text-slate-100">Contact Support</h2>
+      <h2 className="text-lg font-bold text-slate-100">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-slate-400">
-        Use this for support, refund requests, billing questions, bugs, or
-        product feedback. Email fallback: support@karpiloloadiq.com.
+        {description}
       </p>
 
       <div className="mt-5 grid gap-4">

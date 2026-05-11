@@ -3,7 +3,14 @@
 import { createClient } from "@/lib/supabase-client";
 
 export type SupportTicketPayload = {
-  category: "support" | "bug" | "refund" | "billing" | "feature";
+  category:
+    | "support"
+    | "bug"
+    | "refund"
+    | "billing"
+    | "feature"
+    | "privacy"
+    | "account_deletion";
   subject: string;
   message: string;
   relatedLoadId?: string;
