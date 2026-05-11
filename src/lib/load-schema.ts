@@ -33,8 +33,11 @@ export const loadInputSchema = z.object({
   routeDeadheadMiles: numberField.refine((value) => value >= 0),
   actualDeadheadMiles: numberField.refine((value) => value >= 0),
 
-  dispatchDays: numberField.refine((value) => value >= 0),
+  dispatchDays: numberField.refine((value) => value >= 1, {
+    message: "Dispatch days must be at least 1.",
+  }),
   deadheadDays: numberField.refine((value) => value >= 0),
+  loadRunStatus: z.enum(["ran", "test", "planned"]).default("planned"),
 
   ratePerMile: numberField.refine((value) => value >= 0.01),
   fuelSurcharge: numberField.refine((value) => value >= 0),
@@ -51,6 +54,47 @@ export const loadInputSchema = z.object({
   mpg: numberField.refine((value) => value >= 1),
 
   overhead: numberField.refine((value) => value >= 0),
+  profileDerivedValues: z
+    .object({
+      dailyFixedOverhead: numberField,
+      operatingDaysPerWeek: numberField,
+      operatingDaysPerMonth: numberField,
+      dispatchPercent: numberField,
+      factoringPercent: numberField,
+      maintenanceReserve: numberField,
+      tireReserve: numberField,
+      trailerFee: numberField,
+      insuranceAllocation: numberField,
+      variableCostPerMile: numberField,
+      fixedCostAllocation: numberField,
+      mpg: numberField,
+      targetTrueRpm: numberField,
+      incomeTargetDaily: numberField,
+      incomeTargetWeekly: numberField,
+      minimumHourlyProfitability: numberField,
+    })
+    .default({
+      dailyFixedOverhead: 0,
+      operatingDaysPerWeek: 5.5,
+      operatingDaysPerMonth: 23.8,
+      dispatchPercent: 0,
+      factoringPercent: 0,
+      maintenanceReserve: 0,
+      tireReserve: 0,
+      trailerFee: 0,
+      insuranceAllocation: 0,
+      variableCostPerMile: 0,
+      fixedCostAllocation: 0,
+      mpg: 6.5,
+      targetTrueRpm: 2,
+      incomeTargetDaily: 0,
+      incomeTargetWeekly: 0,
+      minimumHourlyProfitability: 50,
+    }),
+  temporaryOverrides: z.record(z.string(), numberField).default({}),
+  calculationSource: z
+    .enum(["profile", "load_input", "temporary_override", "system"])
+    .default("profile"),
   accessorialItems: z
     .custom<AccessorialInputItem[]>()
     .default([]),
@@ -112,6 +156,7 @@ export const defaultLoadInputValues: LoadInputFormValues = {
 
   dispatchDays: 1,
   deadheadDays: 0,
+  loadRunStatus: "planned",
 
   ratePerMile: 0,
   fuelSurcharge: 0,
@@ -126,6 +171,26 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   mpg: 6.5,
 
   overhead: 0,
+  profileDerivedValues: {
+    dailyFixedOverhead: 0,
+    operatingDaysPerWeek: 5.5,
+    operatingDaysPerMonth: 23.8,
+    dispatchPercent: 0,
+    factoringPercent: 0,
+    maintenanceReserve: 0,
+    tireReserve: 0,
+    trailerFee: 0,
+    insuranceAllocation: 0,
+    variableCostPerMile: 0,
+    fixedCostAllocation: 0,
+    mpg: 6.5,
+    targetTrueRpm: 2,
+    incomeTargetDaily: 0,
+    incomeTargetWeekly: 0,
+    minimumHourlyProfitability: 50,
+  },
+  temporaryOverrides: {},
+  calculationSource: "profile",
   accessorialItems: [],
   reserveAllocation: 0,
   maintenanceReserve: 0,

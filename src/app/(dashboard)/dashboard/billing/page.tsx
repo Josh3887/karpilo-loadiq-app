@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CheckoutAcknowledgement } from "@/components/billing/checkout-acknowledgement";
 import {
   FOUNDER_ACCESS,
   INTERNAL_FOUNDER_PLANS,
+  PILOT_ACCESS,
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
@@ -181,10 +183,14 @@ export default async function BillingPage() {
               </div>
 
               {publicPlan.tier !== "free" && activeTier === "free" && (
-                <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-                  Stripe checkout is the next wiring step. Plan selection is
-                  modeled here without faking payment processing.
-                </div>
+                <>
+                  <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
+                    Stripe checkout is the next wiring step. Plan selection is
+                    modeled here without faking payment processing.
+                  </div>
+
+                  <CheckoutAcknowledgement label="Agree Before Checkout" />
+                </>
               )}
             </div>
           );
@@ -234,6 +240,60 @@ export default async function BillingPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+            Pilot program
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-slate-100">
+            {PILOT_ACCESS.name}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            {PILOT_ACCESS.publicTeaser} Approved pilot operators receive a
+            45-day pre-release path at ${PILOT_ACCESS.monthlyPrice}/month, with
+            pricing locked while the subscription remains active. It is not
+            transferable and is lost if canceled or deleted.
+          </p>
+          <div className="mt-5">
+            <CheckoutAcknowledgement label="Agree Before Pilot Checkout" />
+          </div>
+          <div className="mt-4 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
+            Internal cap: {PILOT_ACCESS.maxSeats} operators.
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+            Cancellation and refund guidance
+          </p>
+          <div className="mt-4 grid gap-4 text-sm leading-6 text-slate-300 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+              Canceling a subscription stops future billing through the
+              applicable platform. Access usually remains active through the
+              paid period unless the account is terminated for policy, security,
+              or payment abuse reasons.
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+              Apple and Google purchases may need to be canceled or refunded
+              directly through Apple or Google. Direct website billing will use
+              the Stripe or website checkout flow once live.
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold uppercase tracking-[0.16em]">
+            <Link
+              href="/refund-policy"
+              className="text-sky-300 underline decoration-sky-400/40 underline-offset-4"
+            >
+              Refund Policy
+            </Link>
+            <Link
+              href="/subscription-terms"
+              className="text-sky-300 underline decoration-sky-400/40 underline-offset-4"
+            >
+              Subscription Terms
+            </Link>
+          </div>
         </section>
       </div>
     </main>

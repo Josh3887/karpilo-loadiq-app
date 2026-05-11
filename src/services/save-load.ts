@@ -55,9 +55,26 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     throw new Error(formatSupabaseError(profileError));
   }
 
+  const { count } = await supabase
+    .from("saved_loads")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const loadiqLoadNumber = `LIQ-${String((count ?? 0) + 1).padStart(5, "0")}`;
+
   const { error: saveError } = await supabase.from("saved_loads").insert({
     user_id: user.id,
-    status: "estimated",
+    status: "saved",
+    loadiq_load_number: loadiqLoadNumber,
+    driver_load_number: input.loadNumber || null,
+    load_outcome:
+      input.loadRunStatus === "ran"
+        ? "ran"
+        : input.loadRunStatus === "test"
+          ? "test_calculation"
+          : "planned",
+    load_run_status: input.loadRunStatus,
+    was_run_status: input.loadRunStatus,
     pickup_zip: input.pickupZip,
     pickup_city: input.pickupCity,
     pickup_state: input.pickupState,
@@ -77,6 +94,12 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     eia_period: input.fuelPricePeriod || null,
     fuel_fetched_at: input.fuelPriceFetchedAt || null,
     operational_cost: result.operationalCost,
+    dispatch_days: input.dispatchDays,
+    daily_overhead: result.dailyFixedOverhead,
+    overhead_applied: result.loadOverheadApplied,
+    used_profile_values: input.profileDerivedValues,
+    used_temporary_overrides: input.temporaryOverrides,
+    calculated_at: new Date().toISOString(),
     estimated_net: result.estimatedNet,
     true_rpm: result.trueRpm,
     profitability_score: result.profitabilityScore,

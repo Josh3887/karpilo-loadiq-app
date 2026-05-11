@@ -13,6 +13,8 @@ export type OperationalProfile = {
   targetProfitMargin: number;
   minimumTrueRpm: number;
   minimumHourlyProfitability: number;
+  operatingDaysPerWeek: number;
+  operatingDaysPerMonth: number;
   defaultMpg: number;
   truckMake: string;
   truckModel: string;
@@ -45,6 +47,8 @@ export const defaultOperationalProfile: OperationalProfile = {
   targetProfitMargin: 20,
   minimumTrueRpm: 2,
   minimumHourlyProfitability: 50,
+  operatingDaysPerWeek: 5.5,
+  operatingDaysPerMonth: 23.8,
   defaultMpg: 6.5,
   truckMake: "",
   truckModel: "",
@@ -158,6 +162,13 @@ export async function getOperationalProfile() {
     minimumHourlyProfitability: Number(
       settingsResult.data?.minimum_hourly_profitability ?? 50
     ),
+    operatingDaysPerWeek: Number(
+      settingsResult.data?.operating_days_per_week ?? 5.5
+    ),
+    operatingDaysPerMonth: Number(
+      settingsResult.data?.operating_days_per_month ??
+        Number(settingsResult.data?.operating_days_per_week ?? 5.5) * 4.33
+    ),
     defaultMpg: Number(
       truckResult.data?.default_mpg ?? settingsResult.data?.default_mpg ?? 6.5
     ),
@@ -215,6 +226,9 @@ export async function saveOperationalProfile(profile: OperationalProfile) {
     target_profit_margin: profile.targetProfitMargin,
     target_true_rpm: profile.minimumTrueRpm,
     minimum_hourly_profitability: profile.minimumHourlyProfitability,
+    operating_days_per_week: profile.operatingDaysPerWeek,
+    operating_days_per_month:
+      profile.operatingDaysPerMonth || profile.operatingDaysPerWeek * 4.33,
     default_mpg: profile.defaultMpg,
     default_maintenance_reserve: profile.defaultMaintenanceReserve,
     default_tire_reserve: profile.defaultTireReserve,

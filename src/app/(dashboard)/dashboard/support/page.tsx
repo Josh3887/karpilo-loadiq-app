@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SupportTicketForm } from "@/components/support/support-ticket-form";
 import { createClient } from "@/lib/supabase-server";
 
 const faqs = [
@@ -72,6 +73,10 @@ export default async function SupportPage() {
           ))}
         </section>
 
+        <div className="mt-6">
+          <SupportTicketForm />
+        </div>
+
         <section className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
           <h2 className="text-lg font-bold text-red-200">
             Escalation Preparation
@@ -82,6 +87,12 @@ export default async function SupportPage() {
             This keeps support lightweight and preserves founder time during a
             launch spike.
           </p>
+          <Link
+            href="https://www.karpiloloadiq.com"
+            className="mt-4 inline-flex rounded-xl border border-red-300/25 bg-[#060B14] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-200 hover:border-red-200"
+          >
+            Product Updates
+          </Link>
         </section>
       </div>
     </main>

@@ -64,7 +64,10 @@ export async function duplicateSavedLoad(loadId: string) {
     .from("saved_loads")
     .insert({
       user_id: userId,
-      status: "estimated",
+      status: "saved",
+      driver_load_number: savedLoad.driver_load_number,
+      load_outcome: "unknown",
+      was_run_status: savedLoad.was_run_status ?? null,
       pickup_zip: savedLoad.pickup_zip,
       pickup_city: savedLoad.input_snapshot?.pickupCity ?? null,
       pickup_state: savedLoad.input_snapshot?.pickupState ?? null,
@@ -84,6 +87,11 @@ export async function duplicateSavedLoad(loadId: string) {
       eia_period: savedLoad.eia_period,
       fuel_fetched_at: savedLoad.fuel_fetched_at,
       operational_cost: savedLoad.operational_cost,
+      dispatch_days: savedLoad.dispatch_days,
+      overhead_applied: savedLoad.overhead_applied,
+      used_profile_values: savedLoad.used_profile_values ?? {},
+      used_temporary_overrides: savedLoad.used_temporary_overrides ?? {},
+      calculated_at: savedLoad.calculated_at,
       estimated_net: savedLoad.estimated_net,
       true_rpm: savedLoad.true_rpm,
       profitability_score: savedLoad.profitability_score,
@@ -171,4 +179,26 @@ export async function updateSavedLoadActuals(
     actual_fuel_price: actualFuelPrice > 0 ? actualFuelPrice : null,
     notes: actuals.notes,
   });
+}
+
+export async function updateSavedLoadOutcome(
+  loadId: string,
+  outcome: string,
+  status: string
+) {
+  const supabase = createClient();
+  const userId = await getCurrentUserId();
+
+  const { error } = await supabase
+    .from("saved_loads")
+    .update({
+      load_outcome: outcome,
+      status,
+    })
+    .eq("id", loadId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
 }

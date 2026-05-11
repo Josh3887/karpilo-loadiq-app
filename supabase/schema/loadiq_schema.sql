@@ -32,6 +32,7 @@ create table if not exists public.user_settings (
   default_fuel_price numeric default 4.00,
   default_dispatch_percent numeric default 0,
   default_factoring_percent numeric default 0,
+  default_lease_percent numeric default 0,
   default_overhead numeric default 0,
   default_reserve_allocation numeric default 0,
   default_maintenance_reserve numeric default 0,
@@ -42,17 +43,28 @@ create table if not exists public.user_settings (
   default_fixed_cost_allocation numeric default 0,
   target_profit_margin numeric default 20,
   minimum_hourly_profitability numeric default 50,
+  operating_days_per_week numeric default 5.5,
+  operating_days_per_month numeric default 23.8,
   income_target_amount numeric default 60000,
   income_target_period text default 'yearly',
   toll_handling_mode text default 'trip_specific',
   lumper_handling_mode text default 'trip_specific',
   default_pay_template_id uuid,
+  default_deadhead_miles numeric default 0,
+  default_tolls numeric default 0,
+  default_accessorial_allowance numeric default 0,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
 alter table public.user_settings
-  add column if not exists minimum_hourly_profitability numeric default 50;
+  add column if not exists minimum_hourly_profitability numeric default 50,
+  add column if not exists operating_days_per_week numeric default 5.5,
+  add column if not exists operating_days_per_month numeric default 23.8,
+  add column if not exists default_lease_percent numeric default 0,
+  add column if not exists default_deadhead_miles numeric default 0,
+  add column if not exists default_tolls numeric default 0,
+  add column if not exists default_accessorial_allowance numeric default 0;
 
 create table if not exists public.truck_profiles (
   id uuid primary key default gen_random_uuid(),
@@ -94,7 +106,12 @@ create table if not exists public.user_overhead_items (
 create table if not exists public.saved_loads (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  status text not null default 'estimated',
+  status text not null default 'saved',
+  loadiq_load_number text,
+  driver_load_number text,
+  load_outcome text not null default 'unknown',
+  load_run_status text default 'planned',
+  was_run_status text,
   pickup_zip text not null,
   pickup_city text,
   pickup_state text,
@@ -114,6 +131,11 @@ create table if not exists public.saved_loads (
   eia_period text,
   fuel_fetched_at timestamptz,
   operational_cost numeric not null,
+  dispatch_days numeric,
+  overhead_applied numeric,
+  used_profile_values jsonb not null default '{}'::jsonb,
+  used_temporary_overrides jsonb not null default '{}'::jsonb,
+  calculated_at timestamptz,
   estimated_net numeric not null,
   actual_net numeric,
   true_rpm numeric not null,
@@ -124,17 +146,22 @@ create table if not exists public.saved_loads (
   result_snapshot jsonb not null default '{}'::jsonb,
   actuals_snapshot jsonb not null default '{}'::jsonb,
   pay_structure_snapshot jsonb not null default '{}'::jsonb,
-  calculation_version text not null default 'loadiq-v2',
+  calculation_version text not null default 'loadiq-v1.1-profile-overhead',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
 alter table public.saved_loads
+  add column if not exists loadiq_load_number text,
+  add column if not exists driver_load_number text,
+  add column if not exists load_outcome text not null default 'unknown',
+  add column if not exists load_run_status text default 'planned',
+  add column if not exists was_run_status text,
   add column if not exists pickup_city text,
   add column if not exists pickup_state text,
   add column if not exists delivery_city text,
   add column if not exists delivery_state text,
-  add column if not exists status text not null default 'estimated',
+  add column if not exists status text not null default 'saved',
   add column if not exists actual_net numeric,
   add column if not exists fuel_estimate_source text,
   add column if not exists estimated_fuel_price numeric,
@@ -142,11 +169,16 @@ alter table public.saved_loads
   add column if not exists fuel_override boolean not null default false,
   add column if not exists eia_period text,
   add column if not exists fuel_fetched_at timestamptz,
+  add column if not exists dispatch_days numeric,
+  add column if not exists overhead_applied numeric,
+  add column if not exists used_profile_values jsonb not null default '{}'::jsonb,
+  add column if not exists used_temporary_overrides jsonb not null default '{}'::jsonb,
+  add column if not exists calculated_at timestamptz,
   add column if not exists input_snapshot jsonb not null default '{}'::jsonb,
   add column if not exists result_snapshot jsonb not null default '{}'::jsonb,
   add column if not exists actuals_snapshot jsonb not null default '{}'::jsonb,
   add column if not exists pay_structure_snapshot jsonb not null default '{}'::jsonb,
-  add column if not exists calculation_version text not null default 'loadiq-v2';
+  add column if not exists calculation_version text not null default 'loadiq-v1.1-profile-overhead';
 
 create table if not exists public.load_estimates (
   id uuid primary key default gen_random_uuid(),
@@ -154,7 +186,7 @@ create table if not exists public.load_estimates (
   saved_load_id uuid references public.saved_loads(id) on delete cascade,
   input_snapshot jsonb not null default '{}'::jsonb,
   result_snapshot jsonb not null default '{}'::jsonb,
-  calculation_version text not null default 'loadiq-v2',
+  calculation_version text not null default 'loadiq-v1.1-profile-overhead',
   created_at timestamptz default now()
 );
 
@@ -340,8 +372,81 @@ create table if not exists public.trip_history (
   updated_at timestamptz default now()
 );
 
+create table if not exists public.onboarding_states (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references public.users(id) on delete cascade,
+  current_step text not null default 'profile',
+  completed_steps jsonb not null default '[]'::jsonb,
+  is_complete boolean not null default false,
+  completed_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  category text not null default 'support',
+  subject text not null,
+  message text not null,
+  related_load_id uuid references public.saved_loads(id) on delete set null,
+  status text not null default 'open',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.entity_notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  saved_load_id uuid references public.saved_loads(id) on delete set null,
+  entity_type text not null default 'facility',
+  company_name text not null,
+  address text,
+  rating integer,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.review_prompt_tracking (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references public.users(id) on delete cascade,
+  last_prompted_at timestamptz,
+  prompt_count integer not null default 0,
+  last_response text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.pilot_access (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(id) on delete cascade,
+  invite_code text unique,
+  is_active boolean not null default true,
+  monthly_price numeric not null default 14.99,
+  max_days integer not null default 45,
+  seat_number integer,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  canceled_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create index if not exists idx_saved_loads_user_created
 on public.saved_loads (user_id, created_at desc);
+
+create index if not exists idx_saved_loads_user_loadiq_number
+on public.saved_loads (user_id, loadiq_load_number);
+
+create index if not exists idx_saved_loads_user_was_run_status
+on public.saved_loads (user_id, was_run_status, created_at desc);
+
+create index if not exists idx_saved_loads_user_load_run_status
+on public.saved_loads (user_id, load_run_status, created_at desc);
+
+create index if not exists idx_saved_loads_user_calculated
+on public.saved_loads (user_id, calculated_at desc);
 
 create index if not exists idx_usage_events_user_event_created
 on public.usage_events (user_id, event_name, created_at desc);
@@ -363,6 +468,21 @@ on public.disclaimer_acceptances (user_id, created_at desc);
 
 create index if not exists idx_accessorial_items_load
 on public.accessorial_items (saved_load_id, created_at desc);
+
+create index if not exists idx_onboarding_states_user_complete
+on public.onboarding_states (user_id, is_complete);
+
+create index if not exists idx_support_tickets_user_created
+on public.support_tickets (user_id, created_at desc);
+
+create index if not exists idx_entity_notes_user_entity
+on public.entity_notes (user_id, entity_type, created_at desc);
+
+create index if not exists idx_review_prompt_tracking_user
+on public.review_prompt_tracking (user_id);
+
+create index if not exists idx_pilot_access_active
+on public.pilot_access (is_active, seat_number);
 
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -406,6 +526,11 @@ alter table public.analytics_events enable row level security;
 alter table public.trip_history enable row level security;
 alter table public.disclaimer_acceptances enable row level security;
 alter table public.accessorial_items enable row level security;
+alter table public.onboarding_states enable row level security;
+alter table public.support_tickets enable row level security;
+alter table public.entity_notes enable row level security;
+alter table public.review_prompt_tracking enable row level security;
+alter table public.pilot_access enable row level security;
 
 do $$
 begin
@@ -483,6 +608,26 @@ begin
 
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='accessorial_items' and policyname='Users can manage own accessorial items') then
     create policy "Users can manage own accessorial items" on public.accessorial_items for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='onboarding_states' and policyname='Users can manage own onboarding state') then
+    create policy "Users can manage own onboarding state" on public.onboarding_states for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='support_tickets' and policyname='Users can manage own support tickets') then
+    create policy "Users can manage own support tickets" on public.support_tickets for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='entity_notes' and policyname='Users can manage own entity notes') then
+    create policy "Users can manage own entity notes" on public.entity_notes for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='review_prompt_tracking' and policyname='Users can manage own review prompt tracking') then
+    create policy "Users can manage own review prompt tracking" on public.review_prompt_tracking for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='pilot_access' and policyname='Users can view own pilot access') then
+    create policy "Users can view own pilot access" on public.pilot_access for select using (auth.uid() = user_id);
   end if;
 end
 $$;

@@ -1,5 +1,6 @@
 import {
   calculateCpmExposure,
+  calculateOverheadBreakdown,
   calculatePercentDeductions,
   calculateWeeklyOverhead,
   getOverheadItems,
@@ -12,8 +13,16 @@ import { PayStructure } from "@/types/load";
 
 export type CalculatorDefaults = {
   weeklyOverhead: number;
+  monthlyOverhead: number;
+  dailyOverhead: number;
+  annualOverhead: number;
+  operatingDaysPerWeek: number;
+  operatingDaysPerMonth: number;
   cpmExposure: number;
   percentDeductions: number;
+  incomeTargetDaily: number;
+  incomeTargetWeekly: number;
+  minimumHourlyProfitability: number;
   targetTrueRpm: number;
   defaultMpg: number;
   defaultPayStructure?: PayStructure;
@@ -38,6 +47,10 @@ export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
     (template) => template.is_default
   );
   const weeklyOverhead = calculateWeeklyOverhead(items);
+  const overheadBreakdown = calculateOverheadBreakdown(
+    items,
+    profile?.operatingDaysPerWeek ?? 5.5
+  );
   const cpmExposure = calculateCpmExposure(items);
   const incomeTargets = deriveIncomeTargets(
     profile?.incomeTargetAmount ?? 60000,
@@ -50,8 +63,16 @@ export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
 
   return {
     weeklyOverhead,
+    monthlyOverhead: overheadBreakdown.monthly,
+    dailyOverhead: overheadBreakdown.daily,
+    annualOverhead: overheadBreakdown.annual,
+    operatingDaysPerWeek: overheadBreakdown.operatingDaysPerWeek,
+    operatingDaysPerMonth: overheadBreakdown.operatingDaysPerMonth,
     cpmExposure,
     percentDeductions: calculatePercentDeductions(items),
+    incomeTargetDaily: incomeTargets.daily,
+    incomeTargetWeekly: incomeTargets.weekly,
+    minimumHourlyProfitability: profile?.minimumHourlyProfitability ?? 50,
     targetTrueRpm,
     defaultMpg: profile?.defaultMpg ?? 6.5,
     defaultPayStructure: payTemplate?.structure,

@@ -1,10 +1,11 @@
 import { LoadInput, LoadResult } from "@/types/load";
 
 export type SavedLoadStatus =
-  | "estimated"
-  | "booked"
+  | "calculated"
+  | "saved"
+  | "accepted"
   | "completed"
-  | "canceled";
+  | "archived";
 
 export type SavedLoadActuals = {
   fuelCost: number;
@@ -21,6 +22,10 @@ export type SavedLoadRecord = {
   id: string;
   user_id: string;
   status: SavedLoadStatus;
+  loadiq_load_number: string | null;
+  driver_load_number: string | null;
+  load_outcome: string | null;
+  was_run_status: string | null;
   pickup_zip: string;
   delivery_zip: string;
   loaded_miles: number;
@@ -36,6 +41,11 @@ export type SavedLoadRecord = {
   eia_period: string | null;
   fuel_fetched_at: string | null;
   operational_cost: number;
+  dispatch_days: number | null;
+  overhead_applied: number | null;
+  used_profile_values: unknown | null;
+  used_temporary_overrides: unknown | null;
+  calculated_at: string | null;
   estimated_net: number;
   actual_net: number | null;
   true_rpm: number;

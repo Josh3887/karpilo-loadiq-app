@@ -8,6 +8,7 @@ import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-compari
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { LoadInput, LoadResult } from "@/types/load";
 import { saveLoad } from "@/services/save-load";
+import { ThemedSelect } from "@/components/ui/themed-select";
 
 import {
   formatCurrency,
@@ -32,6 +33,9 @@ export function ResultsPanel({
   onLoadSaved,
 }: ResultsPanelProps) {
   const [saveStatus, setSaveStatus] = useState("");
+  const [loadRunStatus, setLoadRunStatus] = useState<
+    "ran" | "test" | "planned" | ""
+  >("");
 
   async function handleSaveLoad() {
     if (!result || !input) return;
@@ -47,7 +51,10 @@ export function ResultsPanel({
       setSaveStatus("Saving load...");
 
       await saveLoad({
-        input,
+        input: {
+          ...input,
+          loadRunStatus: loadRunStatus || input.loadRunStatus || "planned",
+        },
         result,
       });
 
@@ -88,13 +95,29 @@ export function ResultsPanel({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSaveLoad}
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
-          >
-            Save Load
-          </button>
+          <div className="grid gap-3 sm:min-w-72">
+            <ThemedSelect
+              label="Did you actually run this load?"
+              value={loadRunStatus}
+              onChange={(value) =>
+                setLoadRunStatus(value as "ran" | "test" | "planned")
+              }
+              options={[
+                { label: "Not yet, planned load", value: "planned" },
+                { label: "Yes, I ran this load", value: "ran" },
+                { label: "No, test calculation", value: "test" },
+              ]}
+            />
+
+            <button
+              type="button"
+              onClick={handleSaveLoad}
+              disabled={!loadRunStatus}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
+            >
+              Save Load
+            </button>
+          </div>
         </div>
 
         {saveStatus && (
@@ -108,6 +131,8 @@ export function ResultsPanel({
           <KpiCard label="Fuel Cost" value={formatCurrency(result.fuelCost)} tone="red" />
           <KpiCard label="Break-Even RPM" value={formatRpm(result.breakEvenRpm)} tone={input && input.ratePerMile < result.breakEvenRpm ? "red" : "silver"} />
           <KpiCard label="Daily Net" value={formatCurrency(result.dailyProfitability)} tone={result.dailyProfitability > 0 ? "green" : "red"} />
+          <KpiCard label="Net / Total Mi" value={formatRpm(result.profitPerTotalMile)} tone={result.profitPerTotalMile > 0 ? "green" : "red"} />
+          <KpiCard label="Net / Loaded Mi" value={formatRpm(result.profitPerLoadedMile)} tone={result.profitPerLoadedMile > 0 ? "green" : "red"} />
           <KpiCard label="Deadhead" value={formatPercent(result.deadheadPercent)} tone={result.deadheadPercent > 25 ? "red" : "silver"} />
           <KpiCard
             label="Profitability"
@@ -124,12 +149,21 @@ export function ResultsPanel({
           <div className="space-y-3 text-sm">
             <BreakdownRow label="Total Miles" value={`${formatNumber(result.totalMiles)} mi`} />
             <BreakdownRow label="Operational Cost" value={formatCurrency(result.operationalCost)} />
+            <BreakdownRow label="Daily Fixed Overhead" value={formatCurrency(result.dailyFixedOverhead)} />
+            <BreakdownRow label="Dispatch Days" value={formatNumber(result.dispatchDays)} />
+            <BreakdownRow label="Overhead Applied" value={formatCurrency(result.loadOverheadApplied)} />
             <BreakdownRow label="Cost Per Mile" value={formatRpm(result.costPerMile)} />
+            <BreakdownRow label="Profit Per Day" value={formatCurrency(result.profitPerDay)} />
+            <BreakdownRow label="Profit Per Hour" value={formatCurrency(result.profitPerHour)} />
             <BreakdownRow label="Fuel % of Gross" value={formatPercent(result.fuelPercentOfGross)} />
             <BreakdownRow label="Profit Margin" value={formatPercent(result.profitMarginPercent)} />
             <BreakdownRow label="Retained Earnings" value={formatCurrency(result.retainedEarnings)} />
             <BreakdownRow label="Dispatch Cost" value={formatCurrency(result.dispatchCost)} />
             <BreakdownRow label="Factoring Cost" value={formatCurrency(result.factoringCost)} />
+            <BreakdownRow
+              label="Daily Target Gap"
+              value={formatCurrency(result.incomeTargetComparison)}
+            />
           </div>
         </div>
 

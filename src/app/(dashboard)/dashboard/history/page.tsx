@@ -15,6 +15,9 @@ type SavedLoad = {
   profitability_score: number;
   profitability_band: string;
   status: string;
+  loadiq_load_number: string | null;
+  driver_load_number: string | null;
+  load_outcome: string | null;
   created_at: string;
 };
 
@@ -32,7 +35,7 @@ export default async function LoadHistoryPage() {
   const { data: loads, error } = await supabase
     .from("saved_loads")
     .select(
-      "id, pickup_zip, delivery_zip, gross_revenue, estimated_net, actual_net, true_rpm, profitability_score, profitability_band, status, created_at"
+      "id, pickup_zip, delivery_zip, gross_revenue, estimated_net, actual_net, true_rpm, profitability_score, profitability_band, status, loadiq_load_number, driver_load_number, load_outcome, created_at"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -40,6 +43,18 @@ export default async function LoadHistoryPage() {
   if (error) {
     throw new Error(error.message);
   }
+
+  const typedLoads = (loads ?? []) as SavedLoad[];
+  const completedOrSavedLoads = typedLoads.filter((load) =>
+    ["saved", "accepted", "completed"].includes(load.status ?? "saved")
+  );
+  const averageTrueRpm =
+    completedOrSavedLoads.length > 0
+      ? completedOrSavedLoads.reduce(
+          (total, load) => total + Number(load.true_rpm),
+          0
+        ) / completedOrSavedLoads.length
+      : 0;
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -68,6 +83,21 @@ export default async function LoadHistoryPage() {
         </header>
 
         <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
+          <div className="mb-5 grid gap-4 md:grid-cols-3">
+            <HistoryMetric
+              label="Saved/Accepted Loads"
+              value={String(completedOrSavedLoads.length)}
+            />
+            <HistoryMetric
+              label="Avg True RPM"
+              value={averageTrueRpm > 0 ? formatRpm(averageTrueRpm) : "Pending"}
+            />
+            <HistoryMetric
+              label="Completed"
+              value={String(typedLoads.filter((load) => load.status === "completed").length)}
+            />
+          </div>
+
           {!loads || loads.length === 0 ? (
             <div className="py-20 text-center text-slate-500">
               No saved loads yet.
@@ -91,15 +121,26 @@ export default async function LoadHistoryPage() {
                 </thead>
 
                 <tbody>
-                  {(loads as SavedLoad[]).map((load) => (
+                  {typedLoads.map((load) => {
+                    const rpmDelta =
+                      averageTrueRpm > 0
+                        ? Number(load.true_rpm) - averageTrueRpm
+                        : 0;
+
+                    return (
                     <tr
                       key={load.id}
                       className="border-b border-slate-800/80 text-slate-300 transition hover:bg-sky-400/5"
                     >
                       <td className="py-4 font-semibold text-slate-100">
                         <Link href={`/dashboard/history/${load.id}`} className="text-sky-300 hover:text-sky-200">
-                          {load.pickup_zip} → {load.delivery_zip}
+                          {load.loadiq_load_number ?? "LIQ"} · {load.pickup_zip} → {load.delivery_zip}
                         </Link>
+                        {load.driver_load_number && (
+                          <div className="mt-1 text-xs text-slate-500">
+                            Driver load {load.driver_load_number}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
                         {formatCurrency(Number(load.gross_revenue))}
@@ -114,6 +155,18 @@ export default async function LoadHistoryPage() {
                       </td>
                       <td className="py-4">
                         {formatRpm(Number(load.true_rpm))}
+                        {averageTrueRpm > 0 && (
+                          <div
+                            className={
+                              rpmDelta < 0
+                                ? "mt-1 text-xs text-red-300"
+                                : "mt-1 text-xs text-sky-300"
+                            }
+                          >
+                            {rpmDelta >= 0 ? "+" : ""}
+                            {formatRpm(rpmDelta)} vs avg
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
                         {load.profitability_score}/100
@@ -123,6 +176,11 @@ export default async function LoadHistoryPage() {
                       </td>
                       <td className="py-4 capitalize text-slate-400">
                         {load.status ?? "estimated"}
+                        {load.load_outcome && load.load_outcome !== "unknown" && (
+                          <div className="mt-1 text-xs text-slate-500">
+                            {load.load_outcome.replaceAll("_", " ")}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
                         <Link
@@ -136,7 +194,8 @@ export default async function LoadHistoryPage() {
                         {new Date(load.created_at).toLocaleDateString()}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -144,5 +203,16 @@ export default async function LoadHistoryPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function HistoryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </div>
+      <div className="mt-2 text-xl font-black text-slate-100">{value}</div>
+    </div>
   );
 }

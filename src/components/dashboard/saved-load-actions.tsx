@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import {
   duplicateSavedLoad,
   updateSavedLoadActuals,
+  updateSavedLoadOutcome,
 } from "@/services/saved-load-actions";
 import { createLaneTemplateFromSavedLoad } from "@/services/lane-templates";
 import { SavedLoadActuals } from "@/types/saved-load";
+import { ThemedSelect } from "@/components/ui/themed-select";
 
 const defaultActuals: SavedLoadActuals = {
   fuelCost: 0,
@@ -29,6 +31,7 @@ type SavedLoadActionsProps = {
 export function SavedLoadActions({ loadId }: SavedLoadActionsProps) {
   const router = useRouter();
   const [actuals, setActuals] = useState(defaultActuals);
+  const [outcome, setOutcome] = useState("unknown");
   const [status, setStatus] = useState("");
 
   async function handleDuplicate() {
@@ -65,6 +68,29 @@ export function SavedLoadActions({ loadId }: SavedLoadActionsProps) {
           ? error.message
           : "Unable to save lane template."
       );
+    }
+  }
+
+  async function handleSaveOutcome() {
+    const statusByOutcome: Record<string, string> = {
+      ran: "accepted",
+      did_not_run: "archived",
+      lost: "archived",
+      declined: "archived",
+      unknown: "saved",
+    };
+
+    try {
+      setStatus("Saving load outcome...");
+      await updateSavedLoadOutcome(
+        loadId,
+        outcome,
+        statusByOutcome[outcome] ?? "saved"
+      );
+      setStatus("Load outcome saved.");
+      router.refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to save outcome.");
     }
   }
 
@@ -156,6 +182,28 @@ export function SavedLoadActions({ loadId }: SavedLoadActionsProps) {
         >
           Save Actuals
         </button>
+
+        <div className="mt-6 border-t border-slate-800 pt-5">
+          <ThemedSelect
+            label="What happened with this load?"
+            value={outcome}
+            onChange={setOutcome}
+            options={[
+              { label: "Ran this load", value: "ran" },
+              { label: "Did not run this load", value: "did_not_run" },
+              { label: "Lost load", value: "lost" },
+              { label: "Declined load", value: "declined" },
+              { label: "Unknown", value: "unknown" },
+            ]}
+          />
+          <button
+            type="button"
+            onClick={handleSaveOutcome}
+            className="mt-4 rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
+          >
+            Save Outcome
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">

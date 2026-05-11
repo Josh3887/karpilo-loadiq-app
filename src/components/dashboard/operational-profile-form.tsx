@@ -14,6 +14,8 @@ import {
   saveOperationalProfile,
 } from "@/services/operational-profile";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { LearnMore } from "@/components/ui/learn-more";
+import { EDUCATION_TOPICS } from "@/config/education";
 import { PayStructure } from "@/types/load";
 import { formatCurrency } from "@/utils/format";
 
@@ -143,6 +145,11 @@ export function OperationalProfileForm() {
 
       <section className="space-y-5">
         <SectionTitle title="Target Profitability" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <LearnMore {...EDUCATION_TOPICS.trueRpm} />
+          <LearnMore {...EDUCATION_TOPICS.breakEvenRpm} />
+          <LearnMore {...EDUCATION_TOPICS.targetMargins} />
+        </div>
 
         <div className="grid gap-5 md:grid-cols-2">
           <InputField
@@ -194,6 +201,36 @@ export function OperationalProfileForm() {
               setProfile((prev) => ({
                 ...prev,
                 minimumHourlyProfitability: Number(value),
+              }))
+            }
+          />
+
+          <InputField
+            label="Operating Days / Week"
+            type="number"
+            value={String(profile.operatingDaysPerWeek)}
+            onChange={(value) =>
+              setProfile((prev) => {
+                const operatingDaysPerWeek = Number(value);
+                return {
+                  ...prev,
+                  operatingDaysPerWeek,
+                  operatingDaysPerMonth: Number(
+                    (operatingDaysPerWeek * 4.33).toFixed(2)
+                  ),
+                };
+              })
+            }
+          />
+
+          <InputField
+            label="Operating Days / Month"
+            type="number"
+            value={String(profile.operatingDaysPerMonth)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                operatingDaysPerMonth: Number(value),
               }))
             }
           />
@@ -368,6 +405,7 @@ export function OperationalProfileForm() {
 
       <section className="space-y-5">
         <SectionTitle title="Pay Templates" />
+        <LearnMore {...EDUCATION_TOPICS.payStructures} />
 
         <div className="grid gap-5 md:grid-cols-3">
           <InputField

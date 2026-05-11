@@ -8,6 +8,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { LoadInputForm } from "@/components/calculator/load-input-form";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { DisclaimerModal } from "@/components/legal/disclaimer-modal";
+import { ReviewPrompt } from "@/components/dashboard/review-prompt";
 import { ResultsPanel } from "@/components/dashboard/results-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 
@@ -60,7 +61,12 @@ export default function DashboardClientPage({
           await getCalculatorDefaults();
 
         setDefaults({
-          overhead: defaults.weeklyOverhead,
+          overhead: defaults.dailyOverhead,
+          operatingDaysPerWeek: defaults.operatingDaysPerWeek,
+          operatingDaysPerMonth: defaults.operatingDaysPerMonth,
+          incomeTargetDaily: defaults.incomeTargetDaily,
+          incomeTargetWeekly: defaults.incomeTargetWeekly,
+          minimumHourlyProfitability: defaults.minimumHourlyProfitability,
           targetTrueRpm: defaults.targetTrueRpm,
           defaultMpg: defaults.defaultMpg,
           defaultPayStructure: defaults.defaultPayStructure,
@@ -244,6 +250,12 @@ export default function DashboardClientPage({
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
+          <div className="lg:col-span-2">
+            <ReviewPrompt
+              calculationCount={entitlementState?.usage.monthlyCalculations ?? 0}
+            />
+          </div>
+
           <DashboardCard title="Load Input">
             {gateMessage && (
               <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">

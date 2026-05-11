@@ -14,6 +14,35 @@ export type PayStructure = {
   includeAccessorials: boolean;
 };
 
+export type LoadRunStatus = "ran" | "test" | "planned";
+
+export type CalculationValueSource =
+  | "profile"
+  | "load_input"
+  | "temporary_override"
+  | "system";
+
+export type ProfileDerivedValues = {
+  dailyFixedOverhead: number;
+  operatingDaysPerWeek: number;
+  operatingDaysPerMonth: number;
+  dispatchPercent: number;
+  factoringPercent: number;
+  maintenanceReserve: number;
+  tireReserve: number;
+  trailerFee: number;
+  insuranceAllocation: number;
+  variableCostPerMile: number;
+  fixedCostAllocation: number;
+  mpg: number;
+  targetTrueRpm: number;
+  incomeTargetDaily: number;
+  incomeTargetWeekly: number;
+  minimumHourlyProfitability: number;
+};
+
+export type TemporaryOverrides = Partial<Record<keyof ProfileDerivedValues, number>>;
+
 export type LoadInput = {
   loadNumber: string;
   carrierLoadId: string;
@@ -36,6 +65,7 @@ export type LoadInput = {
 
   dispatchDays: number;
   deadheadDays: number;
+  loadRunStatus: LoadRunStatus;
 
   ratePerMile: number;
   fuelSurcharge: number;
@@ -50,6 +80,9 @@ export type LoadInput = {
   mpg: number;
 
   overhead: number;
+  profileDerivedValues: ProfileDerivedValues;
+  temporaryOverrides: TemporaryOverrides;
+  calculationSource: CalculationValueSource;
   accessorialItems: AccessorialInputItem[];
   reserveAllocation: number;
   maintenanceReserve: number;
@@ -121,6 +154,15 @@ export type LoadResult = {
   dispatchCost: number;
   factoringCost: number;
   operationalCost: number;
+  loadOverheadApplied: number;
+  dailyFixedOverhead: number;
+  dispatchDays: number;
+  profitPerDay: number;
+  profitPerHour: number;
+  profitPerLoadedMile: number;
+  profitPerTotalMile: number;
+  targetRpm: number;
+  incomeTargetComparison: number;
   totalTripCost: number;
   estimatedNet: number;
   retainedEarnings: number;

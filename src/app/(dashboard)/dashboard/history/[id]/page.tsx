@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { SavedLoadActions } from "@/components/dashboard/saved-load-actions";
+import { EntityNoteForm } from "@/components/dashboard/entity-note-form";
 import { createClient } from "@/lib/supabase-server";
 import { SavedLoadActuals } from "@/types/saved-load";
 
@@ -80,6 +81,7 @@ export default async function LoadDetailPage({
             </h1>
 
             <p className="mt-3 text-sm text-slate-400">
+              {load.loadiq_load_number ? `${load.loadiq_load_number} · ` : ""}
               {load.pickup_zip} → {load.delivery_zip}
             </p>
           </div>
@@ -262,6 +264,7 @@ export default async function LoadDetailPage({
           )}
 
         <SavedLoadActions loadId={id} />
+        <EntityNoteForm savedLoadId={id} />
       </div>
     </main>
   );

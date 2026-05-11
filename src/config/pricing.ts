@@ -12,6 +12,17 @@ export const FOUNDER_ACCESS = {
   annualPrice: 149.99,
 } as const;
 
+export const PILOT_ACCESS = {
+  name: "Pilot Operator Access",
+  publicTeaser:
+    "Pilot Operator Access may be available for approved early-access users.",
+  maxSeats: 25,
+  durationDays: 45,
+  monthlyPrice: 14.99,
+  lifetimeLockRule:
+    "Pilot pricing remains locked while the subscription stays active and is lost if canceled, deleted, or transferred.",
+} as const;
+
 export const PUBLIC_PRICING_PLANS = [
   {
     id: "free",

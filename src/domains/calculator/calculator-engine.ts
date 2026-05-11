@@ -6,7 +6,7 @@ import {
   ProfitabilityBand,
 } from "@/types/load";
 
-export const CALCULATION_VERSION = "loadiq-v2";
+export const CALCULATION_VERSION = "loadiq-v1.1-profile-overhead";
 
 function round(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -120,10 +120,13 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
   const factoringCost = grossRevenue * (input.factoringPercent / 100);
   const reserves =
     input.reserveAllocation + input.maintenanceReserve + input.tireReserve;
+  const dispatchDays = Math.max(input.dispatchDays, 1);
+  const dailyFixedOverhead = Math.max(input.overhead, 0);
+  const loadOverheadApplied = dailyFixedOverhead * dispatchDays;
 
   const operationalCost =
     fuelCost +
-    input.overhead +
+    loadOverheadApplied +
     accessorialExpense +
     input.tolls +
     input.lumpers +
@@ -150,9 +153,14 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       ? (totalTripCost - fuelSurchargeRevenue - accessorialRevenue) /
         input.loadedMiles
       : 0;
-  const operatingDays = Math.max(input.dispatchDays + input.deadheadDays, 0.25);
+  const operatingDays = Math.max(dispatchDays + input.deadheadDays, 1);
   const dailyProfitability = estimatedNet / operatingDays;
   const hourlyProfitability = estimatedNet / (operatingDays * 11);
+  const profitPerLoadedMile =
+    input.loadedMiles > 0 ? estimatedNet / input.loadedMiles : 0;
+  const profitPerTotalMile = totalMiles > 0 ? estimatedNet / totalMiles : 0;
+  const incomeTargetComparison =
+    dailyProfitability - (input.profileDerivedValues?.incomeTargetDaily ?? 0);
 
   let profitabilityScore = 100;
 
@@ -228,6 +236,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       : `Estimated net is negative at ${money(estimatedNet)}, so the load needs repricing or cost relief.`,
     `True RPM is ${money(trueRpm)}/mi across ${round(totalMiles)} total miles.`,
     `Break-even linehaul RPM is approximately ${money(breakEvenRpm)}/mi before profit.`,
+    `${money(loadOverheadApplied)} of fixed overhead is assigned to this load using ${money(dailyFixedOverhead)}/day across ${round(dispatchDays)} dispatch day(s).`,
   ];
 
   if (fuelCost > 0) {
@@ -258,6 +267,15 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     dispatchCost: round(dispatchCost),
     factoringCost: round(factoringCost),
     operationalCost: round(operationalCost),
+    loadOverheadApplied: round(loadOverheadApplied),
+    dailyFixedOverhead: round(dailyFixedOverhead),
+    dispatchDays: round(dispatchDays),
+    profitPerDay: round(dailyProfitability),
+    profitPerHour: round(hourlyProfitability),
+    profitPerLoadedMile: round(profitPerLoadedMile),
+    profitPerTotalMile: round(profitPerTotalMile),
+    targetRpm: round(input.targetTrueRpm),
+    incomeTargetComparison: round(incomeTargetComparison),
     totalTripCost: round(totalTripCost),
     estimatedNet: round(estimatedNet),
     retainedEarnings: round(retainedEarnings),
@@ -281,7 +299,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       reserves: round(input.reserveAllocation),
       maintenanceReserve: round(input.maintenanceReserve),
       tireReserve: round(input.tireReserve),
-      overhead: round(input.overhead),
+      overhead: round(loadOverheadApplied),
       trailerFee: round(input.trailerFee),
       insuranceAllocation: round(input.insuranceAllocation),
       variableCosts: round(variableCosts),

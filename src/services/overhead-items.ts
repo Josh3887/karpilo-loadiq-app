@@ -3,11 +3,14 @@ import { createClient } from "@/lib/supabase-client";
 export type OverheadAmountType = "flat" | "cpm" | "percent";
 
 export type OverheadFrequency =
+  | "daily"
   | "by_mile"
   | "by_day"
+  | "biweekly"
   | "weekly"
   | "monthly"
   | "quarterly"
+  | "annually"
   | "annual"
   | "per_trip"
   | "none";
@@ -42,13 +45,52 @@ export type CreateOverheadItemPayload = {
   is_active: boolean;
 };
 
-export function normalizeFlatToWeekly(amount: number, frequency: OverheadFrequency) {
-  if (frequency === "weekly") return amount;
-  if (frequency === "monthly") return amount / 4.33;
-  if (frequency === "quarterly") return amount / 13;
-  if (frequency === "annual") return amount / 52;
+export type OverheadBreakdown = {
+  weekly: number;
+  monthly: number;
+  daily: number;
+  annual: number;
+  operatingDaysPerWeek: number;
+  operatingDaysPerMonth: number;
+};
+
+const DEFAULT_OPERATING_DAYS_PER_WEEK = 5.5;
+
+function roundCurrency(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(2));
+}
+
+function normalizeFlatToAnnual(amount: number, frequency: OverheadFrequency) {
+  if (frequency === "daily" || frequency === "by_day") {
+    return amount * DEFAULT_OPERATING_DAYS_PER_WEEK * 52;
+  }
+
+  if (frequency === "weekly") return amount * 52;
+  if (frequency === "biweekly") return amount * 26;
+  if (frequency === "monthly") return amount * 12;
+  if (frequency === "quarterly") return amount * 4;
+  if (frequency === "annual" || frequency === "annually") return amount;
 
   return 0;
+}
+
+export function normalizeFlatToWeekly(amount: number, frequency: OverheadFrequency) {
+  if (frequency === "weekly") return amount;
+  if (frequency === "daily" || frequency === "by_day") {
+    return amount * DEFAULT_OPERATING_DAYS_PER_WEEK;
+  }
+  if (frequency === "biweekly") return amount / 2;
+  if (frequency === "monthly") return amount / 4.33;
+  if (frequency === "quarterly") return amount / 13;
+  if (frequency === "annual" || frequency === "annually") return amount / 52;
+
+  return 0;
+}
+
+export function normalizeFlatToMonthly(amount: number, frequency: OverheadFrequency) {
+  if (frequency === "monthly") return amount;
+  return normalizeFlatToAnnual(amount, frequency) / 12;
 }
 
 export function calculateWeeklyOverhead(items: OverheadItem[]) {
@@ -59,6 +101,34 @@ export function calculateWeeklyOverhead(items: OverheadItem[]) {
     .reduce((total, item) => {
       return total + normalizeFlatToWeekly(Number(item.amount), item.frequency);
     }, 0);
+}
+
+export function calculateOverheadBreakdown(
+  items: OverheadItem[],
+  operatingDaysPerWeek = DEFAULT_OPERATING_DAYS_PER_WEEK
+): OverheadBreakdown {
+  const annual = items
+    .filter((item) => item.is_active)
+    .filter((item) => item.responsibility === "driver")
+    .filter((item) => item.amount_type === "flat")
+    .reduce((total, item) => {
+      return total + normalizeFlatToAnnual(Number(item.amount), item.frequency);
+    }, 0);
+
+  const weekly = annual / 52;
+  const monthly = annual / 12;
+  const safeOperatingDaysPerWeek = Math.max(operatingDaysPerWeek, 1);
+  const operatingDaysPerMonth = safeOperatingDaysPerWeek * 4.33;
+  const daily = monthly / operatingDaysPerMonth;
+
+  return {
+    weekly: roundCurrency(weekly),
+    monthly: roundCurrency(monthly),
+    daily: roundCurrency(daily),
+    annual: roundCurrency(annual),
+    operatingDaysPerWeek: roundCurrency(safeOperatingDaysPerWeek),
+    operatingDaysPerMonth: roundCurrency(operatingDaysPerMonth),
+  };
 }
 
 export function calculateCpmExposure(items: OverheadItem[]) {

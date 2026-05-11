@@ -5,6 +5,7 @@ import {
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
+import { SiteFooter } from "@/components/legal/site-footer";
 import { PRODUCT_FAQS, PRODUCT_FEATURES } from "@/config/product-features";
 
 export default function HomePage() {
@@ -176,10 +177,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-800 px-6 py-8 text-center text-sm text-slate-500">
-        Karpilo LoadIQ uses estimates only. Fuel estimates may utilize public
-        EIA data for informational purposes and do not imply endorsement.
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

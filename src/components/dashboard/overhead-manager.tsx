@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import {
   calculateCpmExposure,
+  calculateOverheadBreakdown,
   calculatePercentDeductions,
   calculateWeeklyOverhead,
   createOverheadItem,
@@ -16,7 +17,10 @@ import {
   OverheadItem,
   OverheadResponsibility,
 } from "@/services/overhead-items";
+import { getOperationalProfile } from "@/services/operational-profile";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { LearnMore } from "@/components/ui/learn-more";
+import { EDUCATION_TOPICS, OVERHEAD_CATEGORY_HELP } from "@/config/education";
 import { formatCurrency } from "@/utils/format";
 
 const defaultForm = {
@@ -31,6 +35,7 @@ const defaultForm = {
 
 export function OverheadManager() {
   const [items, setItems] = useState<OverheadItem[]>([]);
+  const [operatingDaysPerWeek, setOperatingDaysPerWeek] = useState(5.5);
   const [status, setStatus] = useState("");
   const [form, setForm] = useState(defaultForm);
 
@@ -38,6 +43,8 @@ export function OverheadManager() {
     try {
       const data = await getOverheadItems();
       setItems(data);
+      const profile = await getOperationalProfile().catch(() => null);
+      setOperatingDaysPerWeek(profile?.profile.operatingDaysPerWeek ?? 5.5);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to load overhead items.");
     }
@@ -69,6 +76,10 @@ export function OverheadManager() {
   }
 
   const weeklyOverhead = calculateWeeklyOverhead(items);
+  const overheadBreakdown = calculateOverheadBreakdown(
+    items,
+    operatingDaysPerWeek
+  );
   const cpmExposure = calculateCpmExposure(items);
   const percentDeductions = calculatePercentDeductions(items);
 
@@ -78,6 +89,75 @@ export function OverheadManager() {
         <SummaryCard label="Weekly Operational Burn" value={formatCurrency(weeklyOverhead)} />
         <SummaryCard label="CPM Exposure" value={`${formatCurrency(cpmExposure)}/mi`} />
         <SummaryCard label="Percent Deductions" value={`${percentDeductions.toFixed(2)}%`} />
+      </div>
+
+      <section className="space-y-4 rounded-2xl border border-slate-800 bg-[#060B14] p-5">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">
+            Overhead Breakdown
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Daily overhead is used to calculate how much fixed business cost
+            should be assigned to each load based on how many days that load
+            occupies your truck.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <SummaryCard
+            label="Annual Fixed"
+            value={formatCurrency(overheadBreakdown.annual)}
+          />
+          <SummaryCard
+            label="Monthly Fixed"
+            value={formatCurrency(overheadBreakdown.monthly)}
+          />
+          <SummaryCard
+            label="Weekly Fixed"
+            value={formatCurrency(overheadBreakdown.weekly)}
+          />
+          <SummaryCard
+            label="Daily Fixed"
+            value={formatCurrency(overheadBreakdown.daily)}
+          />
+        </div>
+
+        <div className="grid gap-3 text-xs leading-5 text-slate-400 md:grid-cols-2">
+          <div className="rounded-xl border border-slate-800 bg-[#0B1220] p-4">
+            Operating days per week:{" "}
+            <span className="font-black text-slate-100">
+              {overheadBreakdown.operatingDaysPerWeek}
+            </span>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-[#0B1220] p-4">
+            Operating days per month:{" "}
+            <span className="font-black text-slate-100">
+              {overheadBreakdown.operatingDaysPerMonth}
+            </span>
+          </div>
+        </div>
+
+        <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+          In the calculator, fixed overhead is applied as daily fixed overhead ×
+          dispatch days. A three-day load carries three days of overhead, not
+          the entire monthly burden.
+        </p>
+      </section>
+
+      <LearnMore {...EDUCATION_TOPICS.overhead} />
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {Object.entries(OVERHEAD_CATEGORY_HELP).map(([key, value]) => (
+          <div
+            key={key}
+            className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-5 text-slate-400"
+          >
+            <span className="font-bold uppercase tracking-[0.16em] text-sky-300">
+              {key.replace(/([A-Z])/g, " $1")}
+            </span>
+            <span className="mt-2 block">{value}</span>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
@@ -182,8 +262,22 @@ export function OverheadManager() {
             <div>
               <div className="font-semibold text-slate-100">{item.label}</div>
               <div className="mt-1 text-sm text-slate-400">
-                {formatCurrency(Number(item.amount))} • {item.amount_type} • {item.frequency} • {item.responsibility}
+            {formatCurrency(Number(item.amount))} • {item.amount_type} • {item.frequency} • {item.responsibility}
               </div>
+              {item.amount_type === "flat" && item.responsibility === "driver" && (
+                <div className="mt-1 text-xs text-slate-500">
+                  Monthly equivalent:{" "}
+                  {formatCurrency(
+                    calculateOverheadBreakdown([item], operatingDaysPerWeek)
+                      .monthly
+                  )}{" "}
+                  • Daily equivalent:{" "}
+                  {formatCurrency(
+                    calculateOverheadBreakdown([item], operatingDaysPerWeek)
+                      .daily
+                  )}
+                </div>
+              )}
             </div>
 
             <button

@@ -36,6 +36,18 @@ export default async function DashboardPage({
     !profile?.disclaimer_accepted_at ||
     profile.disclaimer_version !== LOADIQ_DISCLAIMER_VERSION;
 
+  if (!requiresDisclaimer) {
+    const { data: onboarding, error: onboardingError } = await supabase
+      .from("onboarding_states")
+      .select("is_complete")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!onboardingError && !onboarding?.is_complete) {
+      redirect("/dashboard/onboarding");
+    }
+  }
+
   return (
     <DashboardClientPage
       editLoadId={edit}
