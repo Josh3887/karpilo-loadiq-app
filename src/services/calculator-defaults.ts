@@ -1,0 +1,69 @@
+import {
+  calculateCpmExposure,
+  calculatePercentDeductions,
+  calculateWeeklyOverhead,
+  getOverheadItems,
+} from "@/services/overhead-items";
+import {
+  deriveIncomeTargets,
+  getOperationalProfile,
+} from "@/services/operational-profile";
+import { PayStructure } from "@/types/load";
+
+export type CalculatorDefaults = {
+  weeklyOverhead: number;
+  cpmExposure: number;
+  percentDeductions: number;
+  targetTrueRpm: number;
+  defaultMpg: number;
+  defaultPayStructure?: PayStructure;
+  maintenanceReserve: number;
+  tireReserve: number;
+  trailerFee: number;
+  insuranceAllocation: number;
+  variableCostPerMile: number;
+  fixedCostAllocation: number;
+  dispatchPercent: number;
+  factoringPercent: number;
+};
+
+export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
+  const [items, operationalProfile] = await Promise.all([
+    getOverheadItems().catch(() => []),
+    getOperationalProfile().catch(() => null),
+  ]);
+
+  const profile = operationalProfile?.profile;
+  const payTemplate = operationalProfile?.payTemplates.find(
+    (template) => template.is_default
+  );
+  const weeklyOverhead = calculateWeeklyOverhead(items);
+  const cpmExposure = calculateCpmExposure(items);
+  const incomeTargets = deriveIncomeTargets(
+    profile?.incomeTargetAmount ?? 60000,
+    profile?.incomeTargetPeriod ?? "yearly"
+  );
+  const targetTrueRpm =
+    weeklyOverhead > 0
+      ? Math.max(2, (incomeTargets.weekly + weeklyOverhead) / 2000)
+      : 2;
+
+  return {
+    weeklyOverhead,
+    cpmExposure,
+    percentDeductions: calculatePercentDeductions(items),
+    targetTrueRpm,
+    defaultMpg: profile?.defaultMpg ?? 6.5,
+    defaultPayStructure: payTemplate?.structure,
+    maintenanceReserve: profile?.defaultMaintenanceReserve ?? 0,
+    tireReserve: profile?.defaultTireReserve ?? 0,
+    trailerFee: profile?.defaultTrailerFee ?? 0,
+    insuranceAllocation: profile?.defaultInsuranceAllocation ?? 0,
+    variableCostPerMile:
+      (profile?.defaultVariableCostPerMile ?? 0) + cpmExposure,
+    fixedCostAllocation: profile?.defaultFixedCostAllocation ?? 0,
+    dispatchPercent: profile?.defaultDispatchPercent ?? 0,
+    factoringPercent:
+      (profile?.defaultFactoringPercent ?? 0) + calculatePercentDeductions(items),
+  };
+}

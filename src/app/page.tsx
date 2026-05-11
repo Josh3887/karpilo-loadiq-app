@@ -1,6 +1,16 @@
 import Link from "next/link";
 
+import {
+  FOUNDER_ACCESS,
+  PUBLIC_PRICING_PLANS,
+  formatPriceLabel,
+} from "@/config/pricing";
+import { PRODUCT_FAQS, PRODUCT_FEATURES } from "@/config/product-features";
+
 export default function HomePage() {
+  const heroFeatures = PRODUCT_FEATURES.slice(0, 3);
+  const featureCards = PRODUCT_FEATURES.slice(3);
+
   return (
     <main className="min-h-screen bg-[#060B14] text-slate-100">
       <section className="relative overflow-hidden border-b border-slate-800">
@@ -37,20 +47,13 @@ export default function HomePage() {
           </div>
 
           <div className="mt-20 grid gap-6 md:grid-cols-3">
-            <FeatureCard
-              title="Deadhead Analysis"
-              description="Identify hidden profitability erosion caused by unpaid repositioning miles."
-            />
-
-            <FeatureCard
-              title="True RPM Intelligence"
-              description="See actual operational RPM after deadhead exposure and operating costs."
-            />
-
-            <FeatureCard
-              title="Operational Risk Detection"
-              description="Instantly detect dangerous freight before margin collapse occurs."
-            />
+            {heroFeatures.map((feature) => (
+              <FeatureCard
+                key={feature.title}
+                title={feature.title}
+                description={feature.description}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -85,8 +88,97 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-b border-slate-800 bg-[#060B14]">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
+              Built from the app
+            </p>
+            <h2 className="text-4xl font-black tracking-tight text-white">
+              Real operating features, not vague SaaS filler.
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {featureCards.map((feature) => (
+              <FeatureCard
+                key={feature.title}
+                title={feature.title}
+                description={feature.description}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-800 bg-[#0B1220]">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
+                Pricing
+              </p>
+              <h2 className="text-4xl font-black tracking-tight text-white">
+                Simple public plans. Founder access stays controlled.
+              </h2>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-slate-400">
+              {FOUNDER_ACCESS.publicTeaser}
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {PUBLIC_PRICING_PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className="rounded-2xl border border-slate-800 bg-[#060B14] p-6 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
+              >
+                <h3 className="text-2xl font-black text-slate-100">
+                  {plan.name}
+                </h3>
+                <div className="mt-4 text-3xl font-black text-sky-200">
+                  {formatPriceLabel(plan.price, plan.interval)}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-400">
+                  {plan.description}
+                </p>
+                <div className="mt-5 space-y-2 text-sm text-slate-300">
+                  {plan.bullets.slice(0, 4).map((bullet) => (
+                    <div key={bullet} className="border-b border-slate-800 pb-2">
+                      {bullet}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-800 bg-[#060B14]">
+        <div className="mx-auto max-w-5xl px-6 py-20 md:px-10">
+          <h2 className="text-4xl font-black tracking-tight text-white">
+            Questions drivers ask before trusting the math.
+          </h2>
+          <div className="mt-8 space-y-4">
+            {PRODUCT_FAQS.map((faq) => (
+              <div
+                key={faq.question}
+                className="rounded-2xl border border-slate-800 bg-[#0B1220]/90 p-5"
+              >
+                <h3 className="font-bold text-slate-100">{faq.question}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-slate-800 px-6 py-8 text-center text-sm text-slate-500">
-        Karpilo LoadIQ — Freight intelligence built by the mile.
+        Karpilo LoadIQ uses estimates only. Fuel estimates may utilize public
+        EIA data for informational purposes and do not imply endorsement.
       </footer>
     </main>
   );
@@ -112,4 +204,5 @@ function FeatureCard({
       </p>
     </div>
   );
+
 }

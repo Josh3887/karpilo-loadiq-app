@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase-client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +17,7 @@ export default function LoginPage() {
     event.preventDefault();
 
     setStatus("Signing in...");
+    const supabase = createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
