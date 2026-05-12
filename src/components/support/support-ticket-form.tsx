@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { CONTACT_EMAILS } from "@/config/contact";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import {
   createSupportTicket,
@@ -26,7 +27,7 @@ type SupportTicketFormProps = {
 
 export function SupportTicketForm({
   title = "Contact Support",
-  description = "Use this for support, refund requests, billing questions, privacy, account deletion, bugs, or product feedback. Email fallback: Josh.karpilo@karpiloendeavortechnologies.com.",
+  description = `Use this for support, refund requests, billing questions, privacy, account deletion, bugs, or product feedback. Email fallback: ${CONTACT_EMAILS.support}.`,
   initialCategory = "support",
 }: SupportTicketFormProps) {
   const [ticket, setTicket] = useState<SupportTicketPayload>({
@@ -42,7 +43,7 @@ export function SupportTicketForm({
       await createSupportTicket(ticket);
       setTicket({ category: initialCategory, subject: "", message: "" });
       setStatus(
-        "Support request received. We will reply through Josh.karpilo@karpiloendeavortechnologies.com."
+        `Support request received. We will reply through ${CONTACT_EMAILS.support}.`
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to send support request.");

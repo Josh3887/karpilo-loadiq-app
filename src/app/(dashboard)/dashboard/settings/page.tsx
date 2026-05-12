@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
+import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OperationalProfileForm } from "@/components/dashboard/operational-profile-form";
 import { OverheadManager } from "@/components/dashboard/overhead-manager";
 import { SupportTicketForm } from "@/components/support/support-ticket-form";
+import { CONTACT_EMAILS } from "@/config/contact";
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
@@ -41,12 +43,7 @@ export default async function SettingsPage() {
             </p>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
-          >
-            Dashboard
-          </Link>
+          <BackToDashboardLink />
         </header>
 
         <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
@@ -60,9 +57,13 @@ export default async function SettingsPage() {
         <section className="mt-6">
           <SupportTicketForm
             title="Built On Real Driver Feedback"
-            description="Send operational issues, feature requests, pilot feedback, or anything that slows down freight decisions. This feeds the LoadIQ product loop directly."
+            description={`Send operational issues, feature requests, pilot feedback, or anything that slows down freight decisions. Support goes to ${CONTACT_EMAILS.support}; recommendations may be reviewed through ${CONTACT_EMAILS.feedback}.`}
             initialCategory="feature"
           />
+        </section>
+
+        <section className="mt-6">
+          <AppStorePlaceholders />
         </section>
       </div>
     </main>

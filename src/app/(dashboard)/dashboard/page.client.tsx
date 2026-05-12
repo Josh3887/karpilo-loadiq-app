@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/logout-button";
+import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { LoadInputForm } from "@/components/calculator/load-input-form";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { FounderWelcomeModal } from "@/components/dashboard/founder-welcome-modal";
@@ -30,12 +31,16 @@ import { LoadInputFormValues } from "@/lib/load-schema";
 import { createClient } from "@/lib/supabase-client";
 import { LoadInput } from "@/types/load";
 import { OperatorProgramStatus } from "@/types/operator-program";
+import { LaunchPhaseSnapshot } from "@/config/launch-phases";
 
 type DashboardClientPageProps = {
   editLoadId?: string;
   templateId?: string;
   requiresDisclaimer?: boolean;
   operatorStatus: OperatorProgramStatus;
+  launchSnapshot: LaunchPhaseSnapshot;
+  pilotSlotsRemaining: number;
+  launchSlotsRemaining: number;
 };
 
 export default function DashboardClientPage({
@@ -43,6 +48,9 @@ export default function DashboardClientPage({
   templateId,
   requiresDisclaimer = false,
   operatorStatus,
+  launchSnapshot,
+  pilotSlotsRemaining,
+  launchSlotsRemaining,
 }: DashboardClientPageProps) {
   const router = useRouter();
   const {
@@ -238,7 +246,9 @@ export default function DashboardClientPage({
         aria-hidden={showDisclaimer}
       >
         <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
+          <div className="flex items-start gap-4">
+            <LoadIqMark />
+            <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
               Karpilo LoadIQ
             </p>
@@ -252,6 +262,7 @@ export default function DashboardClientPage({
               Analyze load viability, deadhead exposure, fuel pressure,
               margin compression, and true RPM before accepting freight.
             </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
@@ -260,7 +271,14 @@ export default function DashboardClientPage({
           </div>
         </header>
 
-        {!showDisclaimer && <PilotStatusCard status={operatorStatus} />}
+        {!showDisclaimer && (
+          <PilotStatusCard
+            status={operatorStatus}
+            initialSnapshot={launchSnapshot}
+            pilotSlotsRemaining={pilotSlotsRemaining}
+            launchSlotsRemaining={launchSlotsRemaining}
+          />
+        )}
 
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <div className="lg:col-span-2">

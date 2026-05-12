@@ -15,11 +15,13 @@ export function AccountDeletionRequestForm() {
     acknowledgedSubscriptionWarning: false,
   });
   const [status, setStatus] = useState("");
+  const [confirming, setConfirming] = useState(false);
 
   async function handleSubmit() {
     try {
       setStatus("Submitting account deletion request...");
       await requestAccountDeletion(payload);
+      setConfirming(false);
       setPayload({
         contactEmail: "",
         reason: "",
@@ -129,13 +131,48 @@ export function AccountDeletionRequestForm() {
         disabled={
           !payload.contactEmail || !payload.acknowledgedSubscriptionWarning
         }
-        onClick={handleSubmit}
+        onClick={() => setConfirming(true)}
         className="mt-5 rounded-xl border border-red-300/40 bg-red-500/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Submit Deletion Request
+        Review Deletion Request
       </button>
 
       {status && <p className="mt-4 text-sm leading-6 text-slate-300">{status}</p>}
+
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-end bg-[#02050A]/80 px-4 py-5 backdrop-blur-sm sm:items-center sm:justify-center">
+          <section className="w-full max-w-lg rounded-2xl border border-red-300/30 bg-[#08111F] p-5 shadow-[0_0_45px_rgba(239,68,68,0.16)]">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-red-200">
+              Confirm Request
+            </p>
+            <h3 className="mt-2 text-2xl font-black text-slate-100">
+              Submit deletion request?
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              This sends a privacy/account deletion request to support. It does
+              not instantly delete records or cancel external subscriptions.
+              Support may need to verify identity, billing status, and required
+              retention obligations.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="rounded-xl border border-red-300/40 bg-red-500/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-100 transition hover:bg-red-500/20"
+              >
+                Submit Request
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="rounded-xl border border-slate-700 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-slate-500"
+              >
+                Go Back
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

@@ -149,7 +149,7 @@ export async function getOperatorProgramStatus(
   const [
     { data: programRow },
     { data: experienceRow },
-    { data: countRows },
+    counts,
   ] = await Promise.all([
     supabase
       .from("operator_program_status")
@@ -163,10 +163,22 @@ export async function getOperatorProgramStatus(
       .select("founder_welcome_completed_at, pilot_status_card_dismissed_at")
       .eq("user_id", userId)
       .maybeSingle(),
-    supabase.rpc("get_operator_program_counts"),
+    getOperatorProgramCounts(),
   ]);
 
-  const counts = ((countRows ?? []) as CountRow[]).reduce(
+  return buildStatus({
+    row: (programRow ?? {}) as ProgramRow,
+    experience: (experienceRow ?? {}) as ExperienceRow,
+    pilotClaimed: counts.pilotClaimed,
+    launchClaimed: counts.launchClaimed,
+  });
+}
+
+export async function getOperatorProgramCounts() {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("get_operator_program_counts");
+
+  const counts = ((data ?? []) as CountRow[]).reduce(
     (acc, row) => ({
       ...acc,
       [row.program ?? ""]: row.claimed_count ?? 0,
@@ -174,12 +186,10 @@ export async function getOperatorProgramStatus(
     {} as Record<string, number>
   );
 
-  return buildStatus({
-    row: (programRow ?? {}) as ProgramRow,
-    experience: (experienceRow ?? {}) as ExperienceRow,
+  return {
     pilotClaimed: counts.pilot50 ?? 0,
     launchClaimed: counts.launch500 ?? 0,
-  });
+  };
 }
 
 export async function userCanCheckoutProgram(params: {

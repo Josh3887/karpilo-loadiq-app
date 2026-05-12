@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { LOADIQ_DISCLAIMER_VERSION } from "@/config/legal";
-import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
+import { getLaunchPhaseSnapshot, LAUNCH_SLOT_LIMIT, PILOT_SLOT_LIMIT } from "@/config/launch-phases";
+import {
+  getOperatorProgramCounts,
+  getOperatorProgramStatus,
+} from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
 import DashboardClientPage from "./page.client";
@@ -49,7 +53,11 @@ export default async function DashboardPage({
     }
   }
 
-  const operatorStatus = await getOperatorProgramStatus(user.id);
+  const [operatorStatus, programCounts] = await Promise.all([
+    getOperatorProgramStatus(user.id),
+    getOperatorProgramCounts(),
+  ]);
+  const launchSnapshot = getLaunchPhaseSnapshot();
 
   return (
     <DashboardClientPage
@@ -57,6 +65,9 @@ export default async function DashboardPage({
       templateId={template}
       requiresDisclaimer={requiresDisclaimer}
       operatorStatus={operatorStatus}
+      launchSnapshot={launchSnapshot}
+      pilotSlotsRemaining={Math.max(PILOT_SLOT_LIMIT - programCounts.pilotClaimed, 0)}
+      launchSlotsRemaining={Math.max(LAUNCH_SLOT_LIMIT - programCounts.launchClaimed, 0)}
     />
   );
 }

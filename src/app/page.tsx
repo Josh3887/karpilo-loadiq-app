@@ -1,10 +1,13 @@
 import Link from "next/link";
 
+import { LoadIqMark } from "@/components/brand/loadiq-mark";
+import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
 import {
   FOUNDER_ACCESS,
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
+import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
 import { SiteFooter } from "@/components/legal/site-footer";
 import {
   demoComparison,
@@ -26,8 +29,11 @@ export default function HomePage() {
 
         <div className="relative mx-auto flex max-w-7xl flex-col px-6 py-24 md:px-10 lg:py-32">
           <div className="max-w-3xl">
-            <div className="mb-6 inline-flex rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
-              Karpilo LoadIQ
+            <div className="mb-6 flex items-center gap-4">
+              <LoadIqMark size="lg" />
+              <div className="inline-flex rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
+                Karpilo LoadIQ
+              </div>
             </div>
 
             <h1 className="text-5xl font-black leading-none tracking-tight text-white md:text-7xl">
@@ -72,6 +78,13 @@ export default function HomePage() {
                 description={feature.description}
               />
             ))}
+          </div>
+
+          <div className="mt-8">
+            <LaunchStatusBanner
+              initialSnapshot={getLaunchPhaseSnapshot()}
+              compact
+            />
           </div>
         </div>
       </section>

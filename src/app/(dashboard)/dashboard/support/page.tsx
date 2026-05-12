@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
+import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
 import { SupportTicketForm } from "@/components/support/support-ticket-form";
+import { CONTACT_EMAILS } from "@/config/contact";
 import { createClient } from "@/lib/supabase-server";
 
 const faqs = [
@@ -53,13 +56,21 @@ export default async function SupportPage() {
             </p>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-300 hover:bg-sky-400/20"
-          >
-            Dashboard
-          </Link>
+          <BackToDashboardLink />
         </header>
+
+        <section className="mb-6 grid gap-4 md:grid-cols-2">
+          <ContactCard
+            title="Support"
+            email={CONTACT_EMAILS.support}
+            body="Customer support, account issues, deletion requests, billing support, app issues, and privacy requests."
+          />
+          <ContactCard
+            title="Recommendations / Feedback"
+            email={CONTACT_EMAILS.feedback}
+            body="Driver feedback, feature recommendations, operational workflow suggestions, and founder-era product notes."
+          />
+        </section>
 
         <section className="space-y-4">
           {faqs.map(([question, answer]) => (
@@ -77,6 +88,10 @@ export default async function SupportPage() {
           <SupportTicketForm />
         </div>
 
+        <div className="mt-6">
+          <AppStorePlaceholders />
+        </div>
+
         <section className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
           <h2 className="text-lg font-bold text-slate-100">
             Legal, privacy, and account requests
@@ -84,7 +99,7 @@ export default async function SupportPage() {
           <p className="mt-3 text-sm leading-7 text-slate-300">
             For privacy, data retention, restore purchase, subscription, or
             account deletion requests, use the legal hub or email
-            Josh.karpilo@karpiloendeavortechnologies.com.
+            {CONTACT_EMAILS.support}.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -121,5 +136,25 @@ export default async function SupportPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function ContactCard({
+  title,
+  email,
+  body,
+}: {
+  title: string;
+  email: string;
+  body: string;
+}) {
+  return (
+    <article className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
+        {title}
+      </p>
+      <p className="mt-2 text-lg font-black text-slate-100">{email}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-400">{body}</p>
+    </article>
   );
 }

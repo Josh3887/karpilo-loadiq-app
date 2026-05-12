@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
+import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
+import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
+import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
@@ -22,7 +26,9 @@ export default async function OnboardingPage() {
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
+          <div className="flex items-start gap-4">
+            <LoadIqMark />
+            <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
               Karpilo LoadIQ
             </p>
@@ -34,6 +40,7 @@ export default async function OnboardingPage() {
               A short setup makes the calculator faster and keeps recurring
               business assumptions out of the load screen.
             </p>
+            </div>
           </div>
 
           <Link
@@ -43,6 +50,14 @@ export default async function OnboardingPage() {
             Settings
           </Link>
         </header>
+
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_340px]">
+          <LaunchStatusBanner
+            initialSnapshot={getLaunchPhaseSnapshot()}
+            compact
+          />
+          <AppStorePlaceholders />
+        </div>
 
         <OnboardingChecklist />
       </div>
