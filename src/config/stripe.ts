@@ -54,7 +54,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     priceEnvVar: "STRIPE_PRICE_PILOT_MONTHLY",
     // TODO(stripe): Set STRIPE_PRICE_PILOT_MONTHLY to the Stripe sandbox recurring
     // $14.99 Pilot Price ID after creating the product/price in Stripe.
-    priceId: process.env.STRIPE_PRICE_PILOT_MONTHLY,
+    priceId: process.env.STRIPE_PRICE_PILOT_MONTHLY ?? process.env.STRIPE_PRICE_PILOT,
     requiresProgram: "pilot50",
   },
   "pilot-annual": {
@@ -89,7 +89,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     amount: FOUNDER_ACCESS.annualPrice,
     priceEnvVar: "STRIPE_PRICE_LAUNCH500_ANNUAL",
     // TODO(stripe): Set STRIPE_PRICE_LAUNCH500_ANNUAL to the Stripe sandbox
-    // recurring $159.99 legacy launch annual Price ID.
+    // recurring $149.99 legacy launch annual Price ID.
     priceId: process.env.STRIPE_PRICE_LAUNCH500_ANNUAL,
     requiresProgram: "launch500",
   },

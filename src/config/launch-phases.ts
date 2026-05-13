@@ -1,9 +1,16 @@
+import { LOADIQ_LAUNCH } from "@/config/loadiq";
+import {
+  getRolloutPhaseForClaimedCount,
+  RolloutPhaseCode,
+} from "@/config/rollout";
+
 export type LaunchPhaseCode =
   | "pilot_pending"
   | "pilot_active"
   | "launch_pending"
   | "launch_active"
-  | "complete";
+  | "complete"
+  | RolloutPhaseCode;
 
 export type LaunchPhaseSnapshot = {
   code: LaunchPhaseCode;
@@ -16,11 +23,11 @@ export type LaunchPhaseSnapshot = {
   phaseLabel: string;
 };
 
-export const PILOT_START_AT = "2026-05-13T08:00:00-05:00";
-export const PILOT_DAYS = 30;
-export const LAUNCH_DAYS = 60;
-export const PILOT_SLOT_LIMIT = 50;
-export const LAUNCH_SLOT_LIMIT = 500;
+export const PILOT_START_AT = LOADIQ_LAUNCH.pilot.startsAt;
+export const PILOT_DAYS = LOADIQ_LAUNCH.pilot.durationDays;
+export const LAUNCH_DAYS = LOADIQ_LAUNCH.launchPromotion.durationDays;
+export const PILOT_SLOT_LIMIT = LOADIQ_LAUNCH.pilot.slotLimit;
+export const LAUNCH_SLOT_LIMIT = LOADIQ_LAUNCH.launchPromotion.slotLimit;
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -43,8 +50,31 @@ export function getLaunchTimeline() {
 }
 
 export function getLaunchPhaseSnapshot(
-  now = new Date()
+  now = new Date(),
+  claimedOperatorCount?: number
 ): LaunchPhaseSnapshot {
+  if (typeof claimedOperatorCount === "number") {
+    const rollout = getRolloutPhaseForClaimedCount(claimedOperatorCount);
+    const { pilotStart, pilotEnd, launchEnd } = getLaunchTimeline();
+
+    return {
+      code: rollout.code,
+      title: rollout.onboardingTitle,
+      badge: rollout.badge,
+      message: rollout.onboardingMessage,
+      startsAt:
+        rollout.code === "GENERAL_AVAILABILITY" ? null : pilotStart.toISOString(),
+      endsAt:
+        rollout.code === "FOUNDER_PILOT"
+          ? pilotEnd.toISOString()
+          : rollout.code === "GENERAL_AVAILABILITY"
+            ? null
+            : launchEnd.toISOString(),
+      slotLimit: rollout.seatEnd,
+      phaseLabel: rollout.label,
+    };
+  }
+
   const { pilotStart, pilotEnd, launchStart, launchEnd } = getLaunchTimeline();
 
   if (now < pilotStart) {

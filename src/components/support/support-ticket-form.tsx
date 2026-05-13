@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { CONTACT_EMAILS } from "@/config/contact";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { createFeedback } from "@/services/feedback";
 import {
   createSupportTicket,
   SupportTicketPayload,
@@ -16,7 +17,7 @@ const ticketCategories = [
   { label: "Billing", value: "billing" },
   { label: "Privacy or Data", value: "privacy" },
   { label: "Account Deletion", value: "account_deletion" },
-  { label: "Feature Request", value: "feature" },
+  { label: "Recommendation", value: "feature" },
 ];
 
 type SupportTicketFormProps = {
@@ -27,7 +28,7 @@ type SupportTicketFormProps = {
 
 export function SupportTicketForm({
   title = "Contact Support",
-  description = `Use this for support, refund requests, billing questions, privacy, account deletion, bugs, or product feedback. Email fallback: ${CONTACT_EMAILS.support}.`,
+  description = `Use support for account, billing, privacy, deletion, and app issues. Recommendations are routed separately for product review. Email fallback: ${CONTACT_EMAILS.support}.`,
   initialCategory = "support",
 }: SupportTicketFormProps) {
   const [ticket, setTicket] = useState<SupportTicketPayload>({
@@ -39,11 +40,27 @@ export function SupportTicketForm({
 
   async function handleSubmit() {
     try {
-      setStatus("Sending support request...");
-      await createSupportTicket(ticket);
+      const isRecommendation = ticket.category === "feature";
+      setStatus(
+        isRecommendation
+          ? "Sending recommendation..."
+          : "Sending support request..."
+      );
+
+      if (isRecommendation) {
+        await createFeedback({
+          subject: ticket.subject,
+          message: ticket.message,
+        });
+      } else {
+        await createSupportTicket(ticket);
+      }
+
       setTicket({ category: initialCategory, subject: "", message: "" });
       setStatus(
-        `Support request received. We will reply through ${CONTACT_EMAILS.support}.`
+        isRecommendation
+          ? `Recommendation received. Product feedback is reviewed separately through ${CONTACT_EMAILS.feedback}.`
+          : `Support request received. We will reply through ${CONTACT_EMAILS.support}.`
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to send support request.");
@@ -96,7 +113,7 @@ export function SupportTicketForm({
         disabled={!ticket.subject || !ticket.message}
         className="mt-5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Send Request
+        {ticket.category === "feature" ? "Send Recommendation" : "Send Request"}
       </button>
 
       {status && <p className="mt-4 text-sm text-slate-400">{status}</p>}

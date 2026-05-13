@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { createClient } from "@/lib/supabase-server";
 import { formatCurrency, formatRpm } from "@/utils/format";
 
@@ -74,15 +75,10 @@ export default async function LoadHistoryPage() {
             </p>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-300 hover:bg-sky-400/20"
-          >
-            Dashboard
-          </Link>
+          <DashboardNav />
         </header>
 
-        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
+        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 pb-24 shadow-[0_0_25px_rgba(56,189,248,0.08)] md:pb-5">
           <div className="mb-5 grid gap-4 md:grid-cols-3">
             <HistoryMetric
               label="Saved/Accepted Loads"

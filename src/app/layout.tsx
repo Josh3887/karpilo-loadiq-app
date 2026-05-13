@@ -1,21 +1,39 @@
 import type { Metadata } from "next";
+
+import { BRAND } from "@/config/brand";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.karpiloloadiq.com"),
+  metadataBase: new URL(BRAND.urls.app),
   title: {
-    default: "Karpilo LoadIQ",
-    template: "%s | Karpilo LoadIQ",
+    default: BRAND.productName,
+    template: `%s | ${BRAND.productName}`,
   },
-  description:
-    "Freight profitability intelligence for owner-operators and independent contractors.",
+  description: BRAND.description,
+  applicationName: BRAND.productName,
+  appleWebApp: {
+    capable: true,
+    title: BRAND.productName,
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [{ url: BRAND.assets.appIcon, type: "image/png" }],
+    apple: [{ url: BRAND.assets.appIcon, type: "image/png" }],
+    shortcut: [BRAND.assets.appIcon],
+  },
   openGraph: {
-    title: "Karpilo LoadIQ",
-    description:
-      "Freight profitability intelligence for owner-operators and independent contractors.",
-    url: "https://www.karpiloloadiq.com",
-    siteName: "Karpilo LoadIQ",
+    title: BRAND.productName,
+    description: BRAND.description,
+    url: BRAND.urls.app,
+    siteName: BRAND.productName,
     type: "website",
+    images: [
+      {
+        url: BRAND.assets.cardImage,
+        alt: BRAND.alt.cardImage,
+      },
+    ],
   },
 };
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
@@ -11,11 +10,11 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { FounderWelcomeModal } from "@/components/dashboard/founder-welcome-modal";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { PilotStatusCard } from "@/components/dashboard/pilot-status-card";
-import { DisclaimerModal } from "@/components/legal/disclaimer-modal";
 import { ReviewPrompt } from "@/components/dashboard/review-prompt";
 import { ResultsPanel } from "@/components/dashboard/results-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 
+import { BRAND } from "@/config/brand";
 import {
   ClientEntitlementState,
   getClientEntitlementState,
@@ -24,11 +23,9 @@ import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { resolveEntitlements } from "@/domains/billing/entitlement-service";
 import { useLoadCalculator } from "@/hooks/use-load-calculator";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
-import { acceptLoadIqDisclaimer } from "@/services/disclaimer-acceptance";
 import { getLaneTemplateInput } from "@/services/lane-templates";
 import { getSavedLoadInput } from "@/services/saved-load-input";
 import { LoadInputFormValues } from "@/lib/load-schema";
-import { createClient } from "@/lib/supabase-client";
 import { LoadInput } from "@/types/load";
 import { OperatorProgramStatus } from "@/types/operator-program";
 import { LaunchPhaseSnapshot } from "@/config/launch-phases";
@@ -36,23 +33,22 @@ import { LaunchPhaseSnapshot } from "@/config/launch-phases";
 type DashboardClientPageProps = {
   editLoadId?: string;
   templateId?: string;
-  requiresDisclaimer?: boolean;
   operatorStatus: OperatorProgramStatus;
   launchSnapshot: LaunchPhaseSnapshot;
   pilotSlotsRemaining: number;
   launchSlotsRemaining: number;
+  claimedOperatorCount: number;
 };
 
 export default function DashboardClientPage({
   editLoadId,
   templateId,
-  requiresDisclaimer = false,
   operatorStatus,
   launchSnapshot,
   pilotSlotsRemaining,
   launchSlotsRemaining,
+  claimedOperatorCount,
 }: DashboardClientPageProps) {
-  const router = useRouter();
   const {
     result,
     lastInput,
@@ -65,8 +61,6 @@ export default function DashboardClientPage({
   const [gateMessage, setGateMessage] = useState("");
   const [initialInput, setInitialInput] =
     useState<LoadInputFormValues | null>(null);
-  const [showDisclaimer, setShowDisclaimer] =
-    useState(requiresDisclaimer);
 
   useEffect(() => {
     async function loadDefaults() {
@@ -156,14 +150,9 @@ export default function DashboardClientPage({
   }, [templateId]);
 
   function handleCalculate(input: LoadInput) {
-    if (showDisclaimer) {
-      setGateMessage("Accept the LoadIQ disclaimer before analyzing freight.");
-      return;
-    }
-
     if (entitlementState && !entitlementState.entitlements.canCalculate) {
       setGateMessage(
-        "Free plan calculation limit reached. Upgrade to Pro for unlimited load analysis."
+        "A paid LoadIQ subscription is required before analyzing freight."
       );
       return;
     }
@@ -211,46 +200,19 @@ export default function DashboardClientPage({
     });
   }
 
-  async function handleDisclaimerAccept() {
-    await acceptLoadIqDisclaimer();
-    setShowDisclaimer(false);
-    router.refresh();
-  }
-
-  async function handleDisclaimerDecline() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/");
-    router.refresh();
-  }
-
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
-      {showDisclaimer && (
-        <DisclaimerModal
-          onAccept={handleDisclaimerAccept}
-          onDecline={handleDisclaimerDecline}
-        />
-      )}
-
-      {!showDisclaimer && operatorStatus.shouldShowFounderWelcome && (
+      {operatorStatus.shouldShowFounderWelcome && (
         <FounderWelcomeModal status={operatorStatus} />
       )}
 
-      <div
-        className={
-          showDisclaimer
-            ? "mx-auto max-w-7xl pointer-events-none select-none blur-sm"
-            : "mx-auto max-w-7xl"
-        }
-        aria-hidden={showDisclaimer}
-      >
+      <div className="mx-auto max-w-7xl">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <LoadIqMark />
             <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
-              Karpilo LoadIQ
+              {BRAND.productName}
             </p>
 
             <h1 className="text-3xl font-black tracking-tight text-slate-100 md:text-5xl">
@@ -271,14 +233,13 @@ export default function DashboardClientPage({
           </div>
         </header>
 
-        {!showDisclaimer && (
-          <PilotStatusCard
-            status={operatorStatus}
-            initialSnapshot={launchSnapshot}
-            pilotSlotsRemaining={pilotSlotsRemaining}
-            launchSlotsRemaining={launchSlotsRemaining}
-          />
-        )}
+        <PilotStatusCard
+          status={operatorStatus}
+          initialSnapshot={launchSnapshot}
+          pilotSlotsRemaining={pilotSlotsRemaining}
+          launchSlotsRemaining={launchSlotsRemaining}
+          claimedOperatorCount={claimedOperatorCount}
+        />
 
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <div className="lg:col-span-2">

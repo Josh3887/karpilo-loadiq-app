@@ -20,6 +20,7 @@ import {
 import { PLAN_LIMITS } from "@/domains/billing/plan-limits";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 import { createClient } from "@/lib/supabase-server";
+import { getUserReservationAndLockState } from "@/services/reservations";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -39,6 +40,7 @@ export default async function BillingPage() {
     calculationCount,
     savedLoadCount,
     operatorStatus,
+    reservationState,
   ] =
     await Promise.all([
       supabase
@@ -68,6 +70,7 @@ export default async function BillingPage() {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
       getOperatorProgramStatus(user.id),
+      getUserReservationAndLockState(user.id),
     ]);
 
   const activeTier =
@@ -85,6 +88,8 @@ export default async function BillingPage() {
       hasAccess: canSeeFounderPricing,
       claimedSeats: founderSeatsClaimed,
     });
+  const canSeePilotPricing =
+    operatorStatus.pilotUser || operatorStatus.foundingOperator;
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -135,6 +140,50 @@ export default async function BillingPage() {
                 </p>
               </div>
               <CustomerPortalButton />
+            </div>
+          </section>
+        )}
+
+        {(reservationState.reservations.length > 0 ||
+          reservationState.locks.length > 0) && (
+          <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+              Supabase entitlement record
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {reservationState.reservations.map((reservation) => (
+                <div
+                  key={reservation.id}
+                  className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
+                >
+                  <div className="font-black text-slate-100">
+                    {reservation.cohort} reservation
+                  </div>
+                  <div className="mt-2">
+                    Code {reservation.code} · {reservation.status}
+                  </div>
+                  <div className="mt-1 text-slate-500">
+                    ${reservation.monthly_price}/mo · $
+                    {reservation.annual_price}/yr
+                  </div>
+                </div>
+              ))}
+              {reservationState.locks.map((lock) => (
+                <div
+                  key={lock.id}
+                  className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
+                >
+                  <div className="font-black text-slate-100">
+                    {lock.cohort} pricing lock
+                  </div>
+                  <div className="mt-2">
+                    {lock.lock_status} via {lock.billing_provider}
+                  </div>
+                  <div className="mt-1 text-sky-200/75">
+                    ${lock.monthly_price}/mo · ${lock.annual_price}/yr
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -213,8 +262,8 @@ export default async function BillingPage() {
               {publicPlan.tier !== "free" && activeTier === "free" && (
                 <>
                   <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-                    Stripe checkout is the next wiring step. Plan selection is
-                    modeled here without faking payment processing.
+                    No free trial is included for the initial launch checkout.
+                    Paid access starts through Stripe when checkout completes.
                   </div>
 
                   <CheckoutAcknowledgement
@@ -290,29 +339,37 @@ export default async function BillingPage() {
             locked pricing at ${PILOT_ACCESS.monthlyPrice}/month for the first{" "}
             {PILOT_ACCESS.maxSeats} approved users, with
             pricing locked while the subscription remains active. It is not
-            transferable and is lost if canceled or deleted.
+            transferable and is lost if canceled, lapsed, revoked, or deleted.
+            No free trial is included for pilot access.
           </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {INTERNAL_PILOT_PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className="rounded-xl border border-sky-400/20 bg-[#060B14] p-4"
-              >
-                <div className="text-sm font-bold text-slate-100">
-                  {plan.name}
+          {canSeePilotPricing ? (
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {INTERNAL_PILOT_PLANS.map((plan) => (
+                <div
+                  key={plan.name}
+                  className="rounded-xl border border-sky-400/20 bg-[#060B14] p-4"
+                >
+                  <div className="text-sm font-bold text-slate-100">
+                    {plan.name}
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-sky-200">
+                    {formatPriceLabel(plan.price, plan.interval)}
+                  </div>
+                  <CheckoutAcknowledgement
+                    label="Agree & Open Pilot Checkout"
+                    planId={
+                      plan.interval === "month" ? "pilot-monthly" : "pilot-annual"
+                    }
+                  />
                 </div>
-                <div className="mt-2 text-2xl font-black text-sky-200">
-                  {formatPriceLabel(plan.price, plan.interval)}
-                </div>
-                <CheckoutAcknowledgement
-                  label="Agree & Open Pilot Checkout"
-                  planId={
-                    plan.interval === "month" ? "pilot-monthly" : "pilot-annual"
-                  }
-                />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm leading-6 text-sky-100">
+              Pilot checkout appears only after founder pilot eligibility is
+              assigned in Supabase.
+            </div>
+          )}
           <div className="mt-4 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
             Internal cap: {PILOT_ACCESS.maxSeats} operators.
           </div>

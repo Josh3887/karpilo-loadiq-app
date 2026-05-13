@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OperationalProfileForm } from "@/components/dashboard/operational-profile-form";
 import { OverheadManager } from "@/components/dashboard/overhead-manager";
-import { SupportTicketForm } from "@/components/support/support-ticket-form";
-import { CONTACT_EMAILS } from "@/config/contact";
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
@@ -43,7 +41,10 @@ export default async function SettingsPage() {
             </p>
           </div>
 
-          <BackToDashboardLink />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <DashboardNav />
+            <BackToDashboardLink />
+          </div>
         </header>
 
         <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
@@ -52,18 +53,6 @@ export default async function SettingsPage() {
 
         <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
           <OverheadManager />
-        </section>
-
-        <section className="mt-6">
-          <SupportTicketForm
-            title="Built On Real Driver Feedback"
-            description={`Send operational issues, feature requests, pilot feedback, or anything that slows down freight decisions. Support goes to ${CONTACT_EMAILS.support}; recommendations may be reviewed through ${CONTACT_EMAILS.feedback}.`}
-            initialCategory="feature"
-          />
-        </section>
-
-        <section className="mt-6">
-          <AppStorePlaceholders />
         </section>
       </div>
     </main>

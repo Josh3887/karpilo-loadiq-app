@@ -62,7 +62,7 @@ create table if not exists public.pilot_access (
   invite_code text unique,
   is_active boolean not null default true,
   monthly_price numeric not null default 14.99,
-  max_days integer not null default 45,
+  max_days integer not null default 30,
   seat_number integer,
   starts_at timestamptz,
   ends_at timestamptz,

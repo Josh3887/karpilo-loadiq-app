@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 
 import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { SupportTicketForm } from "@/components/support/support-ticket-form";
 import { CONTACT_EMAILS } from "@/config/contact";
+import { LOADIQ_URLS } from "@/config/loadiq";
 import { createClient } from "@/lib/supabase-server";
 
 const faqs = [
@@ -56,7 +58,10 @@ export default async function SupportPage() {
             </p>
           </div>
 
-          <BackToDashboardLink />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <DashboardNav />
+            <BackToDashboardLink />
+          </div>
         </header>
 
         <section className="mb-6 grid gap-4 md:grid-cols-2">
@@ -128,7 +133,7 @@ export default async function SupportPage() {
             launch spike.
           </p>
           <Link
-            href="https://www.karpiloloadiq.com"
+            href={LOADIQ_URLS.website}
             className="mt-4 inline-flex rounded-xl border border-red-300/25 bg-[#060B14] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-200 hover:border-red-200"
           >
             Product Updates

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DataSources } from "@/components/legal/data-sources";
+import { BRAND } from "@/config/brand";
 
 export function SiteFooter() {
   return (
@@ -10,7 +11,7 @@ export function SiteFooter() {
 
         <div className="flex flex-col gap-4 text-xs leading-5 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © 2026 Karpilo Endeavor Technologies LLC. Karpilo LoadIQ is an
+            © 2026 {BRAND.legalCompanyName}. {BRAND.productName} is an
             informational decision-support platform.
           </p>
 

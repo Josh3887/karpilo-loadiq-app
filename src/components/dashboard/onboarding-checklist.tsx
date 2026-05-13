@@ -8,10 +8,12 @@ import { LearnMore } from "@/components/ui/learn-more";
 import { LegalAcceptancePanel } from "@/components/legal/legal-acceptance-panel";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { EDUCATION_TOPICS } from "@/config/education";
+import { LOADIQ_EMAILS } from "@/config/loadiq";
 import {
   defaultOnboardingState,
   saveOnboardingState,
 } from "@/services/onboarding";
+import { OperatorProgramStatus } from "@/types/operator-program";
 
 const setupSteps = [
   "Accept legal disclaimer",
@@ -22,7 +24,11 @@ const setupSteps = [
   "Review LoadIQ operating guardrails",
 ];
 
-export function OnboardingChecklist() {
+export function OnboardingChecklist({
+  operatorStatus,
+}: {
+  operatorStatus: OperatorProgramStatus;
+}) {
   const router = useRouter();
   const [operatorType, setOperatorType] = useState("leased_owner_operator");
   const [status, setStatus] = useState("");
@@ -58,6 +64,21 @@ export function OnboardingChecklist() {
   return (
     <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
+        <div className="mb-5 rounded-xl border border-sky-400/25 bg-sky-400/10 p-4">
+          <p className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-sky-300">
+            {operatorStatus.rolloutLabel}
+          </p>
+          <h2 className="mt-2 text-xl font-black text-slate-100">
+            {operatorStatus.rolloutMessage}
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            {operatorStatus.rolloutExpectation}
+          </p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {operatorStatus.pricingSummary}
+          </p>
+        </div>
+
         <ThemedSelect
           label="Current Operator Profile"
           value={operatorType}
@@ -116,6 +137,17 @@ export function OnboardingChecklist() {
         </div>
 
         {status && <p className="mt-4 text-sm text-slate-400">{status}</p>}
+
+        <p className="mt-5 border-t border-slate-800 pt-4 text-xs leading-5 text-slate-500">
+          Support, billing, privacy, account deletion, and app issues route to{" "}
+          <a
+            href={`mailto:${LOADIQ_EMAILS.support}`}
+            className="font-bold text-sky-300 underline decoration-sky-400/40 underline-offset-4"
+          >
+            {LOADIQ_EMAILS.support}
+          </a>
+          .
+        </p>
       </div>
 
       <aside className="space-y-4">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BRAND } from "@/config/brand";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
 import {
@@ -32,7 +33,7 @@ export default function HomePage() {
             <div className="mb-6 flex items-center gap-4">
               <LoadIqMark size="lg" />
               <div className="inline-flex rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
-                Karpilo LoadIQ
+                {BRAND.productName}
               </div>
             </div>
 

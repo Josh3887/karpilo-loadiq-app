@@ -1,7 +1,10 @@
+import { RolloutPhaseCode } from "@/config/rollout";
+
 export type OperatorProgramPhase =
   | "prelaunch"
   | "pilot_active"
-  | "official_launch";
+  | "official_launch"
+  | RolloutPhaseCode;
 
 export type OperatorProgramCode = "standard" | "pilot50" | "launch500";
 
@@ -28,4 +31,9 @@ export type OperatorProgramStatus = {
   statusCardDismissed: boolean;
   shouldShowFounderWelcome: boolean;
   badges: OperatorBadge[];
+  rolloutPhase: RolloutPhaseCode;
+  rolloutLabel: string;
+  rolloutMessage: string;
+  rolloutExpectation: string;
+  pricingSummary: string;
 };

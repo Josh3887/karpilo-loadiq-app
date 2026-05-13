@@ -1,6 +1,8 @@
 import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
+import { APP_FEATURE_FLAGS } from "@/config/app";
+import { BRAND } from "@/config/brand";
 import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
 
 import { RegisterForm } from "./register-form";
@@ -12,7 +14,7 @@ export default function RegisterPage() {
         <section className="rounded-2xl border border-slate-800 bg-[#0B1220] p-6 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
           <LoadIqMark size="lg" />
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-sky-400">
-            Karpilo LoadIQ
+            {BRAND.productName}
           </p>
           <h1 className="mt-2 text-3xl font-black">Create Account</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
@@ -24,6 +26,7 @@ export default function RegisterPage() {
         <div className="space-y-4">
           <LaunchStatusBanner
             initialSnapshot={getLaunchPhaseSnapshot()}
+            showCountdown={APP_FEATURE_FLAGS.showAppCountdown}
             compact
           />
           <AppStorePlaceholders />

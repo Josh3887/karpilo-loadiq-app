@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { LOADIQ_DISCLAIMER_VERSION } from "@/config/legal";
 import { getLaunchPhaseSnapshot, LAUNCH_SLOT_LIMIT, PILOT_SLOT_LIMIT } from "@/config/launch-phases";
 import {
   getOperatorProgramCounts,
@@ -31,43 +30,36 @@ export default async function DashboardPage({
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("disclaimer_accepted_at, disclaimer_version")
-    .eq("id", user.id)
+  const { data: onboarding, error: onboardingError } = await supabase
+    .from("onboarding_states")
+    .select("is_complete")
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  const requiresDisclaimer =
-    !profile?.disclaimer_accepted_at ||
-    profile.disclaimer_version !== LOADIQ_DISCLAIMER_VERSION;
-
-  if (!requiresDisclaimer) {
-    const { data: onboarding, error: onboardingError } = await supabase
-      .from("onboarding_states")
-      .select("is_complete")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!onboardingError && !onboarding?.is_complete) {
-      redirect("/dashboard/onboarding");
-    }
+  if (!onboardingError && !onboarding?.is_complete) {
+    redirect("/dashboard/onboarding");
   }
 
   const [operatorStatus, programCounts] = await Promise.all([
     getOperatorProgramStatus(user.id),
     getOperatorProgramCounts(),
   ]);
-  const launchSnapshot = getLaunchPhaseSnapshot();
+  const claimedOperatorCount =
+    programCounts.pilotClaimed + programCounts.launchClaimed;
+  const launchSnapshot = getLaunchPhaseSnapshot(
+    new Date(),
+    claimedOperatorCount
+  );
 
   return (
     <DashboardClientPage
       editLoadId={edit}
       templateId={template}
-      requiresDisclaimer={requiresDisclaimer}
       operatorStatus={operatorStatus}
       launchSnapshot={launchSnapshot}
       pilotSlotsRemaining={Math.max(PILOT_SLOT_LIMIT - programCounts.pilotClaimed, 0)}
       launchSlotsRemaining={Math.max(LAUNCH_SLOT_LIMIT - programCounts.launchClaimed, 0)}
+      claimedOperatorCount={claimedOperatorCount}
     />
   );
 }

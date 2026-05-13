@@ -19,7 +19,7 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     tier: "free",
     monthlyPrice: 0,
     annualPrice: 0,
-    monthlyCalculations: 10,
+    monthlyCalculations: 0,
     savedLoads: 0,
     exports: false,
     advancedAnalytics: false,

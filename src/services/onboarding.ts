@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase-client";
+import { recordOnboardingEvent } from "@/services/onboarding-telemetry";
 
 export type OnboardingStep =
   | "disclaimer"
@@ -64,4 +65,13 @@ export async function saveOnboardingState(state: OnboardingState) {
   );
 
   if (error) throw new Error(formatSupabaseError(error));
+
+  await recordOnboardingEvent({
+    eventName: state.isComplete ? "onboarding_completed" : "onboarding_saved",
+    payload: {
+      currentStep: state.currentStep,
+      completedStepCount: state.completedSteps.length,
+      isComplete: state.isComplete,
+    },
+  }).catch((telemetryError) => console.error(telemetryError));
 }

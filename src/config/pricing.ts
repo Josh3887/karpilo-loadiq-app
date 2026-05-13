@@ -1,23 +1,25 @@
+import { LOADIQ_LAUNCH } from "@/config/loadiq";
+
 export type PublicPlanId = "free" | "pro-monthly" | "pro-annual";
 export type InternalPlanTier = "free" | "pro" | "founder" | "pilot" | "launch500";
 export type BillingInterval = "month" | "year";
 
 export const FOUNDER_ACCESS = {
   name: "Legacy Launch Operator Access",
-  maxSeats: 500,
+  maxSeats: LOADIQ_LAUNCH.launchPromotion.slotLimit,
   publicTeaser: "First 500 launch operators may qualify for lifetime legacy pricing.",
   hiddenPricingEnabled: false,
   inviteCodeRequired: true,
   monthlyPrice: 19.99,
-  annualPrice: 159.99,
+  annualPrice: 149.99,
 } as const;
 
 export const PILOT_ACCESS = {
   name: "Founding Operator Pilot Access",
   publicTeaser:
     "Pilot Operator Access may be available for approved early-access users.",
-  maxSeats: 50,
-  durationDays: 45,
+  maxSeats: LOADIQ_LAUNCH.pilot.slotLimit,
+  durationDays: LOADIQ_LAUNCH.pilot.durationDays,
   monthlyPrice: 14.99,
   annualPrice: 129.99,
   lifetimeLockRule:
@@ -28,14 +30,14 @@ export const PUBLIC_PRICING_PLANS = [
   {
     id: "free",
     tier: "free",
-    name: "Free",
+    name: "Account Only",
     price: 0,
     interval: "month",
-    description: "Basic calculator access for testing LoadIQ before upgrading.",
-    cta: "Current baseline",
+    description: "Signed-in account state before a paid LoadIQ subscription is active.",
+    cta: "Subscription required",
     bullets: [
-      "Limited monthly calculations",
-      "Limited saved-load capacity",
+      "No calculator access until subscribed",
+      "No saved-load history until subscribed",
       "Manual fuel entry fallback",
       "No exports",
       "No advanced comparisons",

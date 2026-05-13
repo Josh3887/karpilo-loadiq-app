@@ -6,8 +6,13 @@ import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
+import { APP_FEATURE_FLAGS } from "@/config/app";
+import { BRAND } from "@/config/brand";
 import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
-import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
+import {
+  getOperatorProgramCounts,
+  getOperatorProgramStatus,
+} from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function OnboardingPage() {
@@ -20,7 +25,12 @@ export default async function OnboardingPage() {
     redirect("/auth/login");
   }
 
-  const operatorStatus = await getOperatorProgramStatus(user.id);
+  const [operatorStatus, programCounts] = await Promise.all([
+    getOperatorProgramStatus(user.id),
+    getOperatorProgramCounts(),
+  ]);
+  const claimedOperatorCount =
+    programCounts.pilotClaimed + programCounts.launchClaimed;
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -30,7 +40,7 @@ export default async function OnboardingPage() {
             <LoadIqMark />
             <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
-              Karpilo LoadIQ
+              {BRAND.productName}
             </p>
             <h1 className="text-3xl font-black tracking-tight md:text-5xl">
               Operator Setup
@@ -53,13 +63,23 @@ export default async function OnboardingPage() {
 
         <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_340px]">
           <LaunchStatusBanner
-            initialSnapshot={getLaunchPhaseSnapshot()}
+            initialSnapshot={getLaunchPhaseSnapshot(
+              new Date(),
+              claimedOperatorCount
+            )}
+            pilotSlotsRemaining={Math.max(50 - programCounts.pilotClaimed, 0)}
+            launchSlotsRemaining={Math.max(
+              500 - programCounts.launchClaimed,
+              0
+            )}
+            claimedOperatorCount={claimedOperatorCount}
+            showCountdown={APP_FEATURE_FLAGS.showAppCountdown}
             compact
           />
           <AppStorePlaceholders />
         </div>
 
-        <OnboardingChecklist />
+        <OnboardingChecklist operatorStatus={operatorStatus} />
       </div>
     </main>
   );

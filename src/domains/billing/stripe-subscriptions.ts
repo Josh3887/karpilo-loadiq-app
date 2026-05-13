@@ -92,6 +92,60 @@ async function insertPricingLock(params: {
   }
 }
 
+async function upsertPricingLockStatus(params: {
+  userId: string;
+  plan: StripeCheckoutPlan | null;
+  subscription: Stripe.Subscription;
+}) {
+  if (!params.plan?.requiresProgram || params.plan.requiresProgram === "standard") {
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const isPilot = params.plan.requiresProgram === "pilot50";
+  const subscriptionStatus = params.subscription.status;
+  const lockStatus =
+    subscriptionStatus === "active" || subscriptionStatus === "trialing"
+      ? "active"
+      : subscriptionStatus === "past_due" || subscriptionStatus === "unpaid"
+        ? "past_due"
+        : "lapsed";
+  const now = new Date().toISOString();
+
+  const { error } = await supabase.from("pricing_lock_status").upsert(
+    {
+      user_id: params.userId,
+      cohort: params.plan.requiresProgram,
+      lock_status: lockStatus,
+      billing_provider: "stripe",
+      provider_subscription_id: params.subscription.id,
+      monthly_price: isPilot
+        ? PILOT_ACCESS.monthlyPrice
+        : FOUNDER_ACCESS.monthlyPrice,
+      annual_price: isPilot
+        ? PILOT_ACCESS.annualPrice
+        : FOUNDER_ACCESS.annualPrice,
+      active_since: now,
+      lapsed_at: lockStatus === "lapsed" ? now : null,
+      reason:
+        lockStatus === "active"
+          ? null
+          : `stripe_subscription_${subscriptionStatus}`,
+      metadata: {
+        plan_id: params.plan.id,
+        stripe_status: subscriptionStatus,
+        stripe_price_id: params.subscription.items.data[0]?.price.id ?? null,
+      },
+      updated_at: now,
+    },
+    {
+      onConflict: "user_id,cohort",
+    }
+  );
+
+  if (error) throw error;
+}
+
 export async function findStripeCustomerIdForUser(userId: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -239,12 +293,14 @@ export async function upsertStripeSubscription(params: {
       .eq("id", existing.id);
     if (error) throw error;
     await insertPricingLock({ userId, plan, subscription });
+    await upsertPricingLockStatus({ userId, plan, subscription });
     return;
   }
 
   const { error } = await supabase.from("subscriptions").insert(record);
   if (error) throw error;
   await insertPricingLock({ userId, plan, subscription });
+  await upsertPricingLockStatus({ userId, plan, subscription });
 }
 
 export async function markStripeSubscriptionPaymentFailed(params: {
@@ -271,4 +327,20 @@ export async function markStripeSubscriptionPaymentFailed(params: {
 
   const { error } = await query;
   if (error) throw error;
+
+  let lockQuery = supabase
+    .from("pricing_lock_status")
+    .update({
+      lock_status: "past_due",
+      reason: "stripe_invoice_payment_failed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("billing_provider", "stripe");
+
+  if (params.subscriptionId) {
+    lockQuery = lockQuery.eq("provider_subscription_id", params.subscriptionId);
+  }
+
+  const { error: lockError } = await lockQuery;
+  if (lockError) throw lockError;
 }

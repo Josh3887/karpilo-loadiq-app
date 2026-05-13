@@ -26,19 +26,23 @@ export function LaunchStatusBanner({
   initialSnapshot,
   pilotSlotsRemaining,
   launchSlotsRemaining,
+  claimedOperatorCount,
   compact = false,
+  showCountdown = true,
 }: {
   initialSnapshot: LaunchPhaseSnapshot;
   pilotSlotsRemaining?: number | null;
   launchSlotsRemaining?: number | null;
+  claimedOperatorCount?: number;
   compact?: boolean;
+  showCountdown?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [remaining, setRemaining] = useState("Syncing launch clock");
 
   useEffect(() => {
     const updateClock = () => {
-      const next = getLaunchPhaseSnapshot();
+      const next = getLaunchPhaseSnapshot(new Date(), claimedOperatorCount);
       setSnapshot(next);
       setRemaining(formatRemaining(next.endsAt ?? next.startsAt));
     };
@@ -49,9 +53,31 @@ export function LaunchStatusBanner({
     }, 30000);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [claimedOperatorCount]);
 
   const slotText = useMemo(() => {
+    if (snapshot.code === "FOUNDER_PILOT") {
+      return typeof pilotSlotsRemaining === "number"
+        ? `${pilotSlotsRemaining} / 50 founder pilot slots remaining`
+        : "Founder pilot users 1-50";
+    }
+
+    if (snapshot.code === "CONTROLLED_PUBLIC_LAUNCH") {
+      return typeof launchSlotsRemaining === "number"
+        ? `${launchSlotsRemaining} launch pricing seats remaining`
+        : "Controlled public launch users 51-300";
+    }
+
+    if (snapshot.code === "EXPANSION_ACCESS") {
+      return typeof launchSlotsRemaining === "number"
+        ? `${launchSlotsRemaining} launch pricing seats remaining`
+        : "Expansion access users 301-550";
+    }
+
+    if (snapshot.code === "GENERAL_AVAILABILITY") {
+      return "Standard plans active";
+    }
+
     if (snapshot.code === "pilot_active" || snapshot.code === "pilot_pending") {
       return typeof pilotSlotsRemaining === "number"
         ? `${pilotSlotsRemaining} / 50 pilot slots remaining`
@@ -92,9 +118,15 @@ export function LaunchStatusBanner({
           <div className="rounded-xl border border-slate-700 bg-[#060B14] px-4 py-3 font-bold text-sky-100">
             {slotText}
           </div>
-          <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 font-bold text-red-100">
-            {remaining}
-          </div>
+          {showCountdown ? (
+            <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 font-bold text-red-100">
+              {remaining}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-slate-700 bg-[#060B14] px-4 py-3 font-bold text-slate-200">
+              Account access is managed by your current pilot or launch phase.
+            </div>
+          )}
         </div>
       </div>
     </section>

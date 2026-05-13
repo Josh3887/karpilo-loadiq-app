@@ -62,6 +62,12 @@ export function LoginForm() {
       {status && <p className="text-sm text-slate-400">{status}</p>}
 
       <p className="text-sm text-slate-400">
+        <Link href="/auth/forgot-password" className="text-sky-400">
+          Forgot password?
+        </Link>
+      </p>
+
+      <p className="text-sm text-slate-400">
         No account?{" "}
         <Link href="/auth/register" className="text-sky-400">
           Create one

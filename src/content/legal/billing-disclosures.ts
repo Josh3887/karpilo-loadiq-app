@@ -102,4 +102,4 @@ export const PLATFORM_BILLING_DISCLOSURES: LegalSection[] = [
 ];
 
 export const CHECKOUT_ACKNOWLEDGEMENT_TEXT =
-  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, and I understand paid subscriptions renew unless canceled through the applicable billing platform.";
+  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand there is no free trial for this launch purchase, and understand paid subscriptions renew unless canceled through the applicable billing platform.";

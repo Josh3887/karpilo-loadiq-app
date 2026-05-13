@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { APP_FEATURE_FLAGS } from "@/config/app";
 import { LaunchPhaseSnapshot } from "@/config/launch-phases";
 import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
 import { dismissPilotStatusCard } from "@/services/user-experience";
@@ -12,11 +13,13 @@ export function PilotStatusCard({
   initialSnapshot,
   pilotSlotsRemaining,
   launchSlotsRemaining,
+  claimedOperatorCount,
 }: {
   status: OperatorProgramStatus;
   initialSnapshot: LaunchPhaseSnapshot;
   pilotSlotsRemaining?: number | null;
   launchSlotsRemaining?: number | null;
+  claimedOperatorCount?: number;
 }) {
   const [hidden, setHidden] = useState(status.statusCardDismissed);
 
@@ -35,6 +38,8 @@ export function PilotStatusCard({
         initialSnapshot={initialSnapshot}
         pilotSlotsRemaining={pilotSlotsRemaining}
         launchSlotsRemaining={launchSlotsRemaining}
+        claimedOperatorCount={claimedOperatorCount}
+        showCountdown={APP_FEATURE_FLAGS.showAppCountdown}
       />
       <button
         type="button"
