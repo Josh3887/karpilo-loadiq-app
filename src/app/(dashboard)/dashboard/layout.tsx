@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 
+import { PaymentSetupModal } from "@/components/billing/payment-setup-modal";
 import { AppAccessGate } from "@/components/legal/app-access-gate";
 import { SystemHealthBanner } from "@/components/system/system-health-banner";
+import { BILLING_EMAIL } from "@/config/billing";
+import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { getAppPolicyGateState } from "@/services/app-policy-server";
 import { getActiveSystemHealthNotices } from "@/services/system-health";
 import { createClient } from "@/lib/supabase-server";
@@ -20,9 +23,10 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  const [gateState, healthNotices] = await Promise.all([
+  const [gateState, healthNotices, paymentAccess] = await Promise.all([
     getAppPolicyGateState(user.id),
     getActiveSystemHealthNotices(),
+    getServerPaymentAccess(user.id),
   ]);
 
   return (
@@ -30,6 +34,10 @@ export default async function DashboardLayout({
       <AppAccessGate
         requiresPolicyAcceptance={gateState.requiresPolicyAcceptance}
         requiresSafetyReminder={gateState.requiresSafetyReminder}
+      />
+      <PaymentSetupModal
+        paymentAccess={paymentAccess}
+        billingEmail={BILLING_EMAIL}
       />
       <div
         className={

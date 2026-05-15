@@ -176,10 +176,15 @@ export default function DashboardClientPage({
         ...state.usage,
         monthlyCalculations: state.usage.monthlyCalculations + 1,
       };
+      const entitlements = resolveEntitlements(state.entitlements.tier, usage);
 
       return {
         usage,
-        entitlements: resolveEntitlements(state.entitlements.tier, usage),
+        entitlements,
+        paymentAccess: {
+          ...state.paymentAccess,
+          entitlements,
+        },
       };
     });
   }
@@ -192,10 +197,15 @@ export default function DashboardClientPage({
         ...state.usage,
         savedLoads: state.usage.savedLoads + 1,
       };
+      const entitlements = resolveEntitlements(state.entitlements.tier, usage);
 
       return {
         usage,
-        entitlements: resolveEntitlements(state.entitlements.tier, usage),
+        entitlements,
+        paymentAccess: {
+          ...state.paymentAccess,
+          entitlements,
+        },
       };
     });
   }

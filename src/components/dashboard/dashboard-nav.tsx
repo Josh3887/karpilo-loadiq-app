@@ -16,7 +16,7 @@ const navItems = [
   { label: "Analyze", href: "/dashboard", icon: Calculator },
   { label: "Loads", href: "/dashboard/history", icon: Truck },
   { label: "Billing", href: "/dashboard/billing", icon: CircleDollarSign },
-  { label: "Profile", href: "/dashboard/settings", icon: Settings },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
   { label: "Support", href: "/dashboard/support", icon: Headset },
 ] as const;
 

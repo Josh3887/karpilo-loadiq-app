@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
 
-import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { OperatorBadges } from "@/components/dashboard/operator-badges";
-import { OperationalProfileForm } from "@/components/dashboard/operational-profile-form";
-import { OverheadManager } from "@/components/dashboard/overhead-manager";
+import {
+  LOADIQ_SETTINGS_LINKS,
+  SettingsMetric,
+  SettingsNavCard,
+  SettingsPageShell,
+  SettingsPanel,
+  StatusPill,
+} from "@/components/settings/settings-shell";
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
+import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function SettingsPage() {
@@ -19,42 +23,122 @@ export default async function SettingsPage() {
     redirect("/auth/login");
   }
 
-  const operatorStatus = await getOperatorProgramStatus(user.id);
+  const [
+    { data: profile },
+    { data: truckProfile },
+    overheadCount,
+    templateCount,
+    operatorStatus,
+    paymentAccess,
+  ] = await Promise.all([
+    supabase
+      .from("users")
+      .select("profile_name, company_name, operation_type")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("truck_profiles")
+      .select("make, model, year, default_mpg")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("user_overhead_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("pay_structure_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    getOperatorProgramStatus(user.id),
+    getServerPaymentAccess(user.id),
+  ]);
+
+  const vehicleLabel =
+    [truckProfile?.year, truckProfile?.make, truckProfile?.model]
+      .filter(Boolean)
+      .join(" ") || "Not set";
+  const operatorLabel =
+    profile?.profile_name || profile?.company_name || user.email || "Operator";
 
   return (
-    <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
-              Karpilo LoadIQ
-            </p>
+    <SettingsPageShell
+      title="LoadIQ Command Settings"
+      description="A dispatch-grade settings hub for account access, billing status, expense intelligence, and vehicle assumptions."
+      actions={
+        <StatusPill tone={paymentAccess.hasActiveAccess ? "green" : "red"}>
+          {formatStatus(paymentAccess.entitlementStatus)}
+        </StatusPill>
+      }
+    >
+      <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <SettingsMetric
+          label="Operator"
+          value={operatorLabel}
+          detail={profile?.operation_type ?? "Operation profile pending"}
+          tone="blue"
+        />
+        <SettingsMetric
+          label="Entitlement"
+          value={formatStatus(paymentAccess.entitlementStatus)}
+          detail={`${paymentAccess.tier} plan via ${paymentAccess.billingProvider}`}
+          tone={paymentAccess.hasActiveAccess ? "green" : "red"}
+        />
+        <SettingsMetric
+          label="Expense Controls"
+          value={String(overheadCount.count ?? 0)}
+          detail={`${templateCount.count ?? 0} pay templates`}
+        />
+        <SettingsMetric
+          label="Vehicle"
+          value={vehicleLabel}
+          detail={
+            truckProfile?.default_mpg
+              ? `${truckProfile.default_mpg} MPG default`
+              : "MPG default pending"
+          }
+        />
+      </section>
 
-            <h1 className="text-3xl font-black tracking-tight md:text-5xl">
-              Operational Profile
-            </h1>
-            <OperatorBadges badges={operatorStatus.badges} />
+      <SettingsPanel
+        title="Command Stations"
+        description="APP owns protected settings. Each station uses the current Supabase auth session and existing LoadIQ profile, billing, and operating tables."
+      >
+        <div className="grid gap-5 md:grid-cols-2">
+          {LOADIQ_SETTINGS_LINKS.slice(1).map((item) => (
+            <SettingsNavCard
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              description={item.description}
+              icon={item.icon}
+              accent={item.accent}
+            />
+          ))}
+        </div>
+      </SettingsPanel>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
-              Centralize your driver profile, target profitability, truck
-              assumptions, pay templates, and recurring overhead.
-            </p>
+      {operatorStatus.badges.length > 0 && (
+        <SettingsPanel
+          title="Operator Access Badges"
+          description={operatorStatus.statusMessage}
+          kicker="Program State"
+        >
+          <div className="flex flex-wrap gap-3">
+            {operatorStatus.badges.map((badge) => (
+              <StatusPill
+                key={badge.label}
+                tone={badge.tone === "red" ? "red" : "green"}
+              >
+                {badge.label}
+              </StatusPill>
+            ))}
           </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <DashboardNav />
-            <BackToDashboardLink />
-          </div>
-        </header>
-
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          <OperationalProfileForm />
-        </section>
-
-        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          <OverheadManager />
-        </section>
-      </div>
-    </main>
+        </SettingsPanel>
+      )}
+    </SettingsPageShell>
   );
+}
+
+function formatStatus(value: string) {
+  return value.replace(/_/g, " ");
 }

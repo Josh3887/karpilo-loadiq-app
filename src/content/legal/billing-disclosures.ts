@@ -1,3 +1,5 @@
+import { BILLING_EMAIL } from "@/config/billing";
+
 export type LegalLink = {
   label: string;
   href: string;
@@ -14,6 +16,7 @@ export type LegalSection = {
 
 export const LEGAL_CONTACT_EMAIL =
   "Josh.karpilo@karpiloendeavortechnologies.com";
+export const BILLING_CONTACT_EMAIL = BILLING_EMAIL;
 
 export const APPLE_BILLING_LINKS: LegalLink[] = [
   {

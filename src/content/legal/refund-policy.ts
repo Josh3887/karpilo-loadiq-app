@@ -1,5 +1,5 @@
 import {
-  LEGAL_CONTACT_EMAIL,
+  BILLING_CONTACT_EMAIL,
   PLATFORM_BILLING_DISCLOSURES,
   STRIPE_BILLING_DISCLOSURES,
   type LegalSection,
@@ -79,7 +79,7 @@ export const REFUND_POLICY_SECTIONS: LegalSection[] = [
     id: "support",
     title: "How to Request Help",
     paragraphs: [
-      `For direct website billing questions, refund review, duplicate billing, or technical access issues, contact ${LEGAL_CONTACT_EMAIL}. Apple App Store and Google Play billing issues may need to be handled through Apple or Google directly when those platforms process the payment.`,
+      `For direct website billing questions, refund review, duplicate billing, or technical access issues, contact ${BILLING_CONTACT_EMAIL}. Apple App Store and Google Play billing issues may need to be handled through Apple or Google directly when those platforms process the payment.`,
     ],
   },
 ];

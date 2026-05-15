@@ -2,12 +2,14 @@ import { createClient } from "@/lib/supabase-client";
 
 import {
   EntitlementUsage,
+  PaymentAccess,
   resolveEntitlements,
+  resolvePaymentAccess,
 } from "@/domains/billing/entitlement-service";
-import { PlanTier } from "@/domains/billing/plan-limits";
 
 export type ClientEntitlementState = {
   entitlements: ReturnType<typeof resolveEntitlements>;
+  paymentAccess: PaymentAccess;
   usage: EntitlementUsage;
 };
 
@@ -16,18 +18,6 @@ function monthStartIso() {
   date.setDate(1);
   date.setHours(0, 0, 0, 0);
   return date.toISOString();
-}
-
-function normalizeTier(tier: unknown): PlanTier {
-  if (
-    tier === "pro" ||
-    tier === "founder" ||
-    tier === "pilot" ||
-    tier === "launch500"
-  ) {
-    return tier;
-  }
-  return "free";
 }
 
 export async function getClientEntitlementState(): Promise<ClientEntitlementState> {
@@ -46,6 +36,7 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
 
     return {
       usage,
+      paymentAccess: resolvePaymentAccess(null, usage),
       entitlements: resolveEntitlements("free", usage),
     };
   }
@@ -54,9 +45,10 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("tier,status,current_period_end")
+        .select(
+          "tier,status,provider,provider_customer_id,provider_subscription_id,current_period_end,trial_end,cancel_at_period_end,canceled_at"
+        )
         .eq("user_id", user.id)
-        .in("status", ["active", "trialing"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
@@ -76,9 +68,11 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
     monthlyCalculations: calculationCount.count ?? 0,
     savedLoads: savedLoadCount.count ?? 0,
   };
+  const paymentAccess = resolvePaymentAccess(subscription, usage);
 
   return {
     usage,
-    entitlements: resolveEntitlements(normalizeTier(subscription?.tier), usage),
+    paymentAccess,
+    entitlements: paymentAccess.entitlements,
   };
 }

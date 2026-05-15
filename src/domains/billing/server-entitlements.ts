@@ -1,29 +1,20 @@
-import { resolveEntitlements } from "@/domains/billing/entitlement-service";
-import { PlanTier } from "@/domains/billing/plan-limits";
+import {
+  resolveEntitlements,
+  resolvePaymentAccess,
+} from "@/domains/billing/entitlement-service";
 import { createClient } from "@/lib/supabase-server";
 
-function normalizeTier(tier: unknown): PlanTier {
-  if (
-    tier === "pro" ||
-    tier === "founder" ||
-    tier === "pilot" ||
-    tier === "launch500"
-  ) {
-    return tier;
-  }
-  return "free";
-}
-
-export async function getServerEntitlements(userId: string) {
+async function getSubscriptionUsage(userId: string) {
   const supabase = await createClient();
 
   const [{ data: subscription }, calculationCount, savedLoadCount] =
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("tier,status,current_period_end")
+        .select(
+          "tier,status,provider,provider_customer_id,provider_subscription_id,current_period_end,trial_end,cancel_at_period_end,canceled_at"
+        )
         .eq("user_id", userId)
-        .in("status", ["active", "trialing"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
@@ -43,5 +34,18 @@ export async function getServerEntitlements(userId: string) {
     savedLoads: savedLoadCount.count ?? 0,
   };
 
-  return resolveEntitlements(normalizeTier(subscription?.tier), usage);
+  return { subscription, usage };
+}
+
+export async function getServerPaymentAccess(userId: string) {
+  const { subscription, usage } = await getSubscriptionUsage(userId);
+  return resolvePaymentAccess(subscription, usage);
+}
+
+export async function getServerEntitlements(userId: string) {
+  const { subscription, usage } = await getSubscriptionUsage(userId);
+  const paymentAccess = resolvePaymentAccess(subscription, usage);
+  return paymentAccess.hasActiveAccess
+    ? paymentAccess.entitlements
+    : resolveEntitlements("free", usage);
 }
