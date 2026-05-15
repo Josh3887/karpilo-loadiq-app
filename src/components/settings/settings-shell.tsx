@@ -17,7 +17,7 @@ import { cn } from "@/utils/cn";
 
 export const LOADIQ_SETTINGS_LINKS = [
   {
-    title: "LoadIQ Command Settings",
+    title: "Karpilo LoadIQ Command Settings",
     href: "/dashboard/settings",
     description: "The operator command deck for account, billing, and profile controls.",
     icon: Settings,
@@ -62,7 +62,7 @@ type SettingsPageShellProps = {
 };
 
 export function SettingsPageShell({
-  eyebrow = "K-LIQ Command Center",
+  eyebrow = "Karpilo LoadIQ Command Center",
   title,
   description,
   children,

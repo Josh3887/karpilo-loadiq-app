@@ -164,7 +164,7 @@ export function AccountSecurityPanel({
           <h3 className="text-lg font-black text-slate-100">Session Control</h3>
         </div>
         <p className="mt-5 text-sm leading-6 text-slate-400">
-          End this browser session and return to the LoadIQ login screen.
+          End this browser session and return to the Karpilo LoadIQ login screen.
         </p>
         <button
           type="button"

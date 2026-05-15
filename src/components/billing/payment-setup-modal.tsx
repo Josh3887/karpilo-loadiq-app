@@ -67,7 +67,7 @@ export function PaymentSetupModal({
                 Billing Setup
               </p>
               <h2 className="mt-2 text-2xl font-black text-slate-100">
-                Activate LoadIQ Access
+                Activate Karpilo LoadIQ Access
               </h2>
             </div>
           </div>
@@ -84,7 +84,7 @@ export function PaymentSetupModal({
         </div>
 
         <p className="mt-5 text-sm leading-6 text-slate-300">
-          Complete billing setup to activate or preserve your LoadIQ
+          Complete billing setup to activate or preserve your Karpilo LoadIQ
           subscription access.
         </p>
 

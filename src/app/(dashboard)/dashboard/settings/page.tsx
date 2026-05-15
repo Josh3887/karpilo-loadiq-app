@@ -62,7 +62,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsPageShell
-      title="LoadIQ Command Settings"
+      title="Karpilo LoadIQ Command Settings"
       description="A dispatch-grade settings hub for account access, billing status, expense intelligence, and vehicle assumptions."
       actions={
         <StatusPill tone={paymentAccess.hasActiveAccess ? "green" : "red"}>
