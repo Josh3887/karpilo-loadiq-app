@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { InternalBillingTestHarnessPanel } from "@/components/billing/internal-billing-test-harness-panel";
 import { PaymentAccessActions } from "@/components/billing/payment-access-actions";
 import {
   SettingsMetric,
@@ -10,6 +11,8 @@ import {
 } from "@/components/settings/settings-shell";
 import { BILLING_EMAIL } from "@/config/billing";
 import { FUTURE_PLATFORM_FEATURE_SCOPE } from "@/config/pricing";
+import { getInternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness";
+import type { InternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness-types";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { getPreviewPaymentAccess } from "@/lib/preview-data";
@@ -41,15 +44,17 @@ export default async function BillingSettingsPage() {
     redirect("/auth/login");
   }
 
-  const [paymentAccess, reservationState] = await Promise.all([
-    getServerPaymentAccess(user.id),
+  const [paymentAccess, reservationState, billingTestHarness] = await Promise.all([
+    getServerPaymentAccess(user.id, user.email),
     getUserReservationAndLockState(user.id),
+    getInternalBillingTestHarnessSnapshot(user.email),
   ]);
 
   return (
     <BillingSettingsContent
       paymentAccess={paymentAccess}
       reservationState={reservationState}
+      billingTestHarness={billingTestHarness}
     />
   );
 }
@@ -57,9 +62,11 @@ export default async function BillingSettingsPage() {
 function BillingSettingsContent({
   paymentAccess,
   reservationState,
+  billingTestHarness,
 }: {
   paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
   reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
+  billingTestHarness?: InternalBillingTestHarnessSnapshot | null;
 }) {
   const lifecycleDate =
     paymentAccess.billingStartsAt ??
@@ -84,6 +91,8 @@ function BillingSettingsContent({
         </StatusPill>
       }
     >
+      <InternalBillingTestHarnessPanel harness={billingTestHarness} />
+
       <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <SettingsMetric
           label="Current Plan"

@@ -82,7 +82,7 @@ export default async function SettingsPage() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
     getOperatorProgramStatus(user.id),
-    getServerPaymentAccess(user.id),
+    getServerPaymentAccess(user.id, user.email),
   ]);
 
   const vehicleLabel =

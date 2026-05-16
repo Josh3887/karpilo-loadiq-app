@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase-client";
 
-import { resolvePaymentAccess } from "@/domains/billing/entitlement-service";
+import { getClientEntitlementState } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { LoadInput, LoadResult } from "@/types/load";
 
@@ -57,36 +57,21 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
   }
 
   const [
-    { data: subscription, error: subscriptionError },
     { count, error: countError },
+    entitlementState,
   ] = await Promise.all([
-    supabase
-      .from("subscriptions")
-      .select(
-        "tier,status,provider,provider_customer_id,provider_subscription_id,current_period_end,trial_end,trial_duration_days,trial_status,billing_starts_at,lifetime_price_lock,future_feature_access_scope,cohort_phase,cohort_cap,price_subject_to_change,entitlement_status,cancel_at_period_end,canceled_at"
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     supabase
       .from("saved_loads")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
+    getClientEntitlementState(),
   ]);
-
-  if (subscriptionError) {
-    throw new Error(formatSupabaseError(subscriptionError));
-  }
 
   if (countError) {
     throw new Error(formatSupabaseError(countError));
   }
 
-  const paymentAccess = resolvePaymentAccess(subscription, {
-    monthlyCalculations: 0,
-    savedLoads: count ?? 0,
-  });
+  const paymentAccess = entitlementState.paymentAccess;
 
   if (!paymentAccess.hasActiveAccess || !paymentAccess.entitlements.canSaveLoad) {
     throw new Error("An active Karpilo LoadIQ subscription is required to save load history.");

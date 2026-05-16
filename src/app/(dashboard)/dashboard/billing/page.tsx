@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { CheckoutAcknowledgement } from "@/components/billing/checkout-acknowledgement";
 import { CustomerPortalButton } from "@/components/billing/customer-portal-button";
+import { InternalBillingTestHarnessPanel } from "@/components/billing/internal-billing-test-harness-panel";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import {
   FOUNDER_ACCESS,
@@ -27,6 +28,11 @@ import {
   type PaymentAccess,
   resolvePaymentAccess,
 } from "@/domains/billing/entitlement-service";
+import {
+  getInternalBillingTestHarnessSnapshot,
+  resolveInternalBillingTestSubscription,
+} from "@/domains/billing/internal-test-harness";
+import type { InternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness-types";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 import {
   getPreviewPaymentAccess,
@@ -77,6 +83,7 @@ export default async function BillingPage() {
     savedLoadCount,
     operatorStatus,
     reservationState,
+    billingTestHarness,
   ] =
     await Promise.all([
       supabase
@@ -109,9 +116,12 @@ export default async function BillingPage() {
         .eq("user_id", user.id),
       getOperatorProgramStatus(user.id),
       getUserReservationAndLockState(user.id),
+      getInternalBillingTestHarnessSnapshot(user.email),
     ]);
 
-  const paymentAccess = resolvePaymentAccess(subscription, {
+  const effectiveSubscription =
+    resolveInternalBillingTestSubscription(billingTestHarness) ?? subscription;
+  const paymentAccess = resolvePaymentAccess(effectiveSubscription, {
     monthlyCalculations: calculationCount.count ?? 0,
     savedLoads: savedLoadCount.count ?? 0,
   });
@@ -140,6 +150,7 @@ export default async function BillingPage() {
       canSeePilotPricing={canSeePilotPricing}
       calculationCount={calculationCount.count ?? 0}
       savedLoadCount={savedLoadCount.count ?? 0}
+      billingTestHarness={billingTestHarness}
     />
   );
 }
@@ -155,6 +166,7 @@ function BillingContent({
   canSeePilotPricing,
   calculationCount,
   savedLoadCount,
+  billingTestHarness,
 }: {
   paymentAccess: PaymentAccess;
   operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
@@ -166,6 +178,7 @@ function BillingContent({
   canSeePilotPricing: boolean;
   calculationCount: number;
   savedLoadCount: number;
+  billingTestHarness?: InternalBillingTestHarnessSnapshot | null;
 }) {
   void founderAccess;
   const activeTier = paymentAccess.tier;
@@ -223,6 +236,8 @@ function BillingContent({
           <Metric label="Calculations" value={String(calculationCount)} />
           <Metric label="Saved Loads" value={String(savedLoadCount)} />
         </section>
+
+        <InternalBillingTestHarnessPanel harness={billingTestHarness} />
 
         <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
@@ -392,10 +407,18 @@ function BillingContent({
                     assigned entitlement records.
                   </div>
 
-                  <CheckoutAcknowledgement
-                    label="Agree & Open Checkout"
-                    planId={publicPlan.id as StripeCheckoutPlanId}
-                  />
+                  {billingTestHarness?.enabled ? (
+                    <div className="mt-6 rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+                      Stripe checkout is disabled while developer billing
+                      simulation is active. Disable the harness to test live
+                      checkout behavior.
+                    </div>
+                  ) : (
+                    <CheckoutAcknowledgement
+                      label="Agree & Open Checkout"
+                      planId={publicPlan.id as StripeCheckoutPlanId}
+                    />
+                  )}
                 </>
               )}
             </div>

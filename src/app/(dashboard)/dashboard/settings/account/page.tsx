@@ -51,7 +51,7 @@ export default async function AccountSettingsPage() {
       .eq("id", user.id)
       .maybeSingle(),
     getOperatorProgramStatus(user.id),
-    getServerPaymentAccess(user.id),
+    getServerPaymentAccess(user.id, user.email),
   ]);
 
   return (

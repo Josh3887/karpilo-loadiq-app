@@ -47,7 +47,7 @@ export default async function DashboardLayout({
   const [gateState, healthNotices, paymentAccess] = await Promise.all([
     getAppPolicyGateState(user.id),
     getActiveSystemHealthNotices(),
-    getServerPaymentAccess(user.id),
+    getServerPaymentAccess(user.id, user.email),
   ]);
 
   return (

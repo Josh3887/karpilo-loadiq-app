@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
+import { InternalBillingTestHarnessPanel } from "@/components/billing/internal-billing-test-harness-panel";
 import { LoadInputForm } from "@/components/calculator/load-input-form";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { FounderWelcomeModal } from "@/components/dashboard/founder-welcome-modal";
@@ -109,19 +110,46 @@ export default function DashboardClientPage({
     loadDefaults();
   }, [previewMode, setDefaults]);
 
+  const refreshEntitlements = useCallback(async () => {
+    if (previewMode) return;
+
+    try {
+      setEntitlementState(await getClientEntitlementState());
+    } catch (error) {
+      console.error(error);
+    }
+  }, [previewMode]);
+
   useEffect(() => {
     if (previewMode) return;
 
-    async function loadEntitlements() {
+    let cancelled = false;
+
+    async function loadInitialEntitlements() {
       try {
-        setEntitlementState(await getClientEntitlementState());
+        const nextState = await getClientEntitlementState();
+        if (!cancelled) {
+          setEntitlementState(nextState);
+        }
       } catch (error) {
         console.error(error);
       }
     }
 
-    loadEntitlements();
-  }, [previewMode]);
+    void loadInitialEntitlements();
+    window.addEventListener(
+      "billing-test-harness-updated",
+      refreshEntitlements
+    );
+
+    return () => {
+      window.removeEventListener(
+        "billing-test-harness-updated",
+        refreshEntitlements
+      );
+      cancelled = true;
+    };
+  }, [previewMode, refreshEntitlements]);
 
   useEffect(() => {
     if (previewMode) return;
@@ -272,6 +300,10 @@ export default function DashboardClientPage({
           pilotSlotsRemaining={pilotSlotsRemaining}
           launchSlotsRemaining={launchSlotsRemaining}
           claimedOperatorCount={claimedOperatorCount}
+        />
+
+        <InternalBillingTestHarnessPanel
+          harness={entitlementState?.billingTestHarness}
         />
 
         {adminControlPlaneAccess && (

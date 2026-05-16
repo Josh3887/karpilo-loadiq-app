@@ -2,9 +2,13 @@ import {
   resolveEntitlements,
   resolvePaymentAccess,
 } from "@/domains/billing/entitlement-service";
+import {
+  getInternalBillingTestHarnessSnapshot,
+  resolveInternalBillingTestSubscription,
+} from "@/domains/billing/internal-test-harness";
 import { createClient } from "@/lib/supabase-server";
 
-async function getSubscriptionUsage(userId: string) {
+async function getSubscriptionUsage(userId: string, userEmail?: string | null) {
   const supabase = await createClient();
 
   const [{ data: subscription }, calculationCount, savedLoadCount] =
@@ -33,17 +37,49 @@ async function getSubscriptionUsage(userId: string) {
     monthlyCalculations: calculationCount.count ?? 0,
     savedLoads: savedLoadCount.count ?? 0,
   };
+  const billingTestHarness =
+    await getInternalBillingTestHarnessSnapshot(userEmail);
+  const harnessSubscription =
+    resolveInternalBillingTestSubscription(billingTestHarness);
 
-  return { subscription, usage };
+  return {
+    subscription: harnessSubscription ?? subscription,
+    usage,
+    billingTestHarness,
+  };
 }
 
-export async function getServerPaymentAccess(userId: string) {
-  const { subscription, usage } = await getSubscriptionUsage(userId);
+export async function getServerEntitlementState(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage, billingTestHarness } = await getSubscriptionUsage(
+    userId,
+    userEmail
+  );
+  const paymentAccess = resolvePaymentAccess(subscription, usage);
+
+  return {
+    usage,
+    paymentAccess,
+    entitlements: paymentAccess.entitlements,
+    billingTestHarness,
+  };
+}
+
+export async function getServerPaymentAccess(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
   return resolvePaymentAccess(subscription, usage);
 }
 
-export async function getServerEntitlements(userId: string) {
-  const { subscription, usage } = await getSubscriptionUsage(userId);
+export async function getServerEntitlements(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
   const paymentAccess = resolvePaymentAccess(subscription, usage);
   return paymentAccess.hasActiveAccess
     ? paymentAccess.entitlements
