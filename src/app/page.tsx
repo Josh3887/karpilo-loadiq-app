@@ -3,8 +3,6 @@ import Link from "next/link";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { BRAND } from "@/config/brand";
 
-const WEBSITE_SIGNUP_URL = `${BRAND.urls.website}/signup`;
-
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100">
@@ -41,18 +39,18 @@ export default function HomePage() {
               Preview App
             </Link>
 
-            <a
-              href={WEBSITE_SIGNUP_URL}
+            <Link
+              href="/auth/register"
               className="rounded-xl border border-slate-700 bg-[#060B14] px-5 py-4 text-center text-sm font-black uppercase tracking-[0.2em] text-slate-200 transition hover:border-sky-400/50 hover:text-sky-200"
             >
               Create Access
-            </a>
+            </Link>
           </div>
 
           <div className="mt-6 rounded-2xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-5 text-slate-500">
-            Public signup, pilot reservations, launch pricing, and acquisition
-            live on the website. This APP stays focused on authenticated
-            operating work.
+            Create an APP account here for authenticated operating access.
+            Pilot reservations, launch pricing, and public product information
+            remain available on the website.
           </div>
         </div>
       </section>

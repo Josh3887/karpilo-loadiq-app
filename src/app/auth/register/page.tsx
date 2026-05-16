@@ -14,8 +14,9 @@ export default function RegisterPage() {
           </p>
           <h1 className="mt-2 text-3xl font-black">Create Access</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Website signup handles reservations, pilot access, and launch
-            pricing. Return here to sign in once your account is ready.
+            Create your APP account with the shared Karpilo LoadIQ Supabase
+            identity. Website pilot reservations and launch pricing remain
+            available as separate public access paths.
           </p>
           <RegisterForm />
         </section>
