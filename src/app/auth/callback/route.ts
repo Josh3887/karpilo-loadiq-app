@@ -20,8 +20,8 @@ function getTrustedRequestOrigin(request: NextRequest) {
           ?.trim()}`
       : null;
   const candidateOrigins = [
-    forwardedOrigin,
     request.nextUrl.origin,
+    forwardedOrigin,
   ].filter((origin): origin is string => Boolean(origin));
 
   return (

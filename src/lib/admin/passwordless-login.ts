@@ -60,8 +60,8 @@ export function getTrustedAdminRequestOrigin(request: Request) {
           ?.trim()}`
       : null;
   const candidateOrigins = [
-    forwardedOrigin,
     new URL(request.url).origin,
+    forwardedOrigin,
   ].filter((origin): origin is string => Boolean(origin));
 
   const trustedOrigin = candidateOrigins.find((origin) =>
