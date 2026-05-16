@@ -58,16 +58,12 @@ function withinLimit(used: number, limit: number | "unlimited") {
 }
 
 export function normalizePlanTier(tier: unknown): PlanTier {
-  if (
-    tier === "pro" ||
-    tier === "founder" ||
-    tier === "pilot" ||
-    tier === "launch500"
-  ) {
-    return tier;
-  }
+  if (tier === "gold" || tier === "pro") return "gold";
+  if (tier === "platinum") return "platinum";
+  if (tier === "pilot") return "pilot";
+  if (tier === "launch500" || tier === "founder") return "launch500";
 
-  return "free";
+  return "no_access";
 }
 
 export function normalizeBillingProvider(provider: unknown): BillingProvider {
@@ -135,7 +131,9 @@ export function resolvePaymentAccess(
   const billingProvider = normalizeBillingProvider(subscription?.provider);
   const entitlementStatus = normalizeEntitlementStatus(subscription?.status);
   const hasActiveAccess = isActiveEntitlementStatus(entitlementStatus);
-  const tier = hasActiveAccess ? normalizePlanTier(subscription?.tier) : "free";
+  const tier = hasActiveAccess
+    ? normalizePlanTier(subscription?.tier)
+    : "no_access";
   const currentPeriodEnd = asNullableString(subscription?.current_period_end);
   const trialEnd = asNullableString(subscription?.trial_end);
   const canceledAt = asNullableString(subscription?.canceled_at);

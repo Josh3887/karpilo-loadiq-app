@@ -9,7 +9,7 @@ export type StripeCheckoutPlanId =
   | "launch500-monthly"
   | "launch500-annual";
 
-export type StripePlanTier = "pro" | "pilot" | "launch500";
+export type StripePlanTier = "gold" | "pilot" | "launch500";
 
 export type StripeCheckoutPlan = {
   id: StripeCheckoutPlanId;
@@ -25,30 +25,26 @@ export type StripeCheckoutPlan = {
 export const STRIPE_CHECKOUT_PLANS = {
   "pro-monthly": {
     id: "pro-monthly",
-    tier: "pro",
-    label: "LoadIQ Pro Monthly",
+    tier: "gold",
+    label: "Karpilo LoadIQ Gold Monthly",
     interval: "month",
     amount: 24.99,
     priceEnvVar: "STRIPE_PRICE_MONTHLY",
-    // TODO(stripe): Set STRIPE_PRICE_MONTHLY to the Stripe sandbox recurring
-    // monthly Pro Price ID after creating the product/price in Stripe.
     priceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   "pro-annual": {
     id: "pro-annual",
-    tier: "pro",
-    label: "LoadIQ Pro Annual",
+    tier: "gold",
+    label: "Karpilo LoadIQ Gold Annual",
     interval: "year",
     amount: 189.99,
     priceEnvVar: "STRIPE_PRICE_ANNUAL",
-    // TODO(stripe): Set STRIPE_PRICE_ANNUAL to the Stripe sandbox recurring
-    // annual Pro Price ID after creating the product/price in Stripe.
     priceId: process.env.STRIPE_PRICE_ANNUAL,
   },
   "pilot-monthly": {
     id: "pilot-monthly",
     tier: "pilot",
-    label: "LoadIQ Pilot Monthly",
+    label: "Karpilo LoadIQ Pilot Monthly",
     interval: "month",
     amount: PILOT_ACCESS.monthlyPrice,
     priceEnvVar: "STRIPE_PRICE_PILOT_MONTHLY",
@@ -60,7 +56,7 @@ export const STRIPE_CHECKOUT_PLANS = {
   "pilot-annual": {
     id: "pilot-annual",
     tier: "pilot",
-    label: "LoadIQ Pilot Annual",
+    label: "Karpilo LoadIQ Pilot Annual",
     interval: "year",
     amount: PILOT_ACCESS.annualPrice,
     priceEnvVar: "STRIPE_PRICE_PILOT_ANNUAL",
@@ -72,7 +68,7 @@ export const STRIPE_CHECKOUT_PLANS = {
   "launch500-monthly": {
     id: "launch500-monthly",
     tier: "launch500",
-    label: "LoadIQ Legacy Launch Monthly",
+    label: "Karpilo LoadIQ Legacy Launch Monthly",
     interval: "month",
     amount: FOUNDER_ACCESS.monthlyPrice,
     priceEnvVar: "STRIPE_PRICE_LAUNCH500_MONTHLY",
@@ -84,7 +80,7 @@ export const STRIPE_CHECKOUT_PLANS = {
   "launch500-annual": {
     id: "launch500-annual",
     tier: "launch500",
-    label: "LoadIQ Legacy Launch Annual",
+    label: "Karpilo LoadIQ Legacy Launch Annual",
     interval: "year",
     amount: FOUNDER_ACCESS.annualPrice,
     priceEnvVar: "STRIPE_PRICE_LAUNCH500_ANNUAL",

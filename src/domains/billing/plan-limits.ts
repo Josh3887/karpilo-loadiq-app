@@ -1,6 +1,6 @@
 import { FOUNDER_ACCESS } from "@/config/pricing";
 
-export type PlanTier = "free" | "pro" | "founder" | "pilot" | "launch500";
+export type PlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
 
 export type PlanLimits = {
   tier: PlanTier;
@@ -15,8 +15,8 @@ export type PlanLimits = {
 };
 
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
-  free: {
-    tier: "free",
+  no_access: {
+    tier: "no_access",
     monthlyPrice: 0,
     annualPrice: 0,
     monthlyCalculations: 0,
@@ -26,8 +26,8 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     comparisons: false,
     laneTemplates: false,
   },
-  pro: {
-    tier: "pro",
+  gold: {
+    tier: "gold",
     monthlyPrice: 24.99,
     annualPrice: 189.99,
     monthlyCalculations: "unlimited",
@@ -37,10 +37,10 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     comparisons: true,
     laneTemplates: true,
   },
-  founder: {
-    tier: "founder",
-    monthlyPrice: FOUNDER_ACCESS.monthlyPrice,
-    annualPrice: FOUNDER_ACCESS.annualPrice,
+  platinum: {
+    tier: "platinum",
+    monthlyPrice: 34.99,
+    annualPrice: 0,
     monthlyCalculations: "unlimited",
     savedLoads: "unlimited",
     exports: true,
@@ -73,5 +73,13 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
 };
 
 export function getPlanLimits(tier: PlanTier | null | undefined) {
-  return PLAN_LIMITS[tier ?? "free"] ?? PLAN_LIMITS.free;
+  return PLAN_LIMITS[tier ?? "no_access"] ?? PLAN_LIMITS.no_access;
+}
+
+export function formatPlanTierLabel(tier: PlanTier | string | null | undefined) {
+  if (tier === "gold" || tier === "pro") return "Gold";
+  if (tier === "platinum") return "Platinum";
+  if (tier === "pilot") return "Pilot";
+  if (tier === "launch500" || tier === "founder") return "Legacy Launch";
+  return "No active access";
 }

@@ -15,7 +15,7 @@ export type LegalSection = {
 };
 
 export const LEGAL_CONTACT_EMAIL =
-  "Josh.karpilo@karpiloendeavortechnologies.com";
+  "j.karpilo@karpiloendeavortechnologies.com";
 export const BILLING_CONTACT_EMAIL = BILLING_EMAIL;
 
 export const APPLE_BILLING_LINKS: LegalLink[] = [

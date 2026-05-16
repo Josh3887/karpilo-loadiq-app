@@ -184,8 +184,8 @@ export async function rememberStripeCustomer(params: {
     user_id: params.userId,
     provider: "stripe",
     provider_customer_id: params.customerId,
-    plan_code: "free",
-    tier: "free",
+    plan_code: "pending",
+    tier: "unknown",
     status: "inactive",
     metadata: {
       email: params.email ?? null,
@@ -237,7 +237,7 @@ export async function upsertStripeSubscription(params: {
   const supabase = createSupabaseAdminClient();
   const subscription = params.subscription;
   const plan = planFromStripeSubscription(subscription);
-  const tier: StripePlanTier = plan?.tier ?? "pro";
+  const tier: StripePlanTier = plan?.tier ?? "gold";
   const userId =
     params.userId ?? (await findUserIdForStripeSubscription(subscription));
 

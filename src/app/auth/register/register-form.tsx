@@ -1,82 +1,32 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-import { createClient } from "@/lib/supabase-client";
+import { BRAND } from "@/config/brand";
+
+const WEBSITE_SIGNUP_URL = `${BRAND.urls.website}/signup`;
 
 export function RegisterForm() {
-  const router = useRouter();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
-
-  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setStatus("Creating account...");
-    const supabase = createClient();
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard/onboarding`,
-      },
-    });
-
-    if (error) {
-      setStatus(error.message);
-      return;
-    }
-
-    if (data.session) {
-      setStatus("Account created. Opening profile setup...");
-      router.push("/dashboard/onboarding");
-      router.refresh();
-      return;
-    }
-
-    setStatus(
-      "Account created. Check your email, then sign in to finish profile setup."
-    );
-  }
-
   return (
-    <form onSubmit={handleRegister} className="mt-6 space-y-4">
-      <input
-        type="email"
-        placeholder="Email"
-        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-slate-100 outline-none focus:border-sky-400"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-slate-100 outline-none focus:border-sky-400"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
-
-      <button
-        type="submit"
-        className="w-full rounded-xl bg-sky-400 px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-[#060B14]"
+    <div className="mt-6 space-y-4">
+      <a
+        href={WEBSITE_SIGNUP_URL}
+        className="block w-full rounded-xl bg-sky-400 px-5 py-4 text-center text-sm font-black uppercase tracking-[0.2em] text-[#060B14] transition hover:bg-sky-300"
       >
-        Create Account
-      </button>
+        Open Website Signup
+      </a>
 
-      {status && <p className="text-sm text-slate-400">{status}</p>}
+      <a
+        href={`${BRAND.urls.website}/pilot-program`}
+        className="block w-full rounded-xl border border-slate-700 bg-[#060B14] px-5 py-4 text-center text-sm font-black uppercase tracking-[0.2em] text-slate-200 transition hover:border-sky-400/50 hover:text-sky-200"
+      >
+        Pilot Reservation
+      </a>
 
-      <p className="text-sm text-slate-400">
-        Already have an account?{" "}
-        <Link href="/auth/login" className="text-sky-400">
+      <p className="text-sm leading-6 text-slate-400">
+        Already have access?{" "}
+        <Link href="/auth/login" className="font-bold text-sky-400">
           Sign in
         </Link>
       </p>
-    </form>
+    </div>
   );
 }

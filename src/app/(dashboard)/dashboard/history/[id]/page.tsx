@@ -81,8 +81,8 @@ export default async function LoadDetailPage({
             </h1>
 
             <p className="mt-3 text-sm text-slate-400">
-              {load.loadiq_load_number ? `${load.loadiq_load_number} · ` : ""}
-              {load.pickup_zip} → {load.delivery_zip}
+              Load #{formatLoadId(load)} · Trip #{formatTripNumber(load)} ·{" "}
+              {formatLane(load)}
             </p>
           </div>
 
@@ -304,4 +304,39 @@ function MetricCard({
       </div>
     </div>
   );
+}
+
+function formatLoadId(load: {
+  load_id?: number | null;
+  loadiq_load_number?: string | null;
+}) {
+  if (typeof load.load_id === "number") return String(load.load_id);
+  const legacyNumber = load.loadiq_load_number?.match(/\d+/)?.[0];
+  return legacyNumber ? String(Number(legacyNumber)) : "pending";
+}
+
+function formatTripNumber(load: {
+  trip_number?: string | null;
+  driver_load_number?: string | null;
+  load_id?: number | null;
+  loadiq_load_number?: string | null;
+}) {
+  if (load.trip_number) return load.trip_number;
+  if (load.driver_load_number) return load.driver_load_number;
+  return `AUTO-${formatLoadId(load)}`;
+}
+
+function formatLane(load: {
+  pickup_city?: string | null;
+  pickup_state?: string | null;
+  delivery_city?: string | null;
+  delivery_state?: string | null;
+}) {
+  const pickup = [load.pickup_city, load.pickup_state].filter(Boolean).join(", ");
+  const delivery = [load.delivery_city, load.delivery_state]
+    .filter(Boolean)
+    .join(", ");
+
+  if (pickup && delivery) return `${pickup} -> ${delivery}`;
+  return "Lane pending";
 }

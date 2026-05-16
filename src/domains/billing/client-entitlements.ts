@@ -37,7 +37,7 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
     return {
       usage,
       paymentAccess: resolvePaymentAccess(null, usage),
-      entitlements: resolveEntitlements("free", usage),
+      entitlements: resolveEntitlements("no_access", usage),
     };
   }
 

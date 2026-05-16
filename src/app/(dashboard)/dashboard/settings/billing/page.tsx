@@ -9,6 +9,7 @@ import {
   StatusPill,
 } from "@/components/settings/settings-shell";
 import { BILLING_EMAIL } from "@/config/billing";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { createClient } from "@/lib/supabase-server";
 import { getUserReservationAndLockState } from "@/services/reservations";
@@ -46,7 +47,7 @@ export default async function BillingSettingsPage() {
       <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <SettingsMetric
           label="Current Plan"
-          value={paymentAccess.tier}
+          value={formatPlanTierLabel(paymentAccess.tier)}
           detail="Resolved from subscription entitlement"
           tone="blue"
         />

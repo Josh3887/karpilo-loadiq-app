@@ -21,6 +21,7 @@ import {
 } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { resolveEntitlements } from "@/domains/billing/entitlement-service";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { useLoadCalculator } from "@/hooks/use-load-calculator";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getLaneTemplateInput } from "@/services/lane-templates";
@@ -152,7 +153,7 @@ export default function DashboardClientPage({
   function handleCalculate(input: LoadInput) {
     if (entitlementState && !entitlementState.entitlements.canCalculate) {
       setGateMessage(
-        "A paid LoadIQ subscription is required before analyzing freight."
+        "An active Karpilo LoadIQ subscription is required before analyzing freight."
       );
       return;
     }
@@ -268,17 +269,17 @@ export default function DashboardClientPage({
             {entitlementState && (
               <div className="mb-4 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs uppercase tracking-[0.16em] text-sky-200">
                 <div>
-                  {entitlementState.entitlements.tier} plan ·{" "}
+                  {formatPlanTierLabel(entitlementState.entitlements.tier)} ·{" "}
                   {entitlementState.usage.monthlyCalculations} calculations this
                   month · {entitlementState.usage.savedLoads} saved loads
                 </div>
 
-                {entitlementState.entitlements.tier === "free" && (
+                {entitlementState.entitlements.tier === "no_access" && (
                   <Link
                     href="/dashboard/billing"
                     className="mt-3 inline-flex text-sky-300 underline decoration-sky-400/40 underline-offset-4"
                   >
-                    Upgrade for unlimited analysis
+                    Activate subscription access
                   </Link>
                 )}
               </div>
@@ -299,8 +300,51 @@ export default function DashboardClientPage({
             }
             onLoadSaved={handleLoadSaved}
           />
+
+          <div className="lg:col-span-2">
+            <PlatinumReadinessCard
+              tier={entitlementState?.entitlements.tier ?? "no_access"}
+            />
+          </div>
         </section>
       </div>
     </main>
+  );
+}
+
+function PlatinumReadinessCard({ tier }: { tier: string }) {
+  const hasPlatinum = tier === "platinum";
+
+  return (
+    <DashboardCard title="Platinum Intelligence Readiness">
+      <div className="space-y-4 text-sm leading-6 text-slate-300">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              IFTA Estimation Support
+            </p>
+            <p className="mt-2 text-slate-400">
+              Platinum will use jurisdiction miles, fuel purchases, gallons,
+              vehicle MPG, and load history to support planning estimates only.
+            </p>
+          </div>
+          <span
+            className={
+              hasPlatinum
+                ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-200"
+                : "rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+            }
+          >
+            {hasPlatinum ? "Enabled" : "Platinum"}
+          </span>
+        </div>
+
+        <p className="rounded-xl border border-red-400/20 bg-red-500/10 p-4 text-xs leading-5 text-red-100">
+          IFTA support is estimation and planning assistance only. It is not tax
+          filing, legal certification, or a replacement for verified
+          jurisdictional reporting.
+        </p>
+      </div>
+    </DashboardCard>
   );
 }

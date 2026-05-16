@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { BRAND } from "@/config/brand";
 
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 export default function ForgotPasswordPage() {
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-8 text-slate-100">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-6 lg:grid-cols-[420px_1fr]">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center">
         <section className="rounded-2xl border border-slate-800 bg-[#0B1220] p-6 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
           <LoadIqMark size="lg" />
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-sky-400">
@@ -38,8 +37,6 @@ export default function ForgotPasswordPage() {
             </Link>
           </p>
         </section>
-
-        <AppStorePlaceholders />
       </div>
     </main>
   );

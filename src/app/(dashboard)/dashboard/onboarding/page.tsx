@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { LoadIqMark } from "@/components/brand/loadiq-mark";
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
-import { LaunchStatusBanner } from "@/components/launch/launch-status-banner";
-import { APP_FEATURE_FLAGS } from "@/config/app";
 import { BRAND } from "@/config/brand";
-import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
-import {
-  getOperatorProgramCounts,
-  getOperatorProgramStatus,
-} from "@/domains/billing/operator-program";
+import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function OnboardingPage() {
@@ -25,12 +18,7 @@ export default async function OnboardingPage() {
     redirect("/auth/login");
   }
 
-  const [operatorStatus, programCounts] = await Promise.all([
-    getOperatorProgramStatus(user.id),
-    getOperatorProgramCounts(),
-  ]);
-  const claimedOperatorCount =
-    programCounts.pilotClaimed + programCounts.launchClaimed;
+  const operatorStatus = await getOperatorProgramStatus(user.id);
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -60,24 +48,6 @@ export default async function OnboardingPage() {
             Settings
           </Link>
         </header>
-
-        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_340px]">
-          <LaunchStatusBanner
-            initialSnapshot={getLaunchPhaseSnapshot(
-              new Date(),
-              claimedOperatorCount
-            )}
-            pilotSlotsRemaining={Math.max(50 - programCounts.pilotClaimed, 0)}
-            launchSlotsRemaining={Math.max(
-              500 - programCounts.launchClaimed,
-              0
-            )}
-            claimedOperatorCount={claimedOperatorCount}
-            showCountdown={APP_FEATURE_FLAGS.showAppCountdown}
-            compact
-          />
-          <AppStorePlaceholders />
-        </div>
 
         <OnboardingChecklist operatorStatus={operatorStatus} />
       </div>

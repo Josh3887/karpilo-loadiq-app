@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AppStorePlaceholders } from "@/components/app-store/app-store-placeholders";
 import { BackToDashboardLink } from "@/components/dashboard/back-to-dashboard-link";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { SupportTicketForm } from "@/components/support/support-ticket-form";
@@ -91,10 +90,6 @@ export default async function SupportPage() {
 
         <div className="mt-6">
           <SupportTicketForm />
-        </div>
-
-        <div className="mt-6">
-          <AppStorePlaceholders />
         </div>
 
         <section className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">

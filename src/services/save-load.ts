@@ -69,12 +69,14 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
   }
 
   if (
+    subscription?.tier !== "gold" &&
+    subscription?.tier !== "platinum" &&
     subscription?.tier !== "pro" &&
     subscription?.tier !== "founder" &&
     subscription?.tier !== "pilot" &&
     subscription?.tier !== "launch500"
   ) {
-    throw new Error("Free users cannot save loads. Upgrade to Pro to save history.");
+    throw new Error("An active Karpilo LoadIQ subscription is required to save load history.");
   }
 
   const { count } = await supabase

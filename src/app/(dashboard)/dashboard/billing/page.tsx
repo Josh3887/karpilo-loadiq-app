@@ -17,7 +17,11 @@ import {
   canClaimFounderAccess,
   founderSeatLabel,
 } from "@/domains/billing/founder-access";
-import { PLAN_LIMITS } from "@/domains/billing/plan-limits";
+import {
+  PLAN_LIMITS,
+  formatPlanTierLabel,
+} from "@/domains/billing/plan-limits";
+import { normalizePlanTier } from "@/domains/billing/entitlement-service";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 import { createClient } from "@/lib/supabase-server";
 import { getUserReservationAndLockState } from "@/services/reservations";
@@ -74,13 +78,11 @@ export default async function BillingPage() {
     ]);
 
   const activeTier =
-    subscription?.tier === "pro" ||
-    subscription?.tier === "founder" ||
-    subscription?.tier === "pilot" ||
-    subscription?.tier === "launch500"
-      ? subscription.tier
-      : "free";
-  const canSeeFounderPricing = activeTier === "founder" || Boolean(founderAccess);
+    subscription?.status === "active" || subscription?.status === "trialing"
+      ? normalizePlanTier(subscription?.tier)
+      : "no_access";
+  const canSeeFounderPricing =
+    activeTier === "launch500" || Boolean(founderAccess);
   const founderSeatsClaimed = founderClaimCount.count ?? 0;
   const canClaimFounder =
     canSeeFounderPricing &&
@@ -119,7 +121,7 @@ export default async function BillingPage() {
         </header>
 
         <section className="mb-6 grid gap-4 md:grid-cols-3">
-          <Metric label="Current Plan" value={activeTier} />
+          <Metric label="Current Plan" value={formatPlanTierLabel(activeTier)} />
           <Metric
             label="Calculations"
             value={String(calculationCount.count ?? 0)}
@@ -191,9 +193,7 @@ export default async function BillingPage() {
         <section className="grid gap-5 lg:grid-cols-3">
           {PUBLIC_PRICING_PLANS.map((publicPlan) => {
             const plan = PLAN_LIMITS[publicPlan.tier];
-            const isActive =
-              activeTier === publicPlan.tier &&
-              (publicPlan.tier === "free" || activeTier !== "founder");
+            const isActive = activeTier === publicPlan.tier;
 
             const isFeatured =
               "featured" in publicPlan && Boolean(publicPlan.featured);
@@ -259,11 +259,12 @@ export default async function BillingPage() {
                 />
               </div>
 
-              {publicPlan.tier !== "free" && activeTier === "free" && (
+              {activeTier === "no_access" && (
                 <>
                   <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-                    No free trial is included for the initial launch checkout.
-                    Paid access starts through Stripe when checkout completes.
+                    Paid access starts when Stripe checkout completes. Pilot
+                    and legacy launch pricing stay protected by assigned
+                    entitlement records.
                   </div>
 
                   <CheckoutAcknowledgement
@@ -340,7 +341,7 @@ export default async function BillingPage() {
             {PILOT_ACCESS.maxSeats} approved users, with
             pricing locked while the subscription remains active. It is not
             transferable and is lost if canceled, lapsed, revoked, or deleted.
-            No free trial is included for pilot access.
+            Trial access is not included for pilot access.
           </p>
           {canSeePilotPricing ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2">

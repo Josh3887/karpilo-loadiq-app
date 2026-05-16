@@ -38,9 +38,10 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300 print:text-black">
             Karpilo LoadIQ
           </p>
-          <h1 className="text-3xl font-black">Reports are a Pro feature.</h1>
+          <h1 className="text-3xl font-black">Reports require active access.</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300 print:text-black">
-            Upgrade to Pro to print/export saved load intelligence reports.
+            Activate Gold, Pilot, Legacy Launch, or Platinum access to
+            print/export saved load intelligence reports.
           </p>
           <Link
             href="/dashboard/billing"
@@ -92,7 +93,8 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
             </p>
             <h1 className="text-4xl font-black">Load Intelligence Report</h1>
             <p className="mt-2 text-sm text-slate-600">
-              {load.pickup_zip} to {load.delivery_zip}
+              Load #{formatLoadId(load)} · Trip #{formatTripNumber(load)} ·{" "}
+              {formatLane(load)}
             </p>
           </div>
         </div>
@@ -260,4 +262,39 @@ function ReportRow({ label, value }: { label: string; value: string }) {
       <span className="font-semibold">{value}</span>
     </div>
   );
+}
+
+function formatLoadId(load: {
+  load_id?: number | null;
+  loadiq_load_number?: string | null;
+}) {
+  if (typeof load.load_id === "number") return String(load.load_id);
+  const legacyNumber = load.loadiq_load_number?.match(/\d+/)?.[0];
+  return legacyNumber ? String(Number(legacyNumber)) : "pending";
+}
+
+function formatTripNumber(load: {
+  trip_number?: string | null;
+  driver_load_number?: string | null;
+  load_id?: number | null;
+  loadiq_load_number?: string | null;
+}) {
+  if (load.trip_number) return load.trip_number;
+  if (load.driver_load_number) return load.driver_load_number;
+  return `AUTO-${formatLoadId(load)}`;
+}
+
+function formatLane(load: {
+  pickup_city?: string | null;
+  pickup_state?: string | null;
+  delivery_city?: string | null;
+  delivery_state?: string | null;
+}) {
+  const pickup = [load.pickup_city, load.pickup_state].filter(Boolean).join(", ");
+  const delivery = [load.delivery_city, load.delivery_state]
+    .filter(Boolean)
+    .join(", ");
+
+  if (pickup && delivery) return `${pickup} -> ${delivery}`;
+  return "Lane pending";
 }

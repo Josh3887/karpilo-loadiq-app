@@ -67,6 +67,9 @@ export type LoadInput = {
   deadheadDays: number;
   loadRunStatus: LoadRunStatus;
 
+  revenueInputMode: "rpm" | "gross";
+  grossRevenue: number;
+  fuelSurchargeIncludedInGross: boolean;
   ratePerMile: number;
   fuelSurcharge: number;
   fuelPrice: number;

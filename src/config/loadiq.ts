@@ -14,7 +14,7 @@ export const LOADIQ_URLS = {
 export const LOADIQ_EMAILS = {
   support: "support@karpiloloadiq.com",
   billing: "billing@karpiloloadiq.com",
-  feedback: "Josh.karpilo@karpiloendeavortechnologies.com",
+  feedback: "j.karpilo@karpiloendeavortechnologies.com",
 } as const;
 
 export const LOADIQ_LAUNCH = {

@@ -190,7 +190,29 @@ export function LoadInputForm({
       profileDerivedValues: profileValues ?? values.profileDerivedValues,
     });
 
-    onCalculate(parsedValues);
+    const derivedLinehaul =
+      parsedValues.revenueInputMode === "gross"
+        ? Math.max(
+            parsedValues.grossRevenue -
+              (parsedValues.fuelSurchargeIncludedInGross
+                ? parsedValues.fuelSurcharge
+                : 0),
+            0
+          )
+        : parsedValues.loadedMiles * parsedValues.ratePerMile;
+    const derivedRatePerMile =
+      parsedValues.loadedMiles > 0
+        ? derivedLinehaul / parsedValues.loadedMiles
+        : parsedValues.ratePerMile;
+
+    onCalculate({
+      ...parsedValues,
+      ratePerMile: derivedRatePerMile,
+      grossRevenue:
+        parsedValues.revenueInputMode === "gross"
+          ? parsedValues.grossRevenue
+          : derivedLinehaul + parsedValues.fuelSurcharge,
+    });
   }
 
   function handleManualFuelOverride() {
@@ -259,6 +281,11 @@ export function LoadInputForm({
   }
 
   const fuelPriceField = register("fuelPrice");
+  const fuelSurchargeIncludedField = register("fuelSurchargeIncludedInGross");
+  const revenueInputMode = watchedValues?.revenueInputMode ?? "rpm";
+  const fuelSurchargeIncludedInGross = Boolean(
+    watchedValues?.fuelSurchargeIncludedInGross
+  );
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-8">
@@ -281,15 +308,21 @@ export function LoadInputForm({
       <input type="hidden" {...register("factoringPercent")} />
       <input type="hidden" {...register("targetTrueRpm")} />
       <input type="hidden" {...register("calculationSource")} />
+      <input type="hidden" {...register("revenueInputMode")} />
 
       <section className="space-y-4">
         <SectionTitle title="Load Identity" />
 
         <InputField
-          label="Load Number"
+          label="Trip Number / Broker Reference"
           error={errors.loadNumber?.message}
           {...register("loadNumber")}
         />
+        <p className="text-xs leading-5 text-slate-500">
+          Karpilo LoadIQ assigns the system Load ID when the load is saved. Use
+          this field only for broker, dispatcher, carrier, or customer trip
+          references. If left blank, the saved load can use an AUTO trip number.
+        </p>
       </section>
 
       <section className="space-y-4">
@@ -481,7 +514,40 @@ export function LoadInputForm({
       <section className="space-y-4">
         <SectionTitle title="Financial Inputs" />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-2">
+          <button
+            type="button"
+            onClick={() => setValue("revenueInputMode", "rpm", { shouldDirty: true })}
+            className={
+              revenueInputMode === "rpm"
+                ? "rounded-lg bg-sky-400 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#060B14]"
+                : "rounded-lg border border-slate-800 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400"
+            }
+          >
+            RPM
+          </button>
+          <button
+            type="button"
+            onClick={() => setValue("revenueInputMode", "gross", { shouldDirty: true })}
+            className={
+              revenueInputMode === "gross"
+                ? "rounded-lg bg-sky-400 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#060B14]"
+                : "rounded-lg border border-slate-800 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-400"
+            }
+          >
+            Gross
+          </button>
+        </div>
+
+        {revenueInputMode === "gross" ? (
+          <InputField
+            label="Gross Revenue"
+            type="number"
+            step="0.01"
+            error={errors.grossRevenue?.message}
+            {...register("grossRevenue")}
+          />
+        ) : (
           <InputField
             label="RPM"
             type="number"
@@ -489,7 +555,9 @@ export function LoadInputForm({
             error={errors.ratePerMile?.message}
             {...register("ratePerMile")}
           />
+        )}
 
+        <div className="grid grid-cols-2 gap-4">
           <InputField
             label="Fuel Surcharge"
             type="number"
@@ -498,6 +566,29 @@ export function LoadInputForm({
             {...register("fuelSurcharge")}
           />
         </div>
+
+        {revenueInputMode === "gross" && (
+          <label className="flex items-start gap-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-sky-100">
+            <input
+              {...fuelSurchargeIncludedField}
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-slate-700 bg-[#060B14]"
+              checked={fuelSurchargeIncludedInGross}
+              onChange={(event) => {
+                void fuelSurchargeIncludedField.onChange(event);
+                setValue("fuelSurchargeIncludedInGross", event.target.checked, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+            <span>
+              Fuel surcharge is already included in gross revenue. Karpilo
+              LoadIQ will subtract the FSC before deriving linehaul RPM so it is
+              not counted twice.
+            </span>
+          </label>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <InputField

@@ -10,6 +10,7 @@ import {
 } from "@/components/settings/settings-shell";
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function SettingsPage() {
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
   const [
     { data: profile },
     { data: truckProfile },
+    { data: operatorProfile },
     overheadCount,
     templateCount,
     operatorStatus,
@@ -39,6 +41,11 @@ export default async function SettingsPage() {
     supabase
       .from("truck_profiles")
       .select("make, model, year, default_mpg")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("operator_profiles")
+      .select("display_name, company_name")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase
@@ -57,8 +64,12 @@ export default async function SettingsPage() {
     [truckProfile?.year, truckProfile?.make, truckProfile?.model]
       .filter(Boolean)
       .join(" ") || "Not set";
-  const operatorLabel =
-    profile?.profile_name || profile?.company_name || user.email || "Operator";
+  const operatorName =
+    profile?.profile_name || operatorProfile?.display_name || user.email || "Operator";
+  const companyName = profile?.company_name || operatorProfile?.company_name;
+  const operatorLabel = companyName
+    ? `${operatorName} / ${companyName}`
+    : operatorName;
 
   return (
     <SettingsPageShell
@@ -72,7 +83,7 @@ export default async function SettingsPage() {
     >
       <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <SettingsMetric
-          label="Operator"
+          label="Name / Company"
           value={operatorLabel}
           detail={profile?.operation_type ?? "Operation profile pending"}
           tone="blue"
@@ -80,7 +91,7 @@ export default async function SettingsPage() {
         <SettingsMetric
           label="Entitlement"
           value={formatStatus(paymentAccess.entitlementStatus)}
-          detail={`${paymentAccess.tier} plan via ${paymentAccess.billingProvider}`}
+          detail={`${formatPlanTierLabel(paymentAccess.tier)} via ${paymentAccess.billingProvider}`}
           tone={paymentAccess.hasActiveAccess ? "green" : "red"}
         />
         <SettingsMetric

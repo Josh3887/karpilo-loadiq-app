@@ -1,7 +1,7 @@
 import { LOADIQ_LAUNCH } from "@/config/loadiq";
 
-export type PublicPlanId = "free" | "pro-monthly" | "pro-annual";
-export type InternalPlanTier = "free" | "pro" | "founder" | "pilot" | "launch500";
+export type PublicPlanId = "pro-monthly" | "pro-annual";
+export type InternalPlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
 export type BillingInterval = "month" | "year";
 
 export const FOUNDER_ACCESS = {
@@ -28,25 +28,9 @@ export const PILOT_ACCESS = {
 
 export const PUBLIC_PRICING_PLANS = [
   {
-    id: "free",
-    tier: "free",
-    name: "Account Only",
-    price: 0,
-    interval: "month",
-    description: "Signed-in account state before a paid LoadIQ subscription is active.",
-    cta: "Subscription required",
-    bullets: [
-      "No calculator access until subscribed",
-      "No saved-load history until subscribed",
-      "Manual fuel entry fallback",
-      "No exports",
-      "No advanced comparisons",
-    ],
-  },
-  {
     id: "pro-monthly",
-    tier: "pro",
-    name: "Pro Monthly",
+    tier: "gold",
+    name: "Gold Monthly",
     price: 24.99,
     interval: "month",
     description: "For operators analyzing freight every week.",
@@ -62,15 +46,15 @@ export const PUBLIC_PRICING_PLANS = [
   },
   {
     id: "pro-annual",
-    tier: "pro",
-    name: "Pro Annual",
+    tier: "gold",
+    name: "Gold Annual",
     price: 189.99,
     interval: "year",
     description: "Best public value for year-round freight decisions.",
     cta: "Annual plan",
     savingsLabel: "Save $109.89 vs monthly",
     bullets: [
-      "Everything in Pro Monthly",
+      "Everything in Gold Monthly",
       "Lower effective monthly cost",
       "Saved load and template workflows",
       "Print/export readiness",
@@ -110,6 +94,5 @@ export const INTERNAL_PILOT_PLANS = [
 ] as const;
 
 export function formatPriceLabel(price: number, interval: BillingInterval) {
-  if (price === 0) return "$0";
   return `$${price.toFixed(2)}/${interval === "month" ? "mo" : "yr"}`;
 }

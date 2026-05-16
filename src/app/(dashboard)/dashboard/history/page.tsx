@@ -8,7 +8,11 @@ import { formatCurrency, formatRpm } from "@/utils/format";
 type SavedLoad = {
   id: string;
   pickup_zip: string;
+  pickup_city: string | null;
+  pickup_state: string | null;
   delivery_zip: string;
+  delivery_city: string | null;
+  delivery_state: string | null;
   gross_revenue: number;
   estimated_net: number;
   true_rpm: number;
@@ -16,6 +20,8 @@ type SavedLoad = {
   profitability_score: number;
   profitability_band: string;
   status: string;
+  load_id?: number | null;
+  trip_number?: string | null;
   loadiq_load_number: string | null;
   driver_load_number: string | null;
   load_outcome: string | null;
@@ -35,9 +41,7 @@ export default async function LoadHistoryPage() {
 
   const { data: loads, error } = await supabase
     .from("saved_loads")
-    .select(
-      "id, pickup_zip, delivery_zip, gross_revenue, estimated_net, actual_net, true_rpm, profitability_score, profitability_band, status, loadiq_load_number, driver_load_number, load_outcome, created_at"
-    )
+    .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -103,6 +107,7 @@ export default async function LoadHistoryPage() {
               <table className="w-full min-w-190 text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-800 text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <th className="py-3">Load</th>
                     <th className="py-3">Lane</th>
                     <th className="py-3">Gross</th>
                     <th className="py-3">Est. Net</th>
@@ -130,13 +135,14 @@ export default async function LoadHistoryPage() {
                     >
                       <td className="py-4 font-semibold text-slate-100">
                         <Link href={`/dashboard/history/${load.id}`} className="text-sky-300 hover:text-sky-200">
-                          {load.loadiq_load_number ?? "LIQ"} · {load.pickup_zip} → {load.delivery_zip}
+                          Load #{formatLoadId(load)}
                         </Link>
-                        {load.driver_load_number && (
-                          <div className="mt-1 text-xs text-slate-500">
-                            Driver load {load.driver_load_number}
-                          </div>
-                        )}
+                        <div className="mt-1 text-xs text-slate-500">
+                          Trip #{formatTripNumber(load)}
+                        </div>
+                      </td>
+                      <td className="py-4 font-semibold text-slate-100">
+                        {formatLane(load)}
                       </td>
                       <td className="py-4">
                         {formatCurrency(Number(load.gross_revenue))}
@@ -211,4 +217,31 @@ function HistoryMetric({ label, value }: { label: string; value: string }) {
       <div className="mt-2 text-xl font-black text-slate-100">{value}</div>
     </div>
   );
+}
+
+function formatLoadId(load: SavedLoad) {
+  if (typeof load.load_id === "number") {
+    return String(load.load_id);
+  }
+
+  const legacyNumber = load.loadiq_load_number?.match(/\d+/)?.[0];
+  return legacyNumber ? String(Number(legacyNumber)) : "pending";
+}
+
+function formatTripNumber(load: SavedLoad) {
+  if (load.trip_number) return load.trip_number;
+  if (load.driver_load_number) return load.driver_load_number;
+  return `AUTO-${formatLoadId(load)}`;
+}
+
+function formatLane(load: SavedLoad) {
+  const pickup = formatCityState(load.pickup_city, load.pickup_state);
+  const delivery = formatCityState(load.delivery_city, load.delivery_state);
+
+  if (pickup && delivery) return `${pickup} -> ${delivery}`;
+  return "Lane pending";
+}
+
+function formatCityState(city?: string | null, state?: string | null) {
+  return [city, state].filter(Boolean).join(", ");
 }

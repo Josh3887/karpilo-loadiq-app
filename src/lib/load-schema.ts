@@ -39,7 +39,10 @@ export const loadInputSchema = z.object({
   deadheadDays: numberField.refine((value) => value >= 0),
   loadRunStatus: z.enum(["ran", "test", "planned"]).default("planned"),
 
-  ratePerMile: numberField.refine((value) => value >= 0.01),
+  revenueInputMode: z.enum(["rpm", "gross"]).default("rpm"),
+  grossRevenue: numberField.refine((value) => value >= 0),
+  fuelSurchargeIncludedInGross: z.boolean().optional().default(false),
+  ratePerMile: numberField.refine((value) => value >= 0),
   fuelSurcharge: numberField.refine((value) => value >= 0),
   fuelPrice: numberField.refine((value) => value >= 0.01),
   fuelPriceSource: z
@@ -129,6 +132,22 @@ export const loadInputSchema = z.object({
       includeAccessorials: z.boolean(),
     })
     .optional(),
+}).superRefine((value, context) => {
+  if (value.revenueInputMode === "rpm" && value.ratePerMile < 0.01) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "RPM must be at least 0.01.",
+      path: ["ratePerMile"],
+    });
+  }
+
+  if (value.revenueInputMode === "gross" && value.grossRevenue < 0.01) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Gross revenue must be entered for gross mode.",
+      path: ["grossRevenue"],
+    });
+  }
 });
 
 export type LoadInputFormValues = z.infer<typeof loadInputSchema>;
@@ -158,6 +177,9 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   deadheadDays: 0,
   loadRunStatus: "planned",
 
+  revenueInputMode: "rpm",
+  grossRevenue: 0,
+  fuelSurchargeIncludedInGross: false,
   ratePerMile: 0,
   fuelSurcharge: 0,
   fuelPrice: 4,

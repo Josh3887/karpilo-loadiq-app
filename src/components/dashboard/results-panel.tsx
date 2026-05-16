@@ -42,7 +42,7 @@ export function ResultsPanel({
 
     if (!canSaveLoad) {
       setSaveStatus(
-        "Free plan saved-load limit reached. Upgrade to Pro for unlimited history."
+        "An active Karpilo LoadIQ subscription is required before saving load history."
       );
       return;
     }

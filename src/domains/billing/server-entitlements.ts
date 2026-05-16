@@ -47,5 +47,5 @@ export async function getServerEntitlements(userId: string) {
   const paymentAccess = resolvePaymentAccess(subscription, usage);
   return paymentAccess.hasActiveAccess
     ? paymentAccess.entitlements
-    : resolveEntitlements("free", usage);
+    : resolveEntitlements("no_access", usage);
 }
