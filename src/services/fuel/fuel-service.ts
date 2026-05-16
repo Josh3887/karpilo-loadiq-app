@@ -152,8 +152,11 @@ export async function getLatestDieselFuelPrice(): Promise<FuelPriceResponse> {
       fuel: null,
       message: `${freshFuel.failureReason} Manual fuel entry remains active.`,
     };
-  } catch {
-    // Fall back to cache or manual entry below.
+  } catch (error) {
+    console.error(
+      "EIA_DIESEL_SERVICE_ERROR:",
+      error instanceof Error ? error.message : "Unknown EIA service failure."
+    );
   }
 
   if (cachedFuel) {
