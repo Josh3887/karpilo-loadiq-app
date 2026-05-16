@@ -1,7 +1,10 @@
+import type { PreviewExplanationKey } from "@/components/preview/preview-mode-provider";
+
 type KpiCardProps = {
   label: string;
   value: string;
   tone?: "blue" | "red" | "green" | "silver";
+  previewExplanation?: PreviewExplanationKey;
 };
 
 const toneMap = {
@@ -15,9 +18,13 @@ export function KpiCard({
   label,
   value,
   tone = "silver",
+  previewExplanation = "analyze-load",
 }: KpiCardProps) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+    <div
+      data-preview-explain={previewExplanation}
+      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+    >
       <div className="mb-2 text-xs uppercase tracking-[0.15em] text-slate-500">
         {label}
       </div>

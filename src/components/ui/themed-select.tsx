@@ -3,6 +3,7 @@
 import { KeyboardEvent, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
+import type { PreviewExplanationKey } from "@/components/preview/preview-mode-provider";
 import { cn } from "@/utils/cn";
 
 export type ThemedSelectOption = {
@@ -17,6 +18,7 @@ type ThemedSelectProps = {
   onChange: (value: string) => void;
   options: ThemedSelectOption[];
   className?: string;
+  previewExplanation?: PreviewExplanationKey;
 };
 
 export function ThemedSelect({
@@ -25,6 +27,7 @@ export function ThemedSelect({
   onChange,
   options,
   className,
+  previewExplanation = "settings-station",
 }: ThemedSelectProps) {
   const listboxId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -92,6 +95,7 @@ export function ThemedSelect({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
+        data-preview-explain={previewExplanation}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleKeyDown}
         className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-slate-800 bg-[#060B14] px-4 text-left text-sm font-semibold text-slate-100 outline-none transition hover:border-sky-400/60 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
@@ -122,6 +126,7 @@ export function ThemedSelect({
                 type="button"
                 role="option"
                 aria-selected={isSelected}
+                data-preview-explain={previewExplanation}
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => selectOption(option)}

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { PreviewActionButton } from "@/components/preview/preview-mode-provider";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 import { formatCurrency, formatRpm } from "@/utils/format";
 
@@ -28,12 +30,68 @@ type SavedLoad = {
   created_at: string;
 };
 
+const previewLoads: SavedLoad[] = [
+  {
+    id: "preview-load-10482",
+    pickup_zip: "",
+    pickup_city: "Dallas",
+    pickup_state: "TX",
+    delivery_zip: "",
+    delivery_city: "Atlanta",
+    delivery_state: "GA",
+    gross_revenue: 2450,
+    estimated_net: 780,
+    true_rpm: 2.38,
+    actual_net: null,
+    profitability_score: 82,
+    profitability_band: "strong",
+    status: "saved",
+    load_id: 10482,
+    trip_number: "R45672",
+    loadiq_load_number: null,
+    driver_load_number: null,
+    load_outcome: "planned",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "preview-load-10483",
+    pickup_zip: "",
+    pickup_city: "Memphis",
+    pickup_state: "TN",
+    delivery_zip: "",
+    delivery_city: "Charlotte",
+    delivery_state: "NC",
+    gross_revenue: 1850,
+    estimated_net: 415,
+    true_rpm: 2.08,
+    actual_net: null,
+    profitability_score: 68,
+    profitability_band: "watch",
+    status: "saved",
+    load_id: 10483,
+    trip_number: null,
+    loadiq_load_number: null,
+    driver_load_number: null,
+    load_outcome: "planned",
+    created_at: new Date(Date.now() - 86_400_000).toISOString(),
+  },
+];
+
 export default async function LoadHistoryPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (!user && previewMode) {
+    return <LoadHistoryContent loads={previewLoads} previewMode />;
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -45,11 +103,19 @@ export default async function LoadHistoryPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
-  const typedLoads = (loads ?? []) as SavedLoad[];
+  return <LoadHistoryContent loads={(loads ?? []) as SavedLoad[]} />;
+}
+
+function LoadHistoryContent({
+  loads,
+  previewMode = false,
+}: {
+  loads: SavedLoad[];
+  previewMode?: boolean;
+}) {
+  const typedLoads = loads;
   const completedOrSavedLoads = typedLoads.filter((load) =>
     ["saved", "accepted", "completed"].includes(load.status ?? "saved")
   );
@@ -98,7 +164,7 @@ export default async function LoadHistoryPage() {
             />
           </div>
 
-          {!loads || loads.length === 0 ? (
+          {loads.length === 0 ? (
             <div className="py-20 text-center text-slate-500">
               No saved loads yet.
             </div>
@@ -131,12 +197,25 @@ export default async function LoadHistoryPage() {
                     return (
                     <tr
                       key={load.id}
+                      data-preview-explain="load-history"
                       className="border-b border-slate-800/80 text-slate-300 transition hover:bg-sky-400/5"
                     >
                       <td className="py-4 font-semibold text-slate-100">
-                        <Link href={`/dashboard/history/${load.id}`} className="text-sky-300 hover:text-sky-200">
-                          Load #{formatLoadId(load)}
-                        </Link>
+                        {previewMode ? (
+                          <PreviewActionButton
+                            explanation="load-id"
+                            className="text-left text-sky-300 hover:text-sky-200"
+                          >
+                            Load #{formatLoadId(load)}
+                          </PreviewActionButton>
+                        ) : (
+                          <Link
+                            href={`/dashboard/history/${load.id}`}
+                            className="text-sky-300 hover:text-sky-200"
+                          >
+                            Load #{formatLoadId(load)}
+                          </Link>
+                        )}
                         <div className="mt-1 text-xs text-slate-500">
                           Trip #{formatTripNumber(load)}
                         </div>
@@ -185,12 +264,21 @@ export default async function LoadHistoryPage() {
                         )}
                       </td>
                       <td className="py-4">
-                        <Link
-                          href={`/dashboard/history/${load.id}/report`}
-                          className="text-sky-300 hover:text-sky-200"
-                        >
-                          Print
-                        </Link>
+                        {previewMode ? (
+                          <PreviewActionButton
+                            explanation="history-report"
+                            className="text-left text-sky-300 hover:text-sky-200"
+                          >
+                            Print
+                          </PreviewActionButton>
+                        ) : (
+                          <Link
+                            href={`/dashboard/history/${load.id}/report`}
+                            className="text-sky-300 hover:text-sky-200"
+                          >
+                            Print
+                          </Link>
+                        )}
                       </td>
                       <td className="py-4 text-slate-500">
                         {new Date(load.created_at).toLocaleDateString()}
@@ -210,7 +298,10 @@ export default async function LoadHistoryPage() {
 
 function HistoryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+    <div
+      data-preview-explain="load-history"
+      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+    >
       <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>

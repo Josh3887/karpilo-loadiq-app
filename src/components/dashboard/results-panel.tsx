@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { LoadInput, LoadResult } from "@/types/load";
@@ -23,6 +24,7 @@ type ResultsPanelProps = {
   canSaveLoad?: boolean;
   canCompareScenarios?: boolean;
   onLoadSaved?: () => void;
+  previewMode?: boolean;
 };
 
 export function ResultsPanel({
@@ -31,13 +33,20 @@ export function ResultsPanel({
   canSaveLoad = false,
   canCompareScenarios = false,
   onLoadSaved,
+  previewMode = false,
 }: ResultsPanelProps) {
+  const preview = usePreviewMode();
   const [saveStatus, setSaveStatus] = useState("");
   const [loadRunStatus, setLoadRunStatus] = useState<
     "ran" | "test" | "planned" | ""
   >("");
 
   async function handleSaveLoad() {
+    if (previewMode || preview.enabled) {
+      preview.explain("save-load");
+      return;
+    }
+
     if (!result || !input) return;
 
     if (!canSaveLoad) {
@@ -73,7 +82,7 @@ export function ResultsPanel({
 
   if (!result) {
     return (
-      <DashboardCard title="Load Intelligence">
+      <DashboardCard title="Load Intelligence" previewExplanation="analyze-load">
         <div className="flex min-h-100 items-center justify-center text-center text-slate-500">
           Run a profitability analysis to generate operational intelligence.
         </div>
@@ -82,7 +91,7 @@ export function ResultsPanel({
   }
 
   return (
-    <DashboardCard title="Operational Intelligence">
+    <DashboardCard title="Operational Intelligence" previewExplanation="save-load">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -99,6 +108,7 @@ export function ResultsPanel({
             <ThemedSelect
               label="Did you actually run this load?"
               value={loadRunStatus}
+              previewExplanation="save-load"
               onChange={(value) =>
                 setLoadRunStatus(value as "ran" | "test" | "planned")
               }

@@ -9,6 +9,7 @@ import {
   INTERNAL_FOUNDER_PLANS,
   INTERNAL_PILOT_PLANS,
   PILOT_ACCESS,
+  PLATINUM_ACCESS,
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
@@ -23,15 +24,43 @@ import {
 } from "@/domains/billing/plan-limits";
 import { normalizePlanTier } from "@/domains/billing/entitlement-service";
 import { StripeCheckoutPlanId } from "@/config/stripe";
+import {
+  getPreviewPaymentAccess,
+  PREVIEW_OPERATOR_STATUS,
+} from "@/lib/preview-data";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 import { getUserReservationAndLockState } from "@/services/reservations";
 
 export default async function BillingPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (!user && previewMode) {
+    return (
+      <BillingContent
+        activeTier={getPreviewPaymentAccess().tier}
+        hasStripeCustomer={false}
+        operatorStatus={PREVIEW_OPERATOR_STATUS}
+        reservationState={{ reservations: [], locks: [] }}
+        founderAccess={null}
+        founderSeatsClaimed={0}
+        canSeeFounderPricing={false}
+        canClaimFounder={false}
+        canSeePilotPricing={false}
+        calculationCount={0}
+        savedLoadCount={0}
+      />
+    );
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -94,6 +123,50 @@ export default async function BillingPage() {
     operatorStatus.pilotUser || operatorStatus.foundingOperator;
 
   return (
+    <BillingContent
+      activeTier={activeTier}
+      hasStripeCustomer={Boolean(subscription?.provider_customer_id)}
+      operatorStatus={operatorStatus}
+      reservationState={reservationState}
+      founderAccess={founderAccess}
+      founderSeatsClaimed={founderSeatsClaimed}
+      canSeeFounderPricing={canSeeFounderPricing}
+      canClaimFounder={canClaimFounder}
+      canSeePilotPricing={canSeePilotPricing}
+      calculationCount={calculationCount.count ?? 0}
+      savedLoadCount={savedLoadCount.count ?? 0}
+    />
+  );
+}
+
+function BillingContent({
+  activeTier,
+  hasStripeCustomer,
+  operatorStatus,
+  reservationState,
+  founderAccess,
+  founderSeatsClaimed,
+  canSeeFounderPricing,
+  canClaimFounder,
+  canSeePilotPricing,
+  calculationCount,
+  savedLoadCount,
+}: {
+  activeTier: keyof typeof PLAN_LIMITS;
+  hasStripeCustomer: boolean;
+  operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
+  reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
+  founderAccess: { id: string; code: string; is_active: boolean; redeemed_at: string | null } | null;
+  founderSeatsClaimed: number;
+  canSeeFounderPricing: boolean;
+  canClaimFounder: boolean;
+  canSeePilotPricing: boolean;
+  calculationCount: number;
+  savedLoadCount: number;
+}) {
+  void founderAccess;
+
+  return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-start justify-between gap-4">
@@ -122,21 +195,18 @@ export default async function BillingPage() {
 
         <section className="mb-6 grid gap-4 md:grid-cols-3">
           <Metric label="Current Plan" value={formatPlanTierLabel(activeTier)} />
-          <Metric
-            label="Calculations"
-            value={String(calculationCount.count ?? 0)}
-          />
-          <Metric label="Saved Loads" value={String(savedLoadCount.count ?? 0)} />
+          <Metric label="Calculations" value={String(calculationCount)} />
+          <Metric label="Saved Loads" value={String(savedLoadCount)} />
         </section>
 
-        {subscription?.provider_customer_id && (
+        {hasStripeCustomer && (
           <section className="mb-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
+            <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
                   Stripe Billing
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
+                <p className="mt-2 break-words text-sm leading-6 text-slate-300">
                   Manage payment methods, invoices, renewals, and cancellation
                   through Stripe customer portal.
                 </p>
@@ -156,15 +226,15 @@ export default async function BillingPage() {
               {reservationState.reservations.map((reservation) => (
                 <div
                   key={reservation.id}
-                  className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
+                  className="min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
                 >
-                  <div className="font-black text-slate-100">
+                  <div className="break-words font-black text-slate-100">
                     {reservation.cohort} reservation
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 break-words [overflow-wrap:anywhere]">
                     Code {reservation.code} · {reservation.status}
                   </div>
-                  <div className="mt-1 text-slate-500">
+                  <div className="mt-1 break-words text-slate-500">
                     ${reservation.monthly_price}/mo · $
                     {reservation.annual_price}/yr
                   </div>
@@ -173,15 +243,15 @@ export default async function BillingPage() {
               {reservationState.locks.map((lock) => (
                 <div
                   key={lock.id}
-                  className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
+                  className="min-w-0 overflow-hidden rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
                 >
-                  <div className="font-black text-slate-100">
+                  <div className="break-words font-black text-slate-100">
                     {lock.cohort} pricing lock
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 break-words [overflow-wrap:anywhere]">
                     {lock.lock_status} via {lock.billing_provider}
                   </div>
-                  <div className="mt-1 text-sky-200/75">
+                  <div className="mt-1 break-words text-sky-200/75">
                     ${lock.monthly_price}/mo · ${lock.annual_price}/yr
                   </div>
                 </div>
@@ -201,6 +271,7 @@ export default async function BillingPage() {
             return (
             <div
               key={publicPlan.id}
+              data-preview-explain="subscription-tile"
               className={
                 isFeatured
                   ? "rounded-2xl border border-sky-400/35 bg-[#0B1220]/95 p-5 shadow-[0_0_35px_rgba(56,189,248,0.14)]"
@@ -278,7 +349,62 @@ export default async function BillingPage() {
           })}
         </section>
 
-        <section className="mt-6 rounded-2xl border border-red-400/20 bg-red-500/10 p-5">
+        <section
+          data-preview-explain="ifta-estimate"
+          className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="break-words text-xs font-bold uppercase leading-5 tracking-[0.22em] text-sky-300">
+                Planned Tier
+              </p>
+              <h2 className="mt-2 break-words text-2xl font-black text-slate-100">
+                {PLATINUM_ACCESS.name}
+              </h2>
+              <p className="mt-2 max-w-3xl break-words text-sm leading-6 text-slate-300">
+                Platinum Annual is a coming-soon premium intelligence layer for
+                maintenance visibility, out-of-route awareness, repair trends,
+                receipt intelligence, and operational anomaly context. It is not
+                wired to checkout yet, and Gold remains the active standard
+                operational tier.
+              </p>
+            </div>
+            <div className="min-w-0 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
+              <div className="break-words text-2xl font-black">
+                {PLATINUM_ACCESS.pricingModel}
+              </div>
+              <div className="mt-1 break-words text-sky-200/75 [overflow-wrap:anywhere]">
+                {PLATINUM_ACCESS.baseReferenceLabel}
+              </div>
+              <div className="mt-3 inline-flex max-w-full rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-black uppercase leading-5 tracking-[0.16em] text-red-100">
+                Coming Soon
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {PLATINUM_ACCESS.features.map((feature) => (
+              <div
+                key={feature}
+                className="min-w-0 break-words rounded-xl border border-slate-800 bg-[#060B14] px-4 py-3 text-sm text-slate-300"
+              >
+                {feature}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-xl border border-red-400/20 bg-red-500/10 p-4 text-sm leading-6 text-red-100">
+            Platinum intelligence is planning support only. It does not
+            guarantee savings, repairs, dispatch outcomes, legal compliance, tax
+            treatment, or mechanical performance. IFTA support remains
+            estimation assistance, not filing or jurisdictional certification.
+          </div>
+        </section>
+
+        <section
+          data-preview-explain="subscription-tile"
+          className="mt-6 rounded-2xl border border-red-400/20 bg-red-500/10 p-5"
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-200">
@@ -328,7 +454,10 @@ export default async function BillingPage() {
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
+        <section
+          data-preview-explain="subscription-tile"
+          className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5"
+        >
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
             Pilot program
           </p>
@@ -415,11 +544,14 @@ export default async function BillingPage() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+    <div
+      data-preview-explain="subscription-tile"
+      className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5"
+    >
+      <div className="break-words text-xs uppercase leading-5 tracking-[0.18em] text-slate-500">
         {label}
       </div>
-      <div className="mt-3 text-2xl font-black capitalize text-slate-100">
+      <div className="mt-3 break-words text-2xl font-black text-slate-100 [overflow-wrap:anywhere]">
         {value}
       </div>
     </div>
@@ -428,9 +560,11 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function PlanLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-      <span className="text-slate-400">{label}</span>
-      <span className="font-semibold capitalize text-slate-100">{value}</span>
+    <div className="flex min-w-0 items-center justify-between gap-3 border-b border-slate-800 pb-2">
+      <span className="min-w-0 break-words text-slate-400">{label}</span>
+      <span className="min-w-0 break-words text-right font-semibold text-slate-100 [overflow-wrap:anywhere]">
+        {value}
+      </span>
     </div>
   );
 }

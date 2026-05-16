@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LaneTemplateDeleteButton } from "@/components/dashboard/lane-template-delete-button";
+import { PreviewActionButton } from "@/components/preview/preview-mode-provider";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 
 type LaneTemplate = {
@@ -12,12 +14,31 @@ type LaneTemplate = {
   created_at: string;
 };
 
+const previewTemplates: LaneTemplate[] = [
+  {
+    id: "preview-dallas-atlanta",
+    name: "Dallas to Atlanta dry van",
+    pickup_zip: "Dallas, TX",
+    delivery_zip: "Atlanta, GA",
+    created_at: new Date().toISOString(),
+  },
+];
+
 export default async function LaneTemplatesPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (!user && previewMode) {
+    return <LaneTemplatesContent templates={previewTemplates} previewMode />;
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -33,6 +54,16 @@ export default async function LaneTemplatesPage() {
     throw new Error(error.message);
   }
 
+  return <LaneTemplatesContent templates={(templates ?? []) as LaneTemplate[]} />;
+}
+
+function LaneTemplatesContent({
+  templates,
+  previewMode = false,
+}: {
+  templates: LaneTemplate[];
+  previewMode?: boolean;
+}) {
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
       <div className="mx-auto max-w-6xl">
@@ -60,15 +91,16 @@ export default async function LaneTemplatesPage() {
         </header>
 
         <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          {!templates || templates.length === 0 ? (
+          {templates.length === 0 ? (
             <div className="py-20 text-center text-slate-500">
               No lane templates yet. Save one from a load detail page.
             </div>
           ) : (
             <div className="space-y-3">
-              {(templates as LaneTemplate[]).map((template) => (
+              {templates.map((template) => (
                 <div
                   key={template.id}
+                  data-preview-explain="lane-template-load"
                   className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-[#060B14] p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
@@ -82,12 +114,21 @@ export default async function LaneTemplatesPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Link
-                      href={`/dashboard?template=${template.id}`}
-                      className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
-                    >
-                      Load
-                    </Link>
+                    {previewMode ? (
+                      <PreviewActionButton
+                        explanation="lane-template-load"
+                        className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
+                      >
+                        Load
+                      </PreviewActionButton>
+                    ) : (
+                      <Link
+                        href={`/dashboard?template=${template.id}`}
+                        className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
+                      >
+                        Load
+                      </Link>
+                    )}
 
                     <LaneTemplateDeleteButton templateId={template.id} />
                   </div>

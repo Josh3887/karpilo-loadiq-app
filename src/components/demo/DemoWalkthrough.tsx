@@ -64,7 +64,7 @@ type DemoState = {
 
 const storageKey = "loadiq-demo-walkthrough-state";
 const recordingStepDurationMs = 7600;
-const demoEmail = "josh.karpilo@karpilotrucking.com";
+const demoEmail = "operator@example.com";
 
 const initialState: DemoState = {
   safetyAccepted: false,
