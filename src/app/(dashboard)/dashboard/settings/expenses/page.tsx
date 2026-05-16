@@ -6,13 +6,29 @@ import {
   SettingsPageShell,
   SettingsPanel,
 } from "@/components/settings/settings-shell";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function ExpenseSettingsPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (previewMode && !user) {
+    return (
+      <ExpenseSettingsContent
+        overheadCount={2}
+        templateCount={1}
+        settingsCount={1}
+      />
+    );
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -34,6 +50,24 @@ export default async function ExpenseSettingsPage() {
   ]);
 
   return (
+    <ExpenseSettingsContent
+      overheadCount={overheadCount.count ?? 0}
+      templateCount={templateCount.count ?? 0}
+      settingsCount={settingsCount.count ?? 0}
+    />
+  );
+}
+
+function ExpenseSettingsContent({
+  overheadCount,
+  templateCount,
+  settingsCount,
+}: {
+  overheadCount: number;
+  templateCount: number;
+  settingsCount: number;
+}) {
+  return (
     <SettingsPageShell
       title="Expense Intelligence"
       description="Operational cost defaults, recurring overhead, category assumptions, deductions, and export-ready expense context."
@@ -41,20 +75,20 @@ export default async function ExpenseSettingsPage() {
       <section className="mb-6 grid gap-4 md:grid-cols-3">
         <SettingsMetric
           label="Overhead Items"
-          value={String(overheadCount.count ?? 0)}
+          value={String(overheadCount)}
           detail="Recurring cost records"
           tone="red"
         />
         <SettingsMetric
           label="Pay Templates"
-          value={String(templateCount.count ?? 0)}
+          value={String(templateCount)}
           detail="Existing compensation assumptions"
         />
         <SettingsMetric
           label="Defaults Profile"
-          value={(settingsCount.count ?? 0) > 0 ? "Active" : "Pending"}
+          value={settingsCount > 0 ? "Active" : "Pending"}
           detail="Stored in existing user_settings"
-          tone={(settingsCount.count ?? 0) > 0 ? "green" : "default"}
+          tone={settingsCount > 0 ? "green" : "default"}
         />
       </section>
 

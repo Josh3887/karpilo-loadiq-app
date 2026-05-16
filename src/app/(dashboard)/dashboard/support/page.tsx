@@ -6,6 +6,7 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { SupportTicketForm } from "@/components/support/support-ticket-form";
 import { CONTACT_EMAILS } from "@/config/contact";
 import { LOADIQ_URLS } from "@/config/loadiq";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 
 const faqs = [
@@ -28,36 +29,37 @@ const faqs = [
 ] as const;
 
 export default async function SupportPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user && !previewMode) {
     redirect("/auth/login");
   }
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
+        <header className="mb-8 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="mb-2 break-words text-xs font-bold uppercase leading-5 tracking-[0.3em] text-sky-400">
               Karpilo LoadIQ
             </p>
 
-            <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+            <h1 className="break-words text-3xl font-black tracking-tight md:text-5xl">
               Support
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
+            <p className="mt-3 max-w-2xl break-words text-sm leading-6 text-slate-400 md:text-base">
               Practical help for freight profitability assumptions, saved loads,
               and operational modeling.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
             <DashboardNav />
             <BackToDashboardLink />
           </div>
@@ -98,8 +100,11 @@ export default async function SupportPage() {
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-300">
             For privacy, data retention, restore purchase, subscription, or
-            account deletion requests, use the legal hub or email
-            {CONTACT_EMAILS.support}.
+            account deletion requests, use the legal hub or email{" "}
+            <span className="break-words font-semibold text-sky-200 [overflow-wrap:anywhere]">
+              {CONTACT_EMAILS.support}
+            </span>
+            .
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -149,12 +154,16 @@ function ContactCard({
   body: string;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
-      <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
+    <article className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
+      <p className="break-words text-xs font-black uppercase leading-5 tracking-[0.2em] text-sky-300">
         {title}
       </p>
-      <p className="mt-2 text-lg font-black text-slate-100">{email}</p>
-      <p className="mt-3 text-sm leading-6 text-slate-400">{body}</p>
+      <p className="mt-2 break-words text-lg font-black text-slate-100 [overflow-wrap:anywhere]">
+        {email}
+      </p>
+      <p className="mt-3 break-words text-sm leading-6 text-slate-400">
+        {body}
+      </p>
     </article>
   );
 }

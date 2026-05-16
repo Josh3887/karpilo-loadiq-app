@@ -11,14 +11,30 @@ import {
 import { BILLING_EMAIL } from "@/config/billing";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
+import { getPreviewPaymentAccess } from "@/lib/preview-data";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 import { getUserReservationAndLockState } from "@/services/reservations";
 
 export default async function BillingSettingsPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (previewMode && !user) {
+    return (
+      <BillingSettingsContent
+        paymentAccess={getPreviewPaymentAccess()}
+        reservationState={{ reservations: [], locks: [] }}
+      />
+    );
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -29,6 +45,21 @@ export default async function BillingSettingsPage() {
     getUserReservationAndLockState(user.id),
   ]);
 
+  return (
+    <BillingSettingsContent
+      paymentAccess={paymentAccess}
+      reservationState={reservationState}
+    />
+  );
+}
+
+function BillingSettingsContent({
+  paymentAccess,
+  reservationState,
+}: {
+  paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
+  reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
+}) {
   const lifecycleDate =
     paymentAccess.canceledAt ??
     paymentAccess.currentPeriodEnd ??
@@ -90,15 +121,15 @@ export default async function BillingSettingsPage() {
             {reservationState.reservations.map((reservation) => (
               <div
                 key={reservation.id}
-                className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
+                className="min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
               >
-                <div className="font-black text-slate-100">
+                <div className="break-words font-black text-slate-100">
                   {reservation.cohort} reservation
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 break-words [overflow-wrap:anywhere]">
                   Code {reservation.code} · {reservation.status}
                 </div>
-                <div className="mt-1 text-slate-500">
+                <div className="mt-1 break-words text-slate-500">
                   ${reservation.monthly_price}/mo · $
                   {reservation.annual_price}/yr
                 </div>
@@ -107,15 +138,15 @@ export default async function BillingSettingsPage() {
             {reservationState.locks.map((lock) => (
               <div
                 key={lock.id}
-                className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
+                className="min-w-0 overflow-hidden rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
               >
-                <div className="font-black text-slate-100">
+                <div className="break-words font-black text-slate-100">
                   {lock.cohort} pricing lock
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 break-words [overflow-wrap:anywhere]">
                   {lock.lock_status} via {lock.billing_provider}
                 </div>
-                <div className="mt-1 text-sky-200/75">
+                <div className="mt-1 break-words text-sky-200/75">
                   ${lock.monthly_price}/mo · ${lock.annual_price}/yr
                 </div>
               </div>

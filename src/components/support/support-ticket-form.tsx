@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CONTACT_EMAILS } from "@/config/contact";
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { createFeedback } from "@/services/feedback";
 import {
@@ -31,6 +32,7 @@ export function SupportTicketForm({
   description = `Use support for account, billing, privacy, deletion, and app issues. Recommendations are routed separately for product review. Email fallback: ${CONTACT_EMAILS.support}.`,
   initialCategory = "support",
 }: SupportTicketFormProps) {
+  const preview = usePreviewMode();
   const [ticket, setTicket] = useState<SupportTicketPayload>({
     category: initialCategory,
     subject: "",
@@ -39,6 +41,11 @@ export function SupportTicketForm({
   const [status, setStatus] = useState("");
 
   async function handleSubmit() {
+    if (preview.enabled) {
+      preview.explain("support-ticket");
+      return;
+    }
+
     try {
       const isRecommendation = ticket.category === "feature";
       setStatus(
@@ -63,14 +70,19 @@ export function SupportTicketForm({
           : `Support request received. We will reply through ${CONTACT_EMAILS.support}.`
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to send support request.");
+      setStatus(
+        error instanceof Error ? error.message : "Unable to send support request."
+      );
     }
   }
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
-      <h2 className="text-lg font-bold text-slate-100">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-400">
+    <section
+      data-preview-explain="support-ticket"
+      className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
+    >
+      <h2 className="break-words text-lg font-bold text-slate-100">{title}</h2>
+      <p className="mt-2 break-words text-sm leading-6 text-slate-400 [overflow-wrap:anywhere]">
         {description}
       </p>
 
@@ -78,6 +90,7 @@ export function SupportTicketForm({
         <ThemedSelect
           label="Request Type"
           value={ticket.category}
+          previewExplanation="support-ticket"
           onChange={(value) =>
             setTicket((prev) => ({
               ...prev,
@@ -98,6 +111,7 @@ export function SupportTicketForm({
             Message
           </span>
           <textarea
+            data-preview-explain="support-ticket"
             value={ticket.message}
             onChange={(event) =>
               setTicket((prev) => ({ ...prev, message: event.target.value }))
@@ -109,14 +123,19 @@ export function SupportTicketForm({
 
       <button
         type="button"
+        data-preview-explain="support-ticket"
         onClick={handleSubmit}
         disabled={!ticket.subject || !ticket.message}
-        className="mt-5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase leading-5 tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {ticket.category === "feature" ? "Send Recommendation" : "Send Request"}
       </button>
 
-      {status && <p className="mt-4 text-sm text-slate-400">{status}</p>}
+      {status && (
+        <p className="mt-4 break-words text-sm text-slate-400 [overflow-wrap:anywhere]">
+          {status}
+        </p>
+      )}
     </section>
   );
 }
@@ -136,6 +155,7 @@ function Field({
         {label}
       </span>
       <input
+        data-preview-explain="support-ticket"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"

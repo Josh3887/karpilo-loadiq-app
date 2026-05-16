@@ -11,14 +11,39 @@ import {
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
+import {
+  getPreviewPaymentAccess,
+  PREVIEW_OPERATOR_STATUS,
+} from "@/lib/preview-data";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function SettingsPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (previewMode && !user) {
+    return (
+      <SettingsContent
+        paymentAccess={getPreviewPaymentAccess()}
+        operatorLabel="Preview Operator / Karpilo LoadIQ"
+        operationType="Preview only"
+        vehicleLabel="Preview truck"
+        vehicleMpg="6.5 MPG default"
+        overheadCount={2}
+        templateCount={1}
+        operatorStatus={PREVIEW_OPERATOR_STATUS}
+      />
+    );
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -72,6 +97,43 @@ export default async function SettingsPage() {
     : operatorName;
 
   return (
+    <SettingsContent
+      paymentAccess={paymentAccess}
+      operatorLabel={operatorLabel}
+      operationType={profile?.operation_type ?? "Operation profile pending"}
+      vehicleLabel={vehicleLabel}
+      vehicleMpg={
+        truckProfile?.default_mpg
+          ? `${truckProfile.default_mpg} MPG default`
+          : "MPG default pending"
+      }
+      overheadCount={overheadCount.count ?? 0}
+      templateCount={templateCount.count ?? 0}
+      operatorStatus={operatorStatus}
+    />
+  );
+}
+
+function SettingsContent({
+  paymentAccess,
+  operatorLabel,
+  operationType,
+  vehicleLabel,
+  vehicleMpg,
+  overheadCount,
+  templateCount,
+  operatorStatus,
+}: {
+  paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
+  operatorLabel: string;
+  operationType: string;
+  vehicleLabel: string;
+  vehicleMpg: string;
+  overheadCount: number;
+  templateCount: number;
+  operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
+}) {
+  return (
     <SettingsPageShell
       title="Karpilo LoadIQ Command Settings"
       description="A dispatch-grade settings hub for account access, billing status, expense intelligence, and vehicle assumptions."
@@ -85,7 +147,7 @@ export default async function SettingsPage() {
         <SettingsMetric
           label="Name / Company"
           value={operatorLabel}
-          detail={profile?.operation_type ?? "Operation profile pending"}
+          detail={operationType}
           tone="blue"
         />
         <SettingsMetric
@@ -96,17 +158,13 @@ export default async function SettingsPage() {
         />
         <SettingsMetric
           label="Expense Controls"
-          value={String(overheadCount.count ?? 0)}
-          detail={`${templateCount.count ?? 0} pay templates`}
+          value={String(overheadCount)}
+          detail={`${templateCount} pay templates`}
         />
         <SettingsMetric
           label="Vehicle"
           value={vehicleLabel}
-          detail={
-            truckProfile?.default_mpg
-              ? `${truckProfile.default_mpg} MPG default`
-              : "MPG default pending"
-          }
+          detail={vehicleMpg}
         />
       </section>
 
