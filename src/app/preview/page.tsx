@@ -1,5 +1,5 @@
-import { AppPreview } from "@/components/preview/app-preview";
+import { redirect } from "next/navigation";
 
 export default function PreviewPage() {
-  return <AppPreview />;
+  redirect("/api/preview");
 }
