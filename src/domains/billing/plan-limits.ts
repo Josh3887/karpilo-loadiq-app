@@ -1,4 +1,9 @@
-import { FOUNDER_ACCESS } from "@/config/pricing";
+import {
+  FOUNDER_ACCESS,
+  GOLD_ACCESS,
+  PILOT_ACCESS,
+  PLATINUM_ACCESS,
+} from "@/config/pricing";
 
 export type PlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
 
@@ -28,8 +33,8 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   },
   gold: {
     tier: "gold",
-    monthlyPrice: 24.99,
-    annualPrice: 189.99,
+    monthlyPrice: GOLD_ACCESS.monthlyPrice,
+    annualPrice: GOLD_ACCESS.annualPrice,
     monthlyCalculations: "unlimited",
     savedLoads: "unlimited",
     exports: true,
@@ -39,8 +44,8 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   },
   platinum: {
     tier: "platinum",
-    monthlyPrice: 34.99,
-    annualPrice: 0,
+    monthlyPrice: PLATINUM_ACCESS.monthlyPrice,
+    annualPrice: PLATINUM_ACCESS.annualPrice,
     monthlyCalculations: "unlimited",
     savedLoads: "unlimited",
     exports: true,
@@ -61,8 +66,8 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   },
   pilot: {
     tier: "pilot",
-    monthlyPrice: 14.99,
-    annualPrice: 129.99,
+    monthlyPrice: PILOT_ACCESS.monthlyPrice,
+    annualPrice: PILOT_ACCESS.annualPrice,
     monthlyCalculations: "unlimited",
     savedLoads: "unlimited",
     exports: true,

@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
+
 export function CustomerPortalButton() {
+  const preview = usePreviewMode();
   const [status, setStatus] = useState("");
 
   async function openPortal() {
+    if (preview.enabled) {
+      preview.explain("stripe-portal");
+      return;
+    }
+
     setStatus("Opening Stripe customer portal...");
 
     const response = await fetch("/api/billing/portal", {

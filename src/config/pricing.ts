@@ -4,6 +4,38 @@ export type PublicPlanId = "pro-monthly" | "pro-annual";
 export type InternalPlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
 export type BillingInterval = "month" | "year";
 
+export const GOLD_ACCESS = {
+  name: "Gold",
+  monthlyPrice: 24.99,
+  annualPrice: 189.99,
+  annualSavings: 109.89,
+} as const;
+
+export const PLATINUM_ACCESS = {
+  name: "Platinum Annual (Planned)",
+  status: "coming_soon",
+  pricingModel: "You Decide",
+  monthlyPrice: 34.99,
+  annualPrice: 0,
+  annualSavings: 0,
+  baseReferencePrice: 34.99,
+  baseReferenceLabel: "$34.99 minimum annual commitment reference",
+  checkoutEnabled: false,
+  discountNote:
+    "Platinum Annual is planned as a future user-selectable premium intelligence layer and is not available for checkout yet.",
+  features: [
+    "Gold access included",
+    "Maintenance forecasting support",
+    "Out-of-route event awareness",
+    "Mileage mitigation intelligence",
+    "Repair trend monitoring",
+    "Breakdown pattern visibility",
+    "Receipt intelligence",
+    "Fuel and deviation analytics",
+    "Future predictive operations signals",
+  ],
+} as const;
+
 export const FOUNDER_ACCESS = {
   name: "Legacy Launch Operator Access",
   maxSeats: LOADIQ_LAUNCH.launchPromotion.slotLimit,
@@ -31,7 +63,7 @@ export const PUBLIC_PRICING_PLANS = [
     id: "pro-monthly",
     tier: "gold",
     name: "Gold Monthly",
-    price: 24.99,
+    price: GOLD_ACCESS.monthlyPrice,
     interval: "month",
     description: "For operators analyzing freight every week.",
     cta: "Upgrade when checkout is wired",
@@ -48,11 +80,11 @@ export const PUBLIC_PRICING_PLANS = [
     id: "pro-annual",
     tier: "gold",
     name: "Gold Annual",
-    price: 189.99,
+    price: GOLD_ACCESS.annualPrice,
     interval: "year",
     description: "Best public value for year-round freight decisions.",
     cta: "Annual plan",
-    savingsLabel: "Save $109.89 vs monthly",
+    savingsLabel: `Save $${GOLD_ACCESS.annualSavings.toFixed(2)} vs monthly`,
     bullets: [
       "Everything in Gold Monthly",
       "Lower effective monthly cost",

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { CHECKOUT_ACKNOWLEDGEMENT_TEXT } from "@/content/legal/billing-disclosures";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 
@@ -15,10 +16,16 @@ export function CheckoutAcknowledgement({
   label = "Checkout pending",
   planId,
 }: CheckoutAcknowledgementProps) {
+  const preview = usePreviewMode();
   const [accepted, setAccepted] = useState(false);
   const [status, setStatus] = useState("");
 
   async function startCheckout() {
+    if (preview.enabled) {
+      preview.explain("stripe-checkout");
+      return;
+    }
+
     if (!accepted || !planId) return;
 
     setStatus("Opening Stripe checkout...");
