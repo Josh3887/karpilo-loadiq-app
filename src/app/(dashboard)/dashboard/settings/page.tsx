@@ -170,7 +170,7 @@ function SettingsContent({
 
       <SettingsPanel
         title="Command Stations"
-        description="APP owns protected settings. Each station uses the current Supabase auth session and existing LoadIQ profile, billing, and operating tables."
+        description="APP owns protected settings. Each station uses the current Supabase auth session and existing Karpilo LoadIQ profile, billing, and operating tables."
       >
         <div className="grid gap-5 md:grid-cols-2">
           {LOADIQ_SETTINGS_LINKS.slice(1).map((item) => (

@@ -11,14 +11,14 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     title: "Privacy Policy Overview",
     paragraphs: [
       "This Privacy Policy explains how Karpilo Endeavor Technologies LLC collects, uses, stores, shares, protects, and deletes information for Karpilo LoadIQ.",
-      "LoadIQ is an operational profitability and trucking intelligence tool. The app may process account information, subscription status, saved load calculations, operational assumptions, support requests, analytics events, and future cloud synchronization data.",
+      "Karpilo LoadIQ is an operational profitability and trucking intelligence tool. The app may process account information, subscription status, saved load calculations, operational assumptions, support requests, analytics events, and future cloud synchronization data.",
     ],
   },
   {
     id: "data-collected",
-    title: "Information LoadIQ May Collect",
+    title: "Information Karpilo LoadIQ May Collect",
     paragraphs: [
-      "LoadIQ collects information users provide directly, information generated through app use, and limited technical information needed to operate, secure, bill, and improve the service.",
+      "Karpilo LoadIQ collects information users provide directly, information generated through app use, and limited technical information needed to operate, secure, bill, and improve the service.",
       "Operational data can include pickup and delivery details, mileage, rate assumptions, fuel prices, overhead, reserves, pay templates, facility notes, post-trip actuals, saved calculations, profitability ratings, and user-configured profile settings.",
     ],
     bullets: [
@@ -33,15 +33,15 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     id: "use-of-data",
     title: "How Information Is Used",
     paragraphs: [
-      "Information is used to provide the LoadIQ service, calculate operational estimates, save user-owned history, personalize default assumptions, enforce plan limits, process billing status, respond to support, prevent misuse, improve reliability, and prepare future intelligence features.",
-      "LoadIQ may use aggregated or de-identified operational patterns to improve product quality. The app should not sell personal information or private operational records.",
+      "Information is used to provide the Karpilo LoadIQ service, calculate operational estimates, save user-owned history, personalize default assumptions, enforce plan limits, process billing status, respond to support, prevent misuse, improve reliability, and prepare future intelligence features.",
+      "Karpilo LoadIQ may use aggregated or de-identified operational patterns to improve product quality. The app should not sell personal information or private operational records.",
     ],
   },
   {
     id: "cookies-analytics",
     title: "Cookies, Local Storage, and Analytics Disclosure",
     paragraphs: [
-      "LoadIQ may use cookies, browser storage, session tokens, and similar technologies for authentication, session continuity, security, saved preferences, legal acknowledgement state, and product reliability.",
+      "Karpilo LoadIQ may use cookies, browser storage, session tokens, and similar technologies for authentication, session continuity, security, saved preferences, legal acknowledgement state, and product reliability.",
       "Analytics events may be used to understand app usage, measure calculation counts, diagnose errors, detect abuse, and improve onboarding and paid features. Analytics should be limited to what is reasonably needed to operate and improve the service.",
     ],
   },
@@ -49,7 +49,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     id: "third-parties",
     title: "Third-Party Services and Data Providers",
     paragraphs: [
-      "LoadIQ relies on service providers to operate core app functions. These providers may process limited information on behalf of Karpilo Endeavor Technologies LLC.",
+      "Karpilo LoadIQ relies on service providers to operate core app functions. These providers may process limited information on behalf of Karpilo Endeavor Technologies LLC.",
       "Current or planned providers may include Supabase for authentication and database services, Stripe for direct website billing, Apple and Google for app store subscriptions, Vercel or hosting providers for deployment, and public or third-party operational data providers such as EIA fuel reference data.",
     ],
     bullets: [
@@ -63,7 +63,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     id: "retention-deletion",
     title: "Data Retention and Account Deletion",
     paragraphs: [
-      "LoadIQ retains account, operational, billing, support, and legal records for as long as reasonably needed to provide the service, maintain business records, resolve disputes, enforce terms, comply with law, support security, and protect against fraud or abuse.",
+      "Karpilo LoadIQ retains account, operational, billing, support, and legal records for as long as reasonably needed to provide the service, maintain business records, resolve disputes, enforce terms, comply with law, support security, and protect against fraud or abuse.",
       "Users may request account and data deletion in the app or by contacting support. Subscription cancellation and account deletion are separate actions. Users should cancel active subscriptions through the relevant billing platform before requesting deletion when applicable.",
       "Some records may be retained where required or reasonably necessary for legal, tax, billing, security, fraud prevention, dispute, chargeback, compliance, or backup integrity purposes.",
     ],
@@ -72,7 +72,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     id: "security",
     title: "Security Practices",
     paragraphs: [
-      "LoadIQ is designed around authenticated access, user-owned records, row-level security, server-only secrets, and separation between client-visible keys and privileged backend credentials.",
+      "Karpilo LoadIQ is designed around authenticated access, user-owned records, row-level security, server-only secrets, and separation between client-visible keys and privileged backend credentials.",
       "No system can guarantee perfect security. Users are responsible for protecting account credentials, device access, and exported business records.",
     ],
   },
@@ -80,8 +80,8 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     id: "future-ai",
     title: "Future Cloud Sync and Intelligence Systems",
     paragraphs: [
-      "Future LoadIQ features may include cloud synchronization, team or fleet dashboards, predictive intelligence, AI-assisted review, route enrichment, market context, or other operational intelligence systems.",
-      "If future features materially change what data is collected or how it is used, LoadIQ should update disclosures and request any legally required consent before enabling those uses.",
+      "Future Karpilo LoadIQ features may include cloud synchronization, team or fleet dashboards, predictive intelligence, AI-assisted review, route enrichment, market context, or other operational intelligence systems.",
+      "If future features materially change what data is collected or how it is used, Karpilo LoadIQ should update disclosures and request any legally required consent before enabling those uses.",
     ],
   },
   {

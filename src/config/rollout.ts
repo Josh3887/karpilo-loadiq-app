@@ -32,9 +32,9 @@ export const ROLLOUT_PHASES = [
     pricingSummary: "$14.99/mo or $129.99/yr while active and in good standing.",
     onboardingTitle: "Founder Pilot operating window",
     onboardingMessage:
-      "You are in the first controlled LoadIQ operating layer. Expect a focused product, founder-led review, and practical iteration around real freight workflows.",
+      "You are in the first controlled Karpilo LoadIQ operating layer. Expect a focused product, founder-led review, and practical iteration around real freight workflows.",
     operatorExpectation:
-      "Use LoadIQ while safely parked, verify numbers independently, and send sharp operational feedback when the app exposes unclear freight pressure.",
+      "Use Karpilo LoadIQ while safely parked, verify numbers independently, and send sharp operational feedback when the app exposes unclear freight pressure.",
   },
   {
     code: "CONTROLLED_PUBLIC_LAUNCH",
@@ -46,7 +46,7 @@ export const ROLLOUT_PHASES = [
     pricingSummary: "$19.99/mo or $149.99/yr while active and in good standing.",
     onboardingTitle: "Controlled launch access",
     onboardingMessage:
-      "LoadIQ is expanding with measured access so calculator performance, saved-load workflows, and support routing stay stable under real operator use.",
+      "Karpilo LoadIQ is expanding with measured access so calculator performance, saved-load workflows, and support routing stay stable under real operator use.",
     operatorExpectation:
       "Complete your operating profile before relying on true RPM, and report confusing setup moments through support or feedback.",
   },
@@ -60,7 +60,7 @@ export const ROLLOUT_PHASES = [
     pricingSummary: "$19.99/mo or $149.99/yr while active and in good standing.",
     onboardingTitle: "Expansion access",
     onboardingMessage:
-      "LoadIQ is opening to a broader operator group while preserving private profiles, saved-load isolation, and launch-pricing discipline.",
+      "Karpilo LoadIQ is opening to a broader operator group while preserving private profiles, saved-load isolation, and launch-pricing discipline.",
     operatorExpectation:
       "Keep profile assumptions current as fuel, overhead, dispatch fees, insurance, and maintenance reserves change.",
   },
@@ -71,10 +71,10 @@ export const ROLLOUT_PHASES = [
     badge: "Users 551+",
     seatStart: 551,
     seatEnd: null,
-    pricingSummary: "$24.99/mo or $189.99/yr standard access.",
+    pricingSummary: "$29.99/mo or $299.99/yr standard access.",
     onboardingTitle: "General availability",
     onboardingMessage:
-      "LoadIQ is operating as a standard paid freight profitability platform with secure profiles, saved-load history, and production support routing.",
+      "Karpilo LoadIQ is operating as a standard paid freight profitability platform with secure profiles, saved-load history, and production support routing.",
     operatorExpectation:
       "Use the platform as an operating aid, not a substitute for dispatcher, carrier, broker, tax, compliance, or safety judgment.",
   },

@@ -167,7 +167,7 @@ function buildStatus(params: {
     subscriptionGrandfathered: Boolean(params.row.subscription_grandfathered),
     statusTitle: "Founding Operator Pilot Opening Soon",
     statusMessage:
-      "LoadIQ is in pre-launch readiness. The app stays focused on freight analysis while early operator access is prepared.",
+      "Karpilo LoadIQ is in pre-launch readiness. The app stays focused on freight analysis while early operator access is prepared.",
     slotLabel: "Pilot slot availability will appear here once assigned.",
     slotsRemaining: null,
     slotsTotal: null,

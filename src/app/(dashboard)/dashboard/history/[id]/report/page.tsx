@@ -234,10 +234,10 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
           )}
 
         <section className="mt-8 border-t border-slate-300 pt-4 text-xs leading-5 text-slate-500">
-          LoadIQ reports are estimates and operational summaries based on values
-          entered into the app. Verify against rate confirmations, receipts,
-          reimbursements, settlement statements, and professional tax or legal
-          guidance.
+          Karpilo LoadIQ reports are estimates and operational summaries based
+          on values entered into the app. Verify against rate confirmations,
+          receipts, reimbursements, settlement statements, and professional tax
+          or legal guidance.
         </section>
       </div>
     </main>

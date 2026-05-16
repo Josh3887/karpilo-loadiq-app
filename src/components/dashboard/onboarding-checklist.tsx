@@ -21,7 +21,7 @@ const setupSteps = [
   "Set income and profitability targets",
   "Add recurring overhead and reserves",
   "Create a default pay template",
-  "Review LoadIQ operating guardrails",
+  "Review Karpilo LoadIQ operating guardrails",
 ];
 
 export function OnboardingChecklist({

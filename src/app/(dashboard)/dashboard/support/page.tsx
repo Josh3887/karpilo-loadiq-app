@@ -11,8 +11,8 @@ import { createClient } from "@/lib/supabase-server";
 
 const faqs = [
   [
-    "Why does LoadIQ call these estimates?",
-    "Because real load profitability depends on actual dispatch, traffic, fuel stops, accessorial approval, repairs, delays, and settlement deductions. LoadIQ explains the assumptions it can see.",
+    "Why does Karpilo LoadIQ call these estimates?",
+    "Because real load profitability depends on actual dispatch, traffic, fuel stops, accessorial approval, repairs, delays, and settlement deductions. Karpilo LoadIQ explains the assumptions it can see.",
   ],
   [
     "What should I enter as overhead?",

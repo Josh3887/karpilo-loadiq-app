@@ -52,7 +52,7 @@ export function BrandCard({
               {fallbackLabel}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Brand image placeholder
+              Brand visual unavailable
             </p>
           </div>
         </div>

@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
             Security note
           </p>
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            LoadIQ never stores reset tokens or password values in app tables.
+            Karpilo LoadIQ never stores reset tokens or password values in app tables.
             Password updates are handled by Supabase Auth through the recovery
             session.
           </p>

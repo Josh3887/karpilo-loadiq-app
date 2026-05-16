@@ -61,6 +61,7 @@ function BillingSettingsContent({
   reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
 }) {
   const lifecycleDate =
+    paymentAccess.billingStartsAt ??
     paymentAccess.canceledAt ??
     paymentAccess.currentPeriodEnd ??
     paymentAccess.trialEnd;
@@ -96,9 +97,41 @@ function BillingSettingsContent({
         <SettingsMetric
           label="Lifecycle Date"
           value={formatDate(lifecycleDate)}
-          detail={paymentAccess.cancelAtPeriodEnd ? "Cancel at period end" : "Renewal or trial marker"}
+          detail={paymentAccess.cancelAtPeriodEnd ? "Cancel at period end" : "Billing, renewal, or trial marker"}
+        />
+        <SettingsMetric
+          label="Trial State"
+          value={paymentAccess.trialStatus ? formatStatus(paymentAccess.trialStatus) : formatTrialDuration(paymentAccess.trialDurationDays)}
+          detail={paymentAccess.trialEnd ? `Trial marker ${formatDate(paymentAccess.trialEnd)}` : "7-day trial when supported"}
+          tone={paymentAccess.canContinueTrial ? "green" : "blue"}
+        />
+        <SettingsMetric
+          label="Lifetime Lock"
+          value={paymentAccess.lifetimePriceLock ? "Protected" : "Not active"}
+          detail={paymentAccess.lifetimePriceLock ? "Pilot or Legacy Launch protection" : "Standard price rules"}
+          tone={paymentAccess.lifetimePriceLock ? "green" : "blue"}
+        />
+        <SettingsMetric
+          label="Cohort"
+          value={formatCohort(paymentAccess.cohortPhase, paymentAccess.cohortCap)}
+          detail="Pilot, launch, or standard rollout classification"
+        />
+        <SettingsMetric
+          label="Price Rule"
+          value={paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
+          detail="Gold and Platinum public prices may change for future periods"
         />
       </section>
+
+      <SettingsPanel
+        title="Entitlement Scope"
+        description="Subscription metadata keeps pricing locks separate from feature access so Stripe, Apple, Google Play, and manual reconciliation can share one access decision."
+      >
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-300">
+          {paymentAccess.futureFeatureAccessScope ??
+            "Pilot and Legacy Launch accounts can carry lifetime pricing protection and future released Karpilo LoadIQ platform feature access when assigned by backend entitlement records. Gold remains the complete operational feature tier; Platinum is planned as enhanced intelligence."}
+        </div>
+      </SettingsPanel>
 
       <SettingsPanel
         title="Payment Access"
@@ -181,4 +214,13 @@ function formatDate(value: string | null) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatTrialDuration(value: number | null) {
+  return value ? `${value}-day trial` : "Not set";
+}
+
+function formatCohort(phase: string | null, cap: number | null) {
+  const label = phase ? formatStatus(phase) : "Standard";
+  return cap ? `${label} / ${cap}` : label;
 }

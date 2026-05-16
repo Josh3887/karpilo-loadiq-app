@@ -474,7 +474,7 @@ export function LoadInputForm({
 
         <LearnMore
           title="Profile values in the calculator"
-          summary="LoadIQ uses final values from Settings so you do not re-enter recurring business assumptions."
+          summary="Karpilo LoadIQ uses final values from Settings so you do not re-enter recurring business assumptions."
           detail="Profile-controlled values are read-only by default. If a load needs a one-time change, use a temporary override. Overrides are saved with the calculation but do not update your profile unless you change Settings yourself."
         />
 
@@ -492,7 +492,7 @@ export function LoadInputForm({
               label="Daily Fixed Overhead"
               value={watchedNumber("overhead", profileValues.dailyFixedOverhead)}
               formatter={formatCurrency}
-              help="Your profile stores fixed business costs. LoadIQ converts them into a daily overhead number so each load only carries the cost for the days it uses your truck."
+              help="Your profile stores fixed business costs. Karpilo LoadIQ converts them into a daily overhead number so each load only carries the cost for the days it uses your truck."
               isOverride={overrideFields.dailyFixedOverhead}
               onEnableOverride={() => enableTemporaryOverride("dailyFixedOverhead")}
               onOverride={(value) =>
@@ -558,7 +558,7 @@ export function LoadInputForm({
               label="Target True RPM"
               value={watchedNumber("targetTrueRpm", profileValues.targetTrueRpm)}
               formatter={formatRpm}
-              help="Your target true RPM is the operating guardrail LoadIQ uses to flag weak freight."
+              help="Your target true RPM is the operating guardrail Karpilo LoadIQ uses to flag weak freight."
               isOverride={overrideFields.targetTrueRpm}
               onEnableOverride={() => enableTemporaryOverride("targetTrueRpm")}
               onOverride={(value) =>
@@ -650,8 +650,8 @@ export function LoadInputForm({
             />
             <span>
               Fuel surcharge is already included in gross revenue. Karpilo
-              LoadIQ will subtract the FSC before deriving linehaul RPM so it is
-              not counted twice.
+              Karpilo LoadIQ will subtract the FSC before deriving linehaul RPM
+              so it is not counted twice.
             </span>
           </label>
         )}

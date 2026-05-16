@@ -32,7 +32,7 @@ export async function acceptRequiredAppPolicies() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("You must be signed in to accept LoadIQ policies.");
+    throw new Error("You must be signed in to accept Karpilo LoadIQ policies.");
   }
 
   const acceptedAt = new Date().toISOString();

@@ -68,9 +68,9 @@ export const PRODUCT_FEATURES = [
 
 export const PRODUCT_FAQS = [
   {
-    question: "Does LoadIQ guarantee profitability?",
+    question: "Does Karpilo LoadIQ guarantee profitability?",
     answer:
-      "No. LoadIQ is an informational forecasting tool. It depends on user inputs, assumptions, market conditions, fuel prices, route variance, and real operating costs.",
+      "No. Karpilo LoadIQ is an informational forecasting tool. It depends on user inputs, assumptions, market conditions, fuel prices, route variance, and real operating costs.",
   },
   {
     question: "Can I override the EIA fuel estimate?",
@@ -78,11 +78,11 @@ export const PRODUCT_FAQS = [
       "Yes. EIA diesel data, when configured, is treated as a market reference only. Drivers can enter their own expected or actual purchased fuel price.",
   },
   {
-    question: "Who is LoadIQ built for?",
+    question: "Who is Karpilo LoadIQ built for?",
     answer:
       "Owner operators, lease operators, independent contractors, and small trucking operations that need fast freight profitability checks.",
   },
 ] satisfies ProductFaq[];
 
 export const PRODUCT_DISCLAIMER_SNIPPET =
-  "LoadIQ outputs are estimates based on user inputs, assumptions, and available data. They do not guarantee profit, freight availability, fuel pricing, or business outcomes.";
+  "Karpilo LoadIQ outputs are estimates based on user inputs, assumptions, and available data. They do not guarantee profit, freight availability, fuel pricing, or business outcomes.";

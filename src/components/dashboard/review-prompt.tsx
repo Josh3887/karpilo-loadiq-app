@@ -57,11 +57,11 @@ export function ReviewPrompt({ calculationCount }: ReviewPromptProps) {
             Quick check-in
           </p>
           <h2 className="mt-2 text-xl font-black text-slate-100">
-            Do you like LoadIQ so far?
+            Do you like Karpilo LoadIQ so far?
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
             If it is helping you think through freight decisions, a review later
-            helps early operators find the tool.
+            helps operators find the tool. We will wait before asking again.
           </p>
         </div>
 

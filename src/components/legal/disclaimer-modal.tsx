@@ -53,7 +53,7 @@ export function DisclaimerModal({
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Unable to leave the secured LoadIQ workspace."
+          : "Unable to leave the secured Karpilo LoadIQ workspace."
       );
       setIsDeclining(false);
     }
@@ -104,9 +104,10 @@ export function DisclaimerModal({
               <p className="mt-2">
                 Karpilo LoadIQ is provided solely as an informational
                 decision-support and operational forecasting tool for trucking
-                profitability review. LoadIQ does not guarantee profitability,
-                business success, operational performance, income, margins,
-                freight availability, fuel costs, or any business outcome.
+                profitability review. Karpilo LoadIQ does not guarantee
+                profitability, business success, operational performance,
+                income, margins, freight availability, fuel costs, or any
+                business outcome.
               </p>
             </section>
 
@@ -131,7 +132,7 @@ export function DisclaimerModal({
                 No professional advice
               </h3>
               <p className="mt-2">
-                LoadIQ does not provide financial advice, legal advice,
+                Karpilo LoadIQ does not provide financial advice, legal advice,
                 accounting advice, tax advice, dispatch advice, investment
                 advice, regulatory advice, or regulatory guarantees. Users are
                 solely responsible for verifying freight decisions, operating
@@ -150,11 +151,11 @@ export function DisclaimerModal({
                 by maintenance events, weather, traffic, detention, routing
                 changes, fuel movements, brokerage conditions, carrier policy,
                 equipment condition, customer behavior, macroeconomic pressure,
-                and other variables that LoadIQ cannot control. Past
+                and other variables that Karpilo LoadIQ cannot control. Past
                 profitability does not predict future results. No
                 representation or warranty is made regarding the accuracy,
-                completeness, reliability, availability, or fitness of LoadIQ
-                outputs for any specific freight or business decision.
+                completeness, reliability, availability, or fitness of Karpilo
+                LoadIQ outputs for any specific freight or business decision.
               </p>
             </section>
 
@@ -173,7 +174,7 @@ export function DisclaimerModal({
                 damages, fuel pricing inaccuracies, mileage inaccuracies,
                 routing inaccuracies, user-entered data inaccuracies,
                 third-party API failures, data delays, market fluctuations, or
-                losses arising from reliance on LoadIQ outputs.
+                losses arising from reliance on Karpilo LoadIQ outputs.
               </p>
             </section>
 
@@ -202,7 +203,7 @@ export function DisclaimerModal({
             />
             <span>
               I have scrolled through, read, understood, and agree to the
-              LoadIQ disclaimer and limitation of liability.
+              Karpilo LoadIQ disclaimer and limitation of liability.
             </span>
           </label>
 

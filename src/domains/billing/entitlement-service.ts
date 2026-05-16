@@ -34,6 +34,15 @@ export type SubscriptionAccessRecord = {
   provider_subscription_id?: unknown;
   current_period_end?: unknown;
   trial_end?: unknown;
+  trial_duration_days?: unknown;
+  trial_status?: unknown;
+  billing_starts_at?: unknown;
+  lifetime_price_lock?: unknown;
+  future_feature_access_scope?: unknown;
+  cohort_phase?: unknown;
+  cohort_cap?: unknown;
+  price_subject_to_change?: unknown;
+  entitlement_status?: unknown;
   cancel_at_period_end?: unknown;
   canceled_at?: unknown;
 };
@@ -48,6 +57,14 @@ export type PaymentAccess = {
   shouldPromptForBillingSetup: boolean;
   currentPeriodEnd: string | null;
   trialEnd: string | null;
+  trialDurationDays: number | null;
+  trialStatus: string | null;
+  billingStartsAt: string | null;
+  lifetimePriceLock: boolean;
+  futureFeatureAccessScope: string | null;
+  cohortPhase: string | null;
+  cohortCap: number | null;
+  priceSubjectToChange: boolean | null;
   canceledAt: string | null;
   cancelAtPeriodEnd: boolean;
   entitlements: Entitlements;
@@ -98,6 +115,14 @@ function asNullableString(value: unknown) {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function asNullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asNullableBoolean(value: unknown) {
+  return typeof value === "boolean" ? value : null;
+}
+
 function isFutureIso(value: string | null) {
   if (!value) return false;
   const timestamp = Date.parse(value);
@@ -129,13 +154,27 @@ export function resolvePaymentAccess(
   usage: EntitlementUsage
 ): PaymentAccess {
   const billingProvider = normalizeBillingProvider(subscription?.provider);
-  const entitlementStatus = normalizeEntitlementStatus(subscription?.status);
+  const entitlementStatus = normalizeEntitlementStatus(
+    subscription?.entitlement_status ?? subscription?.status
+  );
   const hasActiveAccess = isActiveEntitlementStatus(entitlementStatus);
   const tier = hasActiveAccess
     ? normalizePlanTier(subscription?.tier)
     : "no_access";
   const currentPeriodEnd = asNullableString(subscription?.current_period_end);
   const trialEnd = asNullableString(subscription?.trial_end);
+  const trialDurationDays = asNullableNumber(subscription?.trial_duration_days);
+  const trialStatus = asNullableString(subscription?.trial_status);
+  const billingStartsAt = asNullableString(subscription?.billing_starts_at);
+  const lifetimePriceLock = Boolean(subscription?.lifetime_price_lock);
+  const futureFeatureAccessScope = asNullableString(
+    subscription?.future_feature_access_scope
+  );
+  const cohortPhase = asNullableString(subscription?.cohort_phase);
+  const cohortCap = asNullableNumber(subscription?.cohort_cap);
+  const priceSubjectToChange = asNullableBoolean(
+    subscription?.price_subject_to_change
+  );
   const canceledAt = asNullableString(subscription?.canceled_at);
   const entitlements = resolveEntitlements(tier, usage);
 
@@ -153,6 +192,14 @@ export function resolvePaymentAccess(
     shouldPromptForBillingSetup: !hasActiveAccess,
     currentPeriodEnd,
     trialEnd,
+    trialDurationDays,
+    trialStatus,
+    billingStartsAt,
+    lifetimePriceLock,
+    futureFeatureAccessScope,
+    cohortPhase,
+    cohortCap,
+    priceSubjectToChange,
     canceledAt,
     cancelAtPeriodEnd: Boolean(subscription?.cancel_at_period_end),
     entitlements,

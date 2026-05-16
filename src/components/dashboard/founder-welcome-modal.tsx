@@ -51,7 +51,7 @@ export function FounderWelcomeModal({
 
         <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
           <p>
-            LoadIQ is being built from the seat, not from a pitch deck. It is
+            Karpilo LoadIQ is being built from the seat, not from a pitch deck. It is
             here to help operators see true RPM, deadhead pressure, overhead,
             fuel exposure, and profit before a load turns into a hard lesson.
           </p>
@@ -59,7 +59,7 @@ export function FounderWelcomeModal({
             {status.rolloutExpectation}
           </p>
           <p>
-            This is only the beginning: LoadIQ is the first layer of a broader
+            This is only the beginning: Karpilo LoadIQ is the first layer of a broader
             Karpilo operational ecosystem, built around practical decisions,
             cleaner freight judgment, and tools that respect a driver&apos;s time.
           </p>
@@ -77,7 +77,7 @@ export function FounderWelcomeModal({
             onClick={closeModal}
             className="rounded-xl bg-sky-400 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-[#060B14] shadow-[0_0_25px_rgba(56,189,248,0.25)] transition hover:bg-sky-300"
           >
-            Enter LoadIQ
+            Enter Karpilo LoadIQ
           </button>
         </div>
       </section>

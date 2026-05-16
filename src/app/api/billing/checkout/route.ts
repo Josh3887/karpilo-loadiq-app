@@ -87,6 +87,7 @@ export async function POST(request: Request) {
       program: plan.requiresProgram ?? "standard",
     },
     subscription_data: {
+      trial_period_days: plan.trialDays,
       metadata: {
         user_id: user.id,
         plan_id: plan.id,

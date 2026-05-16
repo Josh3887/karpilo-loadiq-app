@@ -14,7 +14,7 @@ export async function acceptLoadIqDisclaimer() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("You must be signed in to accept the LoadIQ disclaimer.");
+    throw new Error("You must be signed in to accept the Karpilo LoadIQ disclaimer.");
   }
 
   const acceptedAt = new Date().toISOString();

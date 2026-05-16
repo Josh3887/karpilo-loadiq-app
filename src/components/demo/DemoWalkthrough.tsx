@@ -271,7 +271,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
           <PhoneStack>
             <PhoneHero
               title="Driving Safety"
-              body="Use LoadIQ only when parked or through lawful hands-free operation."
+              body="Use Karpilo LoadIQ only when parked or through lawful hands-free operation."
               tone="warning"
             />
             <PhoneCheckRow
@@ -630,8 +630,8 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
         return (
           <PhoneStack>
             <PhoneHero
-              title="LoadIQ in Action"
-              body="Understand freight before committing to it, protect margin, and make better decisions with real operating numbers."
+              title="Karpilo LoadIQ in Action"
+              body="Understand freight before committing to it, improve margin awareness, and make better decisions with real operating numbers."
               tone="success"
             />
             <PhonePrimaryButton label="Join Pilot" />
@@ -720,7 +720,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
                 )}
               >
                 A simulated owner-operator journey for training videos. It uses
-                mock state, localStorage, and the pure calculator engine only.
+                local browser state and the pure calculator engine only.
               </p>
             </div>
           </div>
@@ -941,7 +941,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
                 <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-red-50 md:p-5">
                   <h3 className="text-xl font-black">Driving safety disclaimer</h3>
                   <p className="mt-3 leading-7">
-                    Do not interact with LoadIQ while driving unless safely
+                    Do not interact with Karpilo LoadIQ while driving unless safely
                     parked or using lawful hands-free methods. The app supports
                     better decisions; it does not replace safe operation.
                   </p>
@@ -976,14 +976,14 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
       case "founderWelcome":
         return (
           <TwoColumn
-            side={<Callout title="Joshua Karpilo" body="Founder/CEO welcome is modeled as a demo-only onboarding moment." icon={<BadgeCheck />} />}
+            side={<Callout title="Joshua Karpilo" body="Founder/CEO welcome is shown as a walkthrough onboarding moment." icon={<BadgeCheck />} />}
             main={
               <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 md:p-6">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
                   Founder welcome
                 </p>
                 <h3 className="mt-3 text-3xl font-black text-slate-100">
-                  Welcome to LoadIQ, {demoProfile.operatorName}.
+                  Welcome to Karpilo LoadIQ, {demoProfile.operatorName}.
                 </h3>
                 <p className="mt-4 leading-8 text-slate-300">
                   I built Karpilo LoadIQ to help operators protect margin before
@@ -1117,8 +1117,8 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
             metrics={[
               ["Profile completeness", "100%"],
               ["Target true RPM", formatRpm(demoProfile.minimumTrueRpm)],
-              ["Weekly revenue mock summary", formatCurrency(7250)],
-              ["Net profit mock summary", formatCurrency(2460)],
+              ["Weekly revenue example", formatCurrency(7250)],
+              ["Net profit example", formatCurrency(2460)],
               ["Saved loads", state.savedLoads.length],
               ["Warnings", "1 lane needs review"],
               ["Quick action", "Calculate new load"],
@@ -1245,7 +1245,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
               ["Scale tickets", formatCurrency(18)],
               ["Parking", formatCurrency(25)],
               ["Permits", formatCurrency(0)],
-              ["Post-trip placeholder", "Awaiting actuals"],
+              ["Post-trip actuals", "Awaiting actuals"],
             ]}
           />
         );
@@ -1603,7 +1603,7 @@ function IPhoneHomeScreen({ tapped }: { tapped: boolean }) {
             <BrandAppIcon size={48} priority />
           </span>
           <span className="text-center text-[11px] font-bold leading-tight text-white drop-shadow">
-            LoadIQ
+            Karpilo LoadIQ
           </span>
         </button>
 
@@ -1619,15 +1619,15 @@ function IPhoneHomeScreen({ tapped }: { tapped: boolean }) {
 
       <div className="mt-auto rounded-[1.6rem] bg-white/12 p-3 backdrop-blur">
         <div className="grid grid-cols-4 gap-3">
-          {["Phone", "Safari", "Messages", "LoadIQ"].map((label) => (
+          {["Phone", "Safari", "Messages", "Karpilo LoadIQ"].map((label) => (
             <div key={label} className="flex flex-col items-center gap-1">
               <span
                 className={cn(
                   "h-12 w-12 rounded-2xl bg-white/20",
-                  label === "LoadIQ" && "flex items-center justify-center bg-white"
+                  label === "Karpilo LoadIQ" && "flex items-center justify-center bg-white"
                 )}
               >
-                {label === "LoadIQ" && <BrandAppIcon size={38} priority />}
+                {label === "Karpilo LoadIQ" && <BrandAppIcon size={38} priority />}
               </span>
             </div>
           ))}
@@ -1635,7 +1635,7 @@ function IPhoneHomeScreen({ tapped }: { tapped: boolean }) {
       </div>
 
       <div className="mt-4 text-center text-xs font-black uppercase tracking-[0.18em] text-white/85">
-        {tapped ? "Opening LoadIQ..." : "Tap LoadIQ"}
+        {tapped ? "Opening Karpilo LoadIQ..." : "Tap Karpilo LoadIQ"}
       </div>
     </div>
   );
@@ -1702,7 +1702,7 @@ function RecordingDialoguePanel({
         </div>
 
         <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs leading-5 text-emerald-50">
-          This route is demo-only: local state, no real auth, no Supabase
+          This walkthrough uses local state only: no real auth, no Supabase
           writes, no billing calls, and no production profile mutation.
         </div>
       </div>

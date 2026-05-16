@@ -39,7 +39,7 @@ export const DATA_PROVIDERS: DataProvider[] = [
     href: EIA_OPEN_DATA_URL,
     attribution: EIA_ATTRIBUTION_TEXT,
     description:
-      "LoadIQ may use EIA Open Data as a weekly U.S. national diesel reference for estimated fuel inputs.",
+      "Karpilo LoadIQ may use EIA Open Data as a weekly U.S. national diesel reference for estimated fuel inputs.",
     disclaimer:
       "EIA fuel data is an informational market reference only. It is not guaranteed to reflect real-time pump pricing, regional pricing, fleet card discounts, taxes, fees, or actual purchased fuel cost.",
   },
@@ -51,7 +51,7 @@ export const DATA_PROVIDERS: DataProvider[] = [
     status: "planned",
     attribution: "Future safety and compliance datasets may reference FMCSA public resources.",
     description:
-      "Future LoadIQ intelligence may support public carrier, safety, or compliance context when appropriate.",
+      "Future Karpilo LoadIQ intelligence may support public carrier, safety, or compliance context when appropriate.",
     disclaimer:
       "Future FMCSA-related features would be informational only and would not provide regulatory guarantees.",
   },

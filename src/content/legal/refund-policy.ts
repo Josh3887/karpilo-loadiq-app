@@ -37,7 +37,7 @@ export const REFUND_POLICY_SECTIONS: LegalSection[] = [
     id: "no-refund-conditions",
     title: "Circumstances Where Refunds Are Generally Not Available",
     paragraphs: [
-      "Because LoadIQ provides immediate digital software access, refunds are generally not available after meaningful use of paid features, unless required by law or approved as an exception. This approach helps protect the service from refund abuse while preserving reasonable support discretion.",
+      "Because Karpilo LoadIQ provides immediate digital software access, refunds are generally not available after meaningful use of paid features, unless required by law or approved as an exception. This approach helps protect the service from refund abuse while preserving reasonable support discretion.",
       "The following conditions may make a refund request ineligible or less likely to be approved.",
     ],
     bullets: [
@@ -63,7 +63,7 @@ export const REFUND_POLICY_SECTIONS: LegalSection[] = [
     id: "free-trials",
     title: "Free Trials and Trial Conversions",
     paragraphs: [
-      "If LoadIQ offers a free trial, the checkout or platform screen should disclose the trial duration, conversion date, recurring price, billing interval, and cancellation method before the user is charged.",
+      "If Karpilo LoadIQ offers a free trial, the checkout or platform screen should disclose the trial duration, conversion date, recurring price, billing interval, and cancellation method before the user is charged.",
       "Unless the checkout or platform terms state otherwise, a trial converts to a paid subscription at the end of the trial period if not canceled through the applicable billing platform before conversion.",
     ],
   },

@@ -54,7 +54,7 @@ export default function LegalCenterPage() {
       eyebrow="Karpilo LoadIQ"
       title="Legal Center"
       lastUpdated="May 11, 2026"
-      description="A central reference for LoadIQ policies, billing terms, and platform-specific subscription guidance."
+      description="A central reference for Karpilo LoadIQ policies, billing terms, and platform-specific subscription guidance."
     >
       <div className="grid gap-4 md:grid-cols-2">
         {legalLinks.map((link) => (

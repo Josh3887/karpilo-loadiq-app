@@ -85,7 +85,9 @@ export function PaymentSetupModal({
 
         <p className="mt-5 text-sm leading-6 text-slate-300">
           Complete billing setup to activate or preserve your Karpilo LoadIQ
-          subscription access.
+          subscription access. Eligible paid tiers include a 7-day trial where
+          supported by the payment provider, then become part of your operating
+          overhead visibility.
         </p>
 
         <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm leading-6 text-red-100">

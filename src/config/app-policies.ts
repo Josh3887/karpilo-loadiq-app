@@ -65,7 +65,7 @@ export const REQUIRED_APP_POLICIES: RequiredPolicy[] = [
     title: "Hands-Free & Driver Safety Disclosure",
     version: REQUIRED_POLICY_VERSION,
     summary:
-      "Do not interact with LoadIQ while driving unless safely parked or using lawful hands-free methods.",
+      "Do not interact with Karpilo LoadIQ while driving unless safely parked or using lawful hands-free methods.",
   },
   {
     key: "billing_policy",
@@ -87,13 +87,13 @@ export const REQUIRED_APP_POLICIES: RequiredPolicy[] = [
     title: "Data Usage Disclosure",
     version: REQUIRED_POLICY_VERSION,
     href: "/privacy",
-    summary: "LoadIQ stores operational inputs, saved loads, support records, billing state, and usage telemetry.",
+    summary: "Karpilo LoadIQ stores operational inputs, saved loads, support records, billing state, and usage telemetry.",
   },
   {
     key: "informational_use_disclaimer",
     title: "Informational Use Disclaimer",
     version: REQUIRED_POLICY_VERSION,
-    summary: "LoadIQ is an informational decision-support tool and does not guarantee outcomes.",
+    summary: "Karpilo LoadIQ is an informational decision-support tool and does not guarantee outcomes.",
   },
   {
     key: "limitation_of_liability",

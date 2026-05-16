@@ -22,7 +22,10 @@ import {
   PLAN_LIMITS,
   formatPlanTierLabel,
 } from "@/domains/billing/plan-limits";
-import { normalizePlanTier } from "@/domains/billing/entitlement-service";
+import {
+  type PaymentAccess,
+  resolvePaymentAccess,
+} from "@/domains/billing/entitlement-service";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 import {
   getPreviewPaymentAccess,
@@ -47,8 +50,7 @@ export default async function BillingPage() {
   if (!user && previewMode) {
     return (
       <BillingContent
-        activeTier={getPreviewPaymentAccess().tier}
-        hasStripeCustomer={false}
+        paymentAccess={getPreviewPaymentAccess()}
         operatorStatus={PREVIEW_OPERATOR_STATUS}
         reservationState={{ reservations: [], locks: [] }}
         founderAccess={null}
@@ -78,7 +80,9 @@ export default async function BillingPage() {
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("tier,status,current_period_end,provider_customer_id")
+        .select(
+          "tier,status,provider,provider_customer_id,provider_subscription_id,current_period_end,trial_end,trial_duration_days,trial_status,billing_starts_at,lifetime_price_lock,future_feature_access_scope,cohort_phase,cohort_cap,price_subject_to_change,entitlement_status,cancel_at_period_end,canceled_at"
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -106,10 +110,11 @@ export default async function BillingPage() {
       getUserReservationAndLockState(user.id),
     ]);
 
-  const activeTier =
-    subscription?.status === "active" || subscription?.status === "trialing"
-      ? normalizePlanTier(subscription?.tier)
-      : "no_access";
+  const paymentAccess = resolvePaymentAccess(subscription, {
+    monthlyCalculations: calculationCount.count ?? 0,
+    savedLoads: savedLoadCount.count ?? 0,
+  });
+  const activeTier = paymentAccess.tier;
   const canSeeFounderPricing =
     activeTier === "launch500" || Boolean(founderAccess);
   const founderSeatsClaimed = founderClaimCount.count ?? 0;
@@ -124,8 +129,7 @@ export default async function BillingPage() {
 
   return (
     <BillingContent
-      activeTier={activeTier}
-      hasStripeCustomer={Boolean(subscription?.provider_customer_id)}
+      paymentAccess={paymentAccess}
       operatorStatus={operatorStatus}
       reservationState={reservationState}
       founderAccess={founderAccess}
@@ -140,8 +144,7 @@ export default async function BillingPage() {
 }
 
 function BillingContent({
-  activeTier,
-  hasStripeCustomer,
+  paymentAccess,
   operatorStatus,
   reservationState,
   founderAccess,
@@ -152,8 +155,7 @@ function BillingContent({
   calculationCount,
   savedLoadCount,
 }: {
-  activeTier: keyof typeof PLAN_LIMITS;
-  hasStripeCustomer: boolean;
+  paymentAccess: PaymentAccess;
   operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
   reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
   founderAccess: { id: string; code: string; is_active: boolean; redeemed_at: string | null } | null;
@@ -165,6 +167,11 @@ function BillingContent({
   savedLoadCount: number;
 }) {
   void founderAccess;
+  const activeTier = paymentAccess.tier;
+  const lifecycleDate =
+    paymentAccess.billingStartsAt ??
+    paymentAccess.trialEnd ??
+    paymentAccess.currentPeriodEnd;
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -181,7 +188,9 @@ function BillingContent({
             <OperatorBadges badges={operatorStatus.badges} />
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
-              Keep the app survivable while protecting serious driver workflows.
+              Treat subscription cost as operational overhead: Karpilo LoadIQ is
+              built to expose deadhead, fuel variance, break-even pressure, and
+              margin leakage before they quietly absorb trip value.
             </p>
           </div>
 
@@ -193,13 +202,49 @@ function BillingContent({
           </Link>
         </header>
 
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
+        <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Metric label="Current Plan" value={formatPlanTierLabel(activeTier)} />
+          <Metric
+            label="Entitlement"
+            value={formatStatus(paymentAccess.entitlementStatus)}
+          />
+          <Metric
+            label="Trial / Billing"
+            value={formatTrialBillingLabel(paymentAccess)}
+          />
           <Metric label="Calculations" value={String(calculationCount)} />
           <Metric label="Saved Loads" value={String(savedLoadCount)} />
         </section>
 
-        {hasStripeCustomer && (
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+            Entitlement Metadata
+          </p>
+          <div className="mt-4 grid gap-3 text-sm text-slate-300 md:grid-cols-2 lg:grid-cols-4">
+            <PlanLine
+              label="Billing starts"
+              value={formatDate(lifecycleDate)}
+            />
+            <PlanLine
+              label="Lifetime lock"
+              value={paymentAccess.lifetimePriceLock ? "Protected" : "Not active"}
+            />
+            <PlanLine
+              label="Cohort"
+              value={formatCohort(paymentAccess)}
+            />
+            <PlanLine
+              label="Price status"
+              value={paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
+            />
+          </div>
+          <p className="mt-4 text-sm leading-6 text-slate-400">
+            {paymentAccess.futureFeatureAccessScope ??
+              "Gold access is designed as complete operational visibility. Pilot and Legacy Launch records can preserve lifetime pricing and future released platform feature access when assigned."}
+          </p>
+        </section>
+
+        {paymentAccess.hasStripeCustomer && (
           <section className="mb-6 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
             <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
@@ -333,9 +378,10 @@ function BillingContent({
               {activeTier === "no_access" && (
                 <>
                   <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-                    Paid access starts when Stripe checkout completes. Pilot
-                    and legacy launch pricing stay protected by assigned
-                    entitlement records.
+                    Eligible paid tiers include a 7-day trial where supported
+                    by the payment provider. Gold is the complete operational
+                    tier; Pilot and Legacy Launch pricing stay protected by
+                    assigned entitlement records.
                   </div>
 
                   <CheckoutAcknowledgement
@@ -362,19 +408,23 @@ function BillingContent({
                 {PLATINUM_ACCESS.name}
               </h2>
               <p className="mt-2 max-w-3xl break-words text-sm leading-6 text-slate-300">
-                Platinum Annual is a coming-soon premium intelligence layer for
-                maintenance visibility, out-of-route awareness, repair trends,
-                receipt intelligence, and operational anomaly context. It is not
-                wired to checkout yet, and Gold remains the active standard
-                operational tier.
+                Platinum is a coming-soon premium intelligence layer for
+                advanced trend visibility, maintenance pattern awareness,
+                out-of-route expense context, repair trends, receipt
+                intelligence, and operational anomaly awareness. It is not wired
+                to checkout yet, and Gold remains the complete operational tier.
               </p>
             </div>
             <div className="min-w-0 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
               <div className="break-words text-2xl font-black">
-                {PLATINUM_ACCESS.pricingModel}
+                {formatPriceLabel(PLATINUM_ACCESS.monthlyPrice, "month")}
               </div>
               <div className="mt-1 break-words text-sky-200/75 [overflow-wrap:anywhere]">
-                {PLATINUM_ACCESS.baseReferenceLabel}
+                {formatPriceLabel(PLATINUM_ACCESS.annualPrice, "year")} ·{" "}
+                {PLATINUM_ACCESS.pricingModel}
+              </div>
+              <div className="mt-2 text-xs leading-5 text-sky-100/80">
+                7-day free trial planned. Prices subject to change.
               </div>
               <div className="mt-3 inline-flex max-w-full rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-black uppercase leading-5 tracking-[0.16em] text-red-100">
                 Coming Soon
@@ -415,8 +465,9 @@ function BillingContent({
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                 {FOUNDER_ACCESS.publicTeaser} Claimed seats are tracked
-                internally and founder pricing stays hidden unless access is
-                assigned by invite code or admin action.
+                internally. Legacy Launch preserves lifetime pricing lock and
+                future released Karpilo LoadIQ platform feature access while the
+                subscription remains active.
               </p>
             </div>
 
@@ -467,10 +518,11 @@ function BillingContent({
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
             {PILOT_ACCESS.publicTeaser} Approved pilot operators receive
             locked pricing at ${PILOT_ACCESS.monthlyPrice}/month for the first{" "}
-            {PILOT_ACCESS.maxSeats} approved users, with
-            pricing locked while the subscription remains active. It is not
-            transferable and is lost if canceled, lapsed, revoked, or deleted.
-            Trial access is not included for pilot access.
+            {PILOT_ACCESS.maxSeats} approved users, with a 7-day trial where
+            supported by the payment provider. Pilot pricing and future
+            released Karpilo LoadIQ platform feature access stay protected while
+            the subscription remains active. It is not transferable and is lost
+            if canceled, lapsed, revoked, or deleted.
           </p>
           {canSeePilotPricing ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -567,4 +619,34 @@ function PlanLine({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   );
+}
+
+function formatStatus(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "Not set";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatTrialBillingLabel(paymentAccess: PaymentAccess) {
+  if (paymentAccess.trialStatus) return formatStatus(paymentAccess.trialStatus);
+  if (paymentAccess.canContinueTrial) return "trialing";
+  if (paymentAccess.billingStartsAt) return "billing scheduled";
+  if (paymentAccess.trialDurationDays) {
+    return `${paymentAccess.trialDurationDays}-day trial`;
+  }
+  return "Not set";
+}
+
+function formatCohort(paymentAccess: PaymentAccess) {
+  const phase = paymentAccess.cohortPhase
+    ? formatStatus(paymentAccess.cohortPhase)
+    : "Standard";
+  return paymentAccess.cohortCap ? `${phase} / ${paymentAccess.cohortCap}` : phase;
 }

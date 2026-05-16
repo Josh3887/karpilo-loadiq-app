@@ -133,7 +133,7 @@ export function getLaunchPhaseSnapshot(
     code: "complete",
     title: "Official Launch Complete",
     badge: "Standard Access",
-    message: "Launch promotions have ended. Standard LoadIQ plans are active.",
+    message: "Launch promotions have ended. Standard Karpilo LoadIQ plans are active.",
     startsAt: null,
     endsAt: null,
     slotLimit: null,

@@ -15,7 +15,7 @@ export const EDUCATION_TOPICS = {
     title: "Deadhead",
     summary: "Miles you drive without paid freight.",
     detail:
-      "Deadhead can make a good-looking rate weak. LoadIQ keeps it visible before you accept the load.",
+      "Deadhead can make a good-looking rate weak. Karpilo LoadIQ keeps it visible before you accept the load.",
   },
   breakEvenRpm: {
     title: "Break-even RPM",
@@ -30,7 +30,7 @@ export const EDUCATION_TOPICS = {
       "A load can look acceptable per mile and still be weak when appointment windows, detention risk, dwell time, and dispatch days stretch the clock.",
   },
   targetMargins: {
-    title: "LoadIQ operating guardrails",
+    title: "Karpilo LoadIQ operating guardrails",
     summary: "A practical way to read margin pressure.",
     detail:
       "Below 10% is caution. 15-25% is a practical operating target. 25-35% is strong. 35-45% is aggressive. Above 45% should be reviewed for assumptions.",
@@ -39,7 +39,7 @@ export const EDUCATION_TOPICS = {
     title: "Fuel estimates",
     summary: "EIA fuel data is only a market reference.",
     detail:
-      "When configured, LoadIQ can use a weekly U.S. national ULSD reference. Always override it when your expected or actual pump price differs.",
+      "When configured, Karpilo LoadIQ can use a weekly U.S. national ULSD reference. Always override it when your expected or actual pump price differs.",
   },
   overhead: {
     title: "Operational overhead",

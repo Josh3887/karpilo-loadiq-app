@@ -20,7 +20,7 @@ export default function PrivacyPage() {
       eyebrow="Karpilo LoadIQ"
       title="Privacy Policy"
       lastUpdated={PRIVACY_POLICY_LAST_UPDATED}
-      description="This policy explains how LoadIQ handles account, operational, support, billing, analytics, third-party, retention, and deletion data."
+      description="This policy explains how Karpilo LoadIQ handles account, operational, support, billing, analytics, third-party, retention, and deletion data."
     >
       <div className="grid gap-6">
         <LegalContent sections={PRIVACY_POLICY_SECTIONS} />

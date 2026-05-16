@@ -232,16 +232,16 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
 
   const explanations = [
     estimatedNet > 0
-      ? `Estimated net is ${money(estimatedNet)} after modeled trip costs.`
+      ? `Estimated net is ${money(estimatedNet)} after modeled trip costs, giving a directional view of trip margin.`
       : `Estimated net is negative at ${money(estimatedNet)}, so the load needs repricing or cost relief.`,
-    `True RPM is ${money(trueRpm)}/mi across ${round(totalMiles)} total miles.`,
-    `Break-even linehaul RPM is approximately ${money(breakEvenRpm)}/mi before profit.`,
-    `${money(loadOverheadApplied)} of fixed overhead is assigned to this load using ${money(dailyFixedOverhead)}/day across ${round(dispatchDays)} dispatch day(s).`,
+    `True RPM is ${money(trueRpm)}/mi across ${round(totalMiles)} total miles, including deadhead exposure.`,
+    `Break-even linehaul RPM is approximately ${money(breakEvenRpm)}/mi before profit, which helps keep price discipline visible.`,
+    `${money(loadOverheadApplied)} of fixed overhead is assigned to this load using ${money(dailyFixedOverhead)}/day across ${round(dispatchDays)} dispatch day(s), so recurring costs are not hidden from the trip.`,
   ];
 
   if (fuelCost > 0) {
     explanations.push(
-      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(input.fuelPrice)}/gal.`
+      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(input.fuelPrice)}/gal, giving visibility into pump-price and MPG variance.`
     );
   }
 

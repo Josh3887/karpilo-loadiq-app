@@ -4,46 +4,53 @@ export type PublicPlanId = "pro-monthly" | "pro-annual";
 export type InternalPlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
 export type BillingInterval = "month" | "year";
 
+export const SUBSCRIPTION_TRIAL_DAYS = 7;
+export const FUTURE_PLATFORM_FEATURE_SCOPE =
+  "Future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem.";
+
 export const GOLD_ACCESS = {
   name: "Gold",
-  monthlyPrice: 24.99,
-  annualPrice: 189.99,
-  annualSavings: 109.89,
+  monthlyPrice: 29.99,
+  annualPrice: 299.99,
+  annualSavings: 59.89,
 } as const;
 
 export const PLATINUM_ACCESS = {
-  name: "Platinum Annual (Planned)",
+  name: "Platinum (Planned)",
   status: "coming_soon",
-  pricingModel: "You Decide",
+  pricingModel: "Planned / Coming Soon",
   monthlyPrice: 34.99,
-  annualPrice: 0,
-  annualSavings: 0,
+  annualPrice: 349.99,
+  annualSavings: 69.89,
   baseReferencePrice: 34.99,
-  baseReferenceLabel: "$34.99 minimum annual commitment reference",
+  baseReferenceLabel: "$34.99/mo or $349.99/year planned",
   checkoutEnabled: false,
   discountNote:
-    "Platinum Annual is planned as a future user-selectable premium intelligence layer and is not available for checkout yet.",
+    "Platinum is planned as a future premium intelligence layer and is not available for checkout yet.",
   features: [
-    "Gold access included",
-    "Maintenance forecasting support",
-    "Out-of-route event awareness",
-    "Mileage mitigation intelligence",
+    "Gold remains complete operational access",
+    "Advanced trend visibility",
+    "Expanded operational intelligence",
+    "Maintenance pattern awareness",
+    "Out-of-route expense awareness",
     "Repair trend monitoring",
-    "Breakdown pattern visibility",
     "Receipt intelligence",
     "Fuel and deviation analytics",
-    "Future predictive operations signals",
+    "IFTA estimation support, not filing",
   ],
 } as const;
 
 export const FOUNDER_ACCESS = {
   name: "Legacy Launch Operator Access",
   maxSeats: LOADIQ_LAUNCH.launchPromotion.slotLimit,
-  publicTeaser: "First 500 launch operators may qualify for lifetime legacy pricing.",
+  publicTeaser:
+    "First 500 launch operators may qualify for lifetime legacy pricing across two rollout phases of 250.",
   hiddenPricingEnabled: false,
   inviteCodeRequired: true,
   monthlyPrice: 19.99,
   annualPrice: 149.99,
+  lifetimeLockRule:
+    "Legacy Launch pricing remains locked while the subscription stays active and includes future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem.",
 } as const;
 
 export const PILOT_ACCESS = {
@@ -55,7 +62,7 @@ export const PILOT_ACCESS = {
   monthlyPrice: 14.99,
   annualPrice: 129.99,
   lifetimeLockRule:
-    "Pilot pricing remains locked while the subscription stays active and is lost if canceled, deleted, or transferred.",
+    "Pilot pricing remains locked while the subscription stays active and includes future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem. It is lost if canceled, deleted, or transferred.",
 } as const;
 
 export const PUBLIC_PRICING_PLANS = [
@@ -65,15 +72,17 @@ export const PUBLIC_PRICING_PLANS = [
     name: "Gold Monthly",
     price: GOLD_ACCESS.monthlyPrice,
     interval: "month",
-    description: "For operators analyzing freight every week.",
+    description: "Complete operational access for load, fuel, overhead, and margin decisions.",
     cta: "Upgrade when checkout is wired",
     featured: true,
     bullets: [
+      `${SUBSCRIPTION_TRIAL_DAYS}-day free trial`,
       "Unlimited load calculations",
       "Saved load history",
       "Pay templates and lane templates",
       "Post-trip actual comparison",
-      "Advanced profitability intelligence",
+      "Operational decision support",
+      "Prices subject to change",
     ],
   },
   {
@@ -82,15 +91,17 @@ export const PUBLIC_PRICING_PLANS = [
     name: "Gold Annual",
     price: GOLD_ACCESS.annualPrice,
     interval: "year",
-    description: "Best public value for year-round freight decisions.",
+    description: "Annual operational discipline for year-round freight decisions.",
     cta: "Annual plan",
     savingsLabel: `Save $${GOLD_ACCESS.annualSavings.toFixed(2)} vs monthly`,
     bullets: [
+      `${SUBSCRIPTION_TRIAL_DAYS}-day free trial`,
       "Everything in Gold Monthly",
       "Lower effective monthly cost",
       "Saved load and template workflows",
       "Print/export readiness",
-      "Built for owner-operator planning",
+      "Built for owner-operator margin awareness",
+      "Prices subject to change",
     ],
   },
 ] as const;

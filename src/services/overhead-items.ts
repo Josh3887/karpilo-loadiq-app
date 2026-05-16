@@ -73,6 +73,7 @@ const LOADIQ_SUBSCRIPTION_ITEM_ID = "system-loadiq-subscription-expense";
 type SubscriptionExpenseRecord = {
   tier?: unknown;
   status?: unknown;
+  entitlement_status?: unknown;
   billing_interval?: unknown;
   plan_code?: unknown;
 };
@@ -233,7 +234,7 @@ async function getLoadIqSubscriptionExpenseItem({
 
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("tier,status,billing_interval,plan_code")
+    .select("tier,status,entitlement_status,billing_interval,plan_code")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -244,7 +245,9 @@ async function getLoadIqSubscriptionExpenseItem({
     return null;
   }
 
-  const entitlementStatus = normalizeEntitlementStatus(data.status);
+  const entitlementStatus = normalizeEntitlementStatus(
+    data.entitlement_status ?? data.status
+  );
   if (!isActiveEntitlementStatus(entitlementStatus)) {
     return null;
   }

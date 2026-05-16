@@ -1,4 +1,9 @@
-import { FOUNDER_ACCESS, PILOT_ACCESS } from "@/config/pricing";
+import {
+  FOUNDER_ACCESS,
+  GOLD_ACCESS,
+  PILOT_ACCESS,
+  SUBSCRIPTION_TRIAL_DAYS,
+} from "@/config/pricing";
 import { OperatorProgramCode } from "@/types/operator-program";
 
 export type StripeCheckoutPlanId =
@@ -17,6 +22,7 @@ export type StripeCheckoutPlan = {
   label: string;
   interval: "month" | "year";
   amount: number;
+  trialDays: number;
   priceEnvVar: string;
   priceId?: string;
   requiresProgram?: OperatorProgramCode;
@@ -28,7 +34,8 @@ export const STRIPE_CHECKOUT_PLANS = {
     tier: "gold",
     label: "Karpilo LoadIQ Gold Monthly",
     interval: "month",
-    amount: 24.99,
+    amount: GOLD_ACCESS.monthlyPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_MONTHLY",
     priceId: process.env.STRIPE_PRICE_MONTHLY,
   },
@@ -37,7 +44,8 @@ export const STRIPE_CHECKOUT_PLANS = {
     tier: "gold",
     label: "Karpilo LoadIQ Gold Annual",
     interval: "year",
-    amount: 189.99,
+    amount: GOLD_ACCESS.annualPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_ANNUAL",
     priceId: process.env.STRIPE_PRICE_ANNUAL,
   },
@@ -47,6 +55,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     label: "Karpilo LoadIQ Pilot Monthly",
     interval: "month",
     amount: PILOT_ACCESS.monthlyPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_PILOT_MONTHLY",
     // TODO(stripe): Set STRIPE_PRICE_PILOT_MONTHLY to the Stripe sandbox recurring
     // $14.99 Pilot Price ID after creating the product/price in Stripe.
@@ -59,6 +68,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     label: "Karpilo LoadIQ Pilot Annual",
     interval: "year",
     amount: PILOT_ACCESS.annualPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_PILOT_ANNUAL",
     // TODO(stripe): Set STRIPE_PRICE_PILOT_ANNUAL to the Stripe sandbox
     // recurring $129.99 Pilot annual Price ID.
@@ -71,6 +81,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     label: "Karpilo LoadIQ Legacy Launch Monthly",
     interval: "month",
     amount: FOUNDER_ACCESS.monthlyPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_LAUNCH500_MONTHLY",
     // TODO(stripe): Set STRIPE_PRICE_LAUNCH500_MONTHLY to the Stripe sandbox
     // recurring $19.99 legacy launch Price ID.
@@ -83,6 +94,7 @@ export const STRIPE_CHECKOUT_PLANS = {
     label: "Karpilo LoadIQ Legacy Launch Annual",
     interval: "year",
     amount: FOUNDER_ACCESS.annualPrice,
+    trialDays: SUBSCRIPTION_TRIAL_DAYS,
     priceEnvVar: "STRIPE_PRICE_LAUNCH500_ANNUAL",
     // TODO(stripe): Set STRIPE_PRICE_LAUNCH500_ANNUAL to the Stripe sandbox
     // recurring $149.99 legacy launch annual Price ID.

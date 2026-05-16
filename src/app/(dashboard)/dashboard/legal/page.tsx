@@ -106,7 +106,7 @@ export default async function DashboardLegalPage() {
               </p>
               <p>
                 Restore purchases will apply to future native Apple/Google
-                builds. For the web MVP, sign in with the same LoadIQ account
+                builds. For the web MVP, sign in with the same Karpilo LoadIQ account
                 and use billing support if an entitlement is missing.
               </p>
             </div>

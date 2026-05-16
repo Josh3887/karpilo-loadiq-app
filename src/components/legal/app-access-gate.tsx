@@ -74,13 +74,13 @@ export function AppAccessGate({
           </p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-50 sm:text-3xl">
             {requiresPolicyAcceptance
-              ? "Review and accept LoadIQ operating policies."
+              ? "Review and accept Karpilo LoadIQ operating policies."
               : "Monthly driver safety reminder."}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-400">
             {requiresPolicyAcceptance
               ? "These policies are required before using the dashboard, calculator, saved loads, profile, or billing tools."
-              : "Do not interact with LoadIQ while driving unless you are safely parked or using lawful hands-free methods."}
+              : "Do not interact with Karpilo LoadIQ while driving unless you are safely parked or using lawful hands-free methods."}
           </p>
         </header>
 
@@ -119,11 +119,11 @@ export function AppAccessGate({
             </div>
           ) : (
             <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-4 text-sm leading-7 text-red-50">
-              LoadIQ is built for freight decisions, not in-motion interaction.
-              Pull over safely before typing, reviewing detailed calculations,
-              changing profile settings, or managing billing. Follow all
-              applicable hands-free, distracted-driving, employer, carrier, and
-              road-safety rules.
+              Karpilo LoadIQ is built for freight decisions, not in-motion
+              interaction. Pull over safely before typing, reviewing detailed
+              calculations, changing profile settings, or managing billing.
+              Follow all applicable hands-free, distracted-driving, employer,
+              carrier, and road-safety rules.
             </div>
           )}
         </div>
@@ -146,8 +146,8 @@ export function AppAccessGate({
             />
             <span>
               {requiresPolicyAcceptance
-                ? "I have reviewed and agree to all required LoadIQ app policies, disclosures, and limitations."
-                : "I acknowledge this safety reminder and will only interact with LoadIQ when it is lawful and safe."}
+                ? "I have reviewed and agree to all required Karpilo LoadIQ app policies, disclosures, and limitations."
+                : "I acknowledge this safety reminder and will only interact with Karpilo LoadIQ when it is lawful and safe."}
             </span>
           </label>
 

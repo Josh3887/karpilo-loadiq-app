@@ -60,6 +60,7 @@ export const STRIPE_BILLING_DISCLOSURES: LegalSection[] = [
     bullets: [
       "Monthly plans renew monthly until canceled.",
       "Annual plans renew annually until canceled.",
+      "Where supported by the payment provider and checkout flow, paid subscription tiers may include a 7-day free trial before the first recurring charge.",
       "Plan access generally continues through the paid billing period after cancellation.",
       "Failed payments may result in retry attempts, account notices, plan downgrade, feature restriction, or suspension.",
       "Any Stripe customer portal, invoice, or checkout experience should display the applicable plan price, interval, renewal behavior, and cancellation path before purchase.",
@@ -105,4 +106,4 @@ export const PLATFORM_BILLING_DISCLOSURES: LegalSection[] = [
 ];
 
 export const CHECKOUT_ACKNOWLEDGEMENT_TEXT =
-  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand there is no free trial for this launch purchase, and understand paid subscriptions renew unless canceled through the applicable billing platform.";
+  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand eligible paid tiers include a 7-day free trial where supported by the payment provider, and understand paid subscriptions renew unless canceled through the applicable billing platform before the trial or billing period ends.";

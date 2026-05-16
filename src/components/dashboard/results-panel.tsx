@@ -177,6 +177,8 @@ export function ResultsPanel({
           </div>
         </div>
 
+        <OperationalValueNotes result={result} />
+
         {result.explanations.length > 0 && (
           <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-5">
             <div className="mb-4 text-sm uppercase tracking-[0.18em] text-sky-300">
@@ -199,11 +201,12 @@ export function ResultsPanel({
         )}
 
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-500">
-          LoadIQ outputs are estimates based on the values entered here. They do
-          not guarantee broker payment, carrier settlement, reimbursements,
-          fuel pricing, repair exposure, tax treatment, detention approval, or
-          final net income. Verify assumptions against rate confirmations,
-          settlement statements, receipts, and your operating records.
+          Karpilo LoadIQ outputs are estimates based on the values entered here.
+          They do not guarantee broker payment, carrier settlement,
+          reimbursements, fuel pricing, repair exposure, tax treatment,
+          detention approval, or final net income. Verify assumptions against
+          rate confirmations, settlement statements, receipts, and your
+          operating records.
         </div>
 
         {result.warnings.length > 0 && (
@@ -230,6 +233,80 @@ export function ResultsPanel({
         )}
       </div>
     </DashboardCard>
+  );
+}
+
+function OperationalValueNotes({ result }: { result: LoadResult }) {
+  const notes = [
+    {
+      label: "Cost per mile",
+      value: formatRpm(result.costPerMile),
+      body:
+        "Shows the estimated operating pressure each total mile carries, including deadhead and fixed overhead.",
+    },
+    {
+      label: "Break-even RPM",
+      value: formatRpm(result.breakEvenRpm),
+      body:
+        "Marks the estimated loaded-mile rate needed before the trip starts producing margin.",
+    },
+    {
+      label: "Deadhead",
+      value: formatPercent(result.deadheadPercent),
+      body:
+        "Keeps unpaid miles visible so route decisions are not judged by linehaul rate alone.",
+    },
+    {
+      label: "Fuel share",
+      value: formatPercent(result.fuelPercentOfGross),
+      body:
+        "Highlights fuel variance exposure when pump price, MPG, or routing assumptions move.",
+    },
+    {
+      label: "Daily net",
+      value: formatCurrency(result.dailyProfitability),
+      body:
+        "Connects margin to time so a load can be compared against the days it occupies the truck.",
+    },
+    {
+      label: "Trip margin",
+      value: formatPercent(result.profitMarginPercent),
+      body:
+        "Provides directional profitability visibility; it is not a guarantee of settlement or final net income.",
+    },
+  ];
+
+  return (
+    <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-5">
+      <div className="mb-3 text-sm uppercase tracking-[0.18em] text-sky-300">
+        Operational Value Context
+      </div>
+      <p className="mb-4 text-sm leading-6 text-slate-300">
+        Karpilo LoadIQ helps expose operational blind spots that can quietly
+        cost more than the subscription itself. These figures are awareness
+        tools, not promised savings.
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {notes.map((note) => (
+          <div
+            key={note.label}
+            className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                {note.label}
+              </span>
+              <span className="text-sm font-black text-slate-100">
+                {note.value}
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              {note.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
