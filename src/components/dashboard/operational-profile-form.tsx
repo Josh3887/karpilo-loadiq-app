@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +15,7 @@ import {
   PayTemplate,
   saveOperationalProfile,
 } from "@/services/operational-profile";
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { LearnMore } from "@/components/ui/learn-more";
 import { EDUCATION_TOPICS } from "@/config/education";
@@ -34,6 +35,7 @@ const defaultPayForm = {
 };
 
 export function OperationalProfileForm() {
+  const preview = usePreviewMode();
   const router = useRouter();
   const [profile, setProfile] = useState<OperationalProfile>(
     defaultOperationalProfile
@@ -43,7 +45,29 @@ export function OperationalProfileForm() {
   const [status, setStatus] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
 
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
+    if (preview.enabled) {
+      setProfile(defaultOperationalProfile);
+      setPayTemplates([
+        {
+          id: "preview-template",
+          name: "Preview percentage pay",
+          structure: {
+            type: "percentage",
+            label: "Preview percentage pay",
+            percentageChain: [100, 88],
+            cpmRate: 0,
+            flatAmount: 0,
+            dailyRate: 0,
+            includeFuelSurcharge: true,
+            includeAccessorials: true,
+          },
+          is_default: true,
+        },
+      ]);
+      return;
+    }
+
     try {
       const data = await getOperationalProfile();
       setProfile(data.profile);
@@ -55,13 +79,18 @@ export function OperationalProfileForm() {
           : "Unable to load operational profile."
       );
     }
-  }
+  }, [preview.enabled]);
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   async function handleSaveProfile() {
+    if (preview.enabled) {
+      preview.explain("vehicle-profile");
+      return;
+    }
+
     try {
       setStatus("Saving profile...");
       await saveOperationalProfile(profile);
@@ -83,6 +112,11 @@ export function OperationalProfileForm() {
   }
 
   async function handleCreatePayTemplate() {
+    if (preview.enabled) {
+      preview.explain("pay-template");
+      return;
+    }
+
     try {
       setStatus("Saving pay template...");
       const structure: PayStructure = {
@@ -409,6 +443,7 @@ export function OperationalProfileForm() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
+            data-preview-explain="vehicle-profile"
             onClick={handleSaveProfile}
             className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
           >
@@ -433,6 +468,7 @@ export function OperationalProfileForm() {
         <div className="grid gap-5 md:grid-cols-3">
           <InputField
             label="Template Name"
+            previewExplanation="pay-template"
             value={payForm.name}
             onChange={(value) =>
               setPayForm((prev) => ({ ...prev, name: value }))
@@ -458,6 +494,7 @@ export function OperationalProfileForm() {
               <InputField
                 label="Primary %"
                 type="number"
+                previewExplanation="pay-template"
                 value={String(payForm.primaryPercent)}
                 onChange={(value) =>
                   setPayForm((prev) => ({
@@ -469,6 +506,7 @@ export function OperationalProfileForm() {
               <InputField
                 label="Nested %"
                 type="number"
+                previewExplanation="pay-template"
                 value={String(payForm.nestedPercent)}
                 onChange={(value) =>
                   setPayForm((prev) => ({
@@ -483,6 +521,7 @@ export function OperationalProfileForm() {
             <InputField
               label="Flat Amount"
               type="number"
+              previewExplanation="pay-template"
               value={String(payForm.flatAmount)}
               onChange={(value) =>
                 setPayForm((prev) => ({
@@ -496,6 +535,7 @@ export function OperationalProfileForm() {
             <InputField
               label="CPM"
               type="number"
+              previewExplanation="pay-template"
               value={String(payForm.cpmRate)}
               onChange={(value) =>
                 setPayForm((prev) => ({ ...prev, cpmRate: Number(value) }))
@@ -507,6 +547,7 @@ export function OperationalProfileForm() {
         <label className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-800 bg-[#060B14] px-4 text-sm font-semibold uppercase tracking-[0.12em] text-slate-300">
           <input
             type="checkbox"
+            data-preview-explain="pay-template"
             checked={payForm.isDefault}
             onChange={(event) =>
               setPayForm((prev) => ({
@@ -521,6 +562,7 @@ export function OperationalProfileForm() {
 
         <button
           type="button"
+          data-preview-explain="pay-template"
           onClick={handleCreatePayTemplate}
           className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
         >
@@ -531,6 +573,7 @@ export function OperationalProfileForm() {
           {payTemplates.map((template) => (
             <div
               key={template.id}
+              data-preview-explain="pay-template"
               className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
             >
               <div className="font-semibold text-slate-100">
@@ -560,7 +603,10 @@ function SectionTitle({ title }: { title: string }) {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
+    <div
+      data-preview-explain="vehicle-profile"
+      className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4"
+    >
       <div className="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
         {label}
       </div>
@@ -574,11 +620,13 @@ function InputField({
   value,
   type = "text",
   onChange,
+  previewExplanation = "vehicle-profile",
 }: {
   label: string;
   value: string;
   type?: string;
   onChange: (value: string) => void;
+  previewExplanation?: "vehicle-profile" | "pay-template";
 }) {
   return (
     <label className="block">
@@ -586,6 +634,7 @@ function InputField({
         {label}
       </span>
       <input
+        data-preview-explain={previewExplanation}
         type={type}
         step={type === "number" ? "0.01" : undefined}
         value={value}
@@ -611,6 +660,9 @@ function SelectField({
     <ThemedSelect
       label={label}
       value={value}
+      previewExplanation={
+        label.toLowerCase().includes("pay") ? "pay-template" : "vehicle-profile"
+      }
       onChange={onChange}
       options={options.map(([optionValue, optionLabel]) => ({
         value: optionValue,

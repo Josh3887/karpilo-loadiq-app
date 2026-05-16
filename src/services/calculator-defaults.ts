@@ -3,7 +3,7 @@ import {
   calculateOverheadBreakdown,
   calculatePercentDeductions,
   calculateWeeklyOverhead,
-  getOverheadItems,
+  getOverheadItemsWithSubscriptionExpense,
 } from "@/services/overhead-items";
 import {
   deriveIncomeTargets,
@@ -38,7 +38,7 @@ export type CalculatorDefaults = {
 
 export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
   const [items, operationalProfile] = await Promise.all([
-    getOverheadItems().catch(() => []),
+    getOverheadItemsWithSubscriptionExpense().catch(() => []),
     getOperationalProfile().catch(() => null),
   ]);
 

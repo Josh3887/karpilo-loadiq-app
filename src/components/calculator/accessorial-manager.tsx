@@ -157,6 +157,7 @@ export function AccessorialManager({
 
       <button
         type="button"
+        data-preview-explain="calculator-field"
         onClick={addItem}
         className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
       >
@@ -167,6 +168,7 @@ export function AccessorialManager({
         {items.map((item) => (
           <div
             key={item.id}
+            data-preview-explain="calculator-field"
             className="flex items-center justify-between rounded-xl border border-slate-800 bg-[#060B14] p-4"
           >
             <div>
@@ -183,6 +185,7 @@ export function AccessorialManager({
 
             <button
               type="button"
+              data-preview-explain="calculator-field"
               onClick={() => removeItem(item.id)}
               className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-red-300 hover:bg-red-500/20"
             >
@@ -197,7 +200,10 @@ export function AccessorialManager({
 
 function Summary({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+    <div
+      data-preview-explain="calculator-field"
+      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+    >
       <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>

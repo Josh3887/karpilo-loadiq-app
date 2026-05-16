@@ -6,6 +6,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { AccessorialManager } from "@/components/calculator/accessorial-manager";
+import {
+  type PreviewExplanationKey,
+  usePreviewMode,
+} from "@/components/preview/preview-mode-provider";
 import { LearnMore } from "@/components/ui/learn-more";
 import {
   defaultLoadInputValues,
@@ -23,18 +27,48 @@ type LoadInputRawValues = z.input<typeof loadInputSchema>;
 type LoadInputFormProps = {
   onCalculate: (values: LoadInputFormValues) => void;
   initialValues?: LoadInputFormValues | null;
+  previewMode?: boolean;
 };
+
+const PREVIEW_PROFILE_VALUES: ProfileDerivedValues = {
+  dailyFixedOverhead: 185,
+  operatingDaysPerWeek: 5.5,
+  operatingDaysPerMonth: 23.82,
+  dispatchPercent: 8,
+  factoringPercent: 2.5,
+  maintenanceReserve: 0.14,
+  tireReserve: 0.04,
+  trailerFee: 0,
+  insuranceAllocation: 0,
+  variableCostPerMile: 0.22,
+  fixedCostAllocation: 185,
+  mpg: 6.5,
+  targetTrueRpm: 2.15,
+  incomeTargetDaily: 450,
+  incomeTargetWeekly: 2250,
+  minimumHourlyProfitability: 65,
+};
+
+const PREVIEW_FUEL_STATUS =
+  "Preview estimate · live EIA lookup is not called in preview mode.";
 
 export function LoadInputForm({
   onCalculate,
   initialValues,
+  previewMode = false,
 }: LoadInputFormProps) {
+  const preview = usePreviewMode();
+  const previewActive = previewMode || preview.enabled;
   const [accessorialItems, setAccessorialItems] = useState<
     AccessorialInputItem[]
   >([]);
-  const [fuelStatus, setFuelStatus] = useState("");
+  const [fuelStatus, setFuelStatus] = useState(
+    previewActive ? PREVIEW_FUEL_STATUS : ""
+  );
   const [profileValues, setProfileValues] =
-    useState<ProfileDerivedValues | null>(null);
+    useState<ProfileDerivedValues | null>(
+      previewActive ? PREVIEW_PROFILE_VALUES : null
+    );
   const [overrideFields, setOverrideFields] = useState<Record<string, boolean>>(
     {}
   );
@@ -55,6 +89,24 @@ export function LoadInputForm({
   const watchedValues = useWatch({ control });
 
   useEffect(() => {
+    if (previewActive) {
+      setValue("profileDerivedValues", PREVIEW_PROFILE_VALUES);
+      setValue("temporaryOverrides", {});
+      setValue("calculationSource", "profile");
+      setValue("overhead", PREVIEW_PROFILE_VALUES.dailyFixedOverhead);
+      setValue("targetTrueRpm", PREVIEW_PROFILE_VALUES.targetTrueRpm);
+      setValue("mpg", PREVIEW_PROFILE_VALUES.mpg);
+      setValue("maintenanceReserve", PREVIEW_PROFILE_VALUES.maintenanceReserve);
+      setValue("tireReserve", PREVIEW_PROFILE_VALUES.tireReserve);
+      setValue("trailerFee", PREVIEW_PROFILE_VALUES.trailerFee);
+      setValue("insuranceAllocation", PREVIEW_PROFILE_VALUES.insuranceAllocation);
+      setValue("variableCostPerMile", PREVIEW_PROFILE_VALUES.variableCostPerMile);
+      setValue("fixedCostAllocation", PREVIEW_PROFILE_VALUES.fixedCostAllocation);
+      setValue("dispatchPercent", PREVIEW_PROFILE_VALUES.dispatchPercent);
+      setValue("factoringPercent", PREVIEW_PROFILE_VALUES.factoringPercent);
+      return;
+    }
+
     async function loadDefaults() {
       try {
         const defaults = await getCalculatorDefaults();
@@ -105,9 +157,11 @@ export function LoadInputForm({
     }
 
     loadDefaults();
-  }, [setValue]);
+  }, [previewActive, setValue]);
 
   useEffect(() => {
+    if (previewActive) return;
+
     async function loadFuelPrice() {
       try {
         const fuel = await getDieselPrice();
@@ -148,7 +202,7 @@ export function LoadInputForm({
     }
 
     loadFuelPrice();
-  }, [setValue]);
+  }, [previewActive, setValue]);
 
   useEffect(() => {
     if (!initialValues) return;
@@ -184,6 +238,11 @@ export function LoadInputForm({
   }, [initialValues, reset]);
 
   function submit(values: LoadInputRawValues) {
+    if (previewMode || preview.enabled) {
+      preview.explain("analyze-load");
+      return;
+    }
+
     const parsedValues = loadInputSchema.parse({
       ...values,
       accessorialItems,
@@ -316,6 +375,7 @@ export function LoadInputForm({
         <InputField
           label="Trip Number / Broker Reference"
           error={errors.loadNumber?.message}
+          previewKey="trip-number"
           {...register("loadNumber")}
         />
         <p className="text-xs leading-5 text-slate-500">
@@ -518,6 +578,7 @@ export function LoadInputForm({
           <button
             type="button"
             onClick={() => setValue("revenueInputMode", "rpm", { shouldDirty: true })}
+            onFocus={() => preview.enabled && preview.explain("rpm")}
             className={
               revenueInputMode === "rpm"
                 ? "rounded-lg bg-sky-400 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#060B14]"
@@ -529,6 +590,7 @@ export function LoadInputForm({
           <button
             type="button"
             onClick={() => setValue("revenueInputMode", "gross", { shouldDirty: true })}
+            onFocus={() => preview.enabled && preview.explain("gross-revenue")}
             className={
               revenueInputMode === "gross"
                 ? "rounded-lg bg-sky-400 px-3 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#060B14]"
@@ -545,6 +607,7 @@ export function LoadInputForm({
             type="number"
             step="0.01"
             error={errors.grossRevenue?.message}
+            previewKey="gross-revenue"
             {...register("grossRevenue")}
           />
         ) : (
@@ -553,6 +616,7 @@ export function LoadInputForm({
             type="number"
             step="0.01"
             error={errors.ratePerMile?.message}
+            previewKey="rpm"
             {...register("ratePerMile")}
           />
         )}
@@ -563,6 +627,7 @@ export function LoadInputForm({
             type="number"
             step="0.01"
             error={errors.fuelSurcharge?.message}
+            previewKey="fuel-surcharge"
             {...register("fuelSurcharge")}
           />
         </div>
@@ -574,6 +639,7 @@ export function LoadInputForm({
               type="checkbox"
               className="mt-1 h-4 w-4 rounded border-slate-700 bg-[#060B14]"
               checked={fuelSurchargeIncludedInGross}
+              onFocus={() => preview.enabled && preview.explain("fuel-surcharge-included")}
               onChange={(event) => {
                 void fuelSurchargeIncludedField.onChange(event);
                 setValue("fuelSurchargeIncludedInGross", event.target.checked, {
@@ -596,6 +662,7 @@ export function LoadInputForm({
             type="number"
             step="0.01"
             error={errors.fuelPrice?.message}
+            previewKey="fuel-price"
             {...fuelPriceField}
             onChange={(event) => {
               void fuelPriceField.onChange(event);
@@ -649,6 +716,7 @@ export function LoadInputForm({
       <div className="sticky bottom-3 z-20">
         <button
           type="submit"
+          onClick={() => preview.enabled && preview.explain("analyze-load")}
           className="w-full rounded-xl bg-sky-400 px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-[#060B14] shadow-[0_0_25px_rgba(56,189,248,0.35)] transition hover:bg-sky-300"
         >
           Analyze Load
@@ -688,8 +756,19 @@ function ProfileValueField({
   onEnableOverride,
   onOverride,
 }: ProfileValueFieldProps) {
+  const preview = usePreviewMode();
+  const previewKey: PreviewExplanationKey =
+    label.toLowerCase().includes("mpg")
+      ? "mpg"
+      : label.toLowerCase().includes("rpm")
+        ? "rpm"
+        : "settings-station";
+
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+    <div
+      data-preview-explain={previewKey}
+      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -707,6 +786,7 @@ function ProfileValueField({
           {isOverride ? (
             <input
               type="number"
+              data-preview-explain={previewKey}
               step="0.01"
               defaultValue={value}
               onChange={(event) => onOverride(Number(event.target.value))}
@@ -721,7 +801,13 @@ function ProfileValueField({
           {!isOverride && (
             <button
               type="button"
-              onClick={onEnableOverride}
+              onClick={() => {
+                if (preview.enabled) {
+                  preview.explain(previewKey);
+                  return;
+                }
+                onEnableOverride();
+              }}
               className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-sky-300 transition hover:text-sky-200"
             >
               Override Once
@@ -764,9 +850,12 @@ function SectionTitle({ title }: { title: string }) {
 type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   error?: string;
+  previewKey?: PreviewExplanationKey;
 };
 
-function InputField({ label, error, ...props }: InputFieldProps) {
+function InputField({ label, error, previewKey, ...props }: InputFieldProps) {
+  const preview = usePreviewMode();
+
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
@@ -775,6 +864,15 @@ function InputField({ label, error, ...props }: InputFieldProps) {
 
       <input
         {...props}
+        data-preview-explain={previewKey}
+        readOnly={preview.enabled || props.readOnly}
+        aria-readonly={preview.enabled || props.readOnly}
+        onFocus={(event) => {
+          props.onFocus?.(event);
+          if (preview.enabled && previewKey) {
+            preview.explain(previewKey);
+          }
+        }}
         className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
       />
 

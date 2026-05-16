@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   calculateCpmExposure,
@@ -11,7 +11,7 @@ import {
   calculateWeeklyOverhead,
   createOverheadItem,
   deleteOverheadItem,
-  getOverheadItems,
+  getOverheadItemsWithSubscriptionExpense,
   OverheadAmountType,
   OverheadFrequency,
   OverheadItem,
@@ -20,6 +20,7 @@ import {
 import { getOperationalProfile } from "@/services/operational-profile";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { LearnMore } from "@/components/ui/learn-more";
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { EDUCATION_TOPICS, OVERHEAD_CATEGORY_HELP } from "@/config/education";
 import { formatCurrency } from "@/utils/format";
 
@@ -33,28 +34,70 @@ const defaultForm = {
   is_active: true,
 };
 
+const previewItems: OverheadItem[] = [
+  {
+    id: "preview-loadiq-subscription",
+    user_id: "preview",
+    label: "Karpilo LoadIQ subscription",
+    category: "software_subscription",
+    amount: 24.99,
+    amount_type: "flat",
+    frequency: "monthly",
+    responsibility: "driver",
+    is_active: true,
+    created_at: new Date(0).toISOString(),
+    updated_at: new Date(0).toISOString(),
+    system_generated: true,
+  },
+  {
+    id: "preview-insurance",
+    user_id: "preview",
+    label: "Insurance allocation",
+    category: "fixed_operations",
+    amount: 1200,
+    amount_type: "flat",
+    frequency: "monthly",
+    responsibility: "driver",
+    is_active: true,
+    created_at: new Date(0).toISOString(),
+    updated_at: new Date(0).toISOString(),
+  },
+];
+
 export function OverheadManager() {
+  const preview = usePreviewMode();
   const [items, setItems] = useState<OverheadItem[]>([]);
   const [operatingDaysPerWeek, setOperatingDaysPerWeek] = useState(5.5);
   const [status, setStatus] = useState("");
   const [form, setForm] = useState(defaultForm);
 
-  async function loadItems() {
+  const loadItems = useCallback(async () => {
+    if (preview.enabled) {
+      setItems(previewItems);
+      setOperatingDaysPerWeek(5.5);
+      return;
+    }
+
     try {
-      const data = await getOverheadItems();
+      const data = await getOverheadItemsWithSubscriptionExpense();
       setItems(data);
       const profile = await getOperationalProfile().catch(() => null);
       setOperatingDaysPerWeek(profile?.profile.operatingDaysPerWeek ?? 5.5);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to load overhead items.");
     }
-  }
+  }, [preview.enabled]);
 
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [loadItems]);
 
   async function handleCreateItem() {
+    if (preview.enabled) {
+      preview.explain("overhead-item");
+      return;
+    }
+
     try {
       setStatus("Saving overhead item...");
       await createOverheadItem(form);
@@ -67,6 +110,11 @@ export function OverheadManager() {
   }
 
   async function handleDeleteItem(id: string) {
+    if (preview.enabled) {
+      preview.explain("overhead-delete");
+      return;
+    }
+
     try {
       await deleteOverheadItem(id);
       await loadItems();
@@ -99,7 +147,8 @@ export function OverheadManager() {
           <p className="mt-3 text-sm leading-6 text-slate-400">
             Daily overhead is used to calculate how much fixed business cost
             should be assigned to each load based on how many days that load
-            occupies your truck.
+            occupies your truck. Active Karpilo LoadIQ subscription pricing is
+            included as a system operating expense for accuracy.
           </p>
         </div>
 
@@ -283,9 +332,10 @@ export function OverheadManager() {
             <button
               type="button"
               onClick={() => handleDeleteItem(item.id)}
+              disabled={item.system_generated}
               className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-red-300 hover:bg-red-500/20"
             >
-              Delete
+              {item.system_generated ? "System" : "Delete"}
             </button>
           </div>
         ))}
@@ -296,7 +346,10 @@ export function OverheadManager() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5">
+    <div
+      data-preview-explain="overhead-item"
+      className="rounded-2xl border border-sky-400/20 bg-sky-400/5 p-5"
+    >
       <div className="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">{label}</div>
       <div className="mt-3 text-3xl font-black text-slate-100">{value}</div>
     </div>
@@ -320,6 +373,7 @@ function InputField({
         {label}
       </span>
       <input
+        data-preview-explain="overhead-item"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -344,6 +398,7 @@ function SelectField({
     <ThemedSelect
       label={label}
       value={value}
+      previewExplanation="overhead-item"
       onChange={onChange}
       options={options}
     />
