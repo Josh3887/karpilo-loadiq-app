@@ -64,7 +64,7 @@ export const OVERHEAD_CATEGORY_HELP = {
   insurance:
     "Insurance can be modeled as a recurring weekly/monthly burden or a trip allocation.",
   compliance:
-    "Permits, IFTA support, ELD, drug consortium, filings, and safety/compliance services fit here.",
+    "Permits, ELD, drug consortium, filings, and safety/compliance services fit here. Advanced jurisdictional fuel-tax estimation belongs only under Platinum intelligence.",
   dispatchFactoring:
     "Dispatch and factoring are usually percentage deductions. Add them as percent overhead or profile defaults.",
   truckPayment:

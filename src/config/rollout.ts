@@ -1,3 +1,5 @@
+import { LOADIQ_EMAILS } from "@/config/loadiq";
+
 export type RolloutPhaseCode =
   | "FOUNDER_PILOT"
   | "CONTROLLED_PUBLIC_LAUNCH"
@@ -81,8 +83,7 @@ export const ROLLOUT_PHASES = [
 export const ROLLOUT_CONFIG = {
   version: "2026.05.rollout-control",
   defaultPhase: "GENERAL_AVAILABILITY",
-  supportFooter:
-    "Support, billing, privacy, deletion, and app issues route through support@karpiloloadiq.com.",
+  supportFooter: `Support, privacy, deletion, and app issues route through ${LOADIQ_EMAILS.support}. Feature requests route through ${LOADIQ_EMAILS.founderFeedback}. Billing issues use ${LOADIQ_EMAILS.billing}.`,
   telemetrySources: {
     appGate: "app_access_gate",
     onboarding: "onboarding",

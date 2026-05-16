@@ -12,9 +12,15 @@ export const LOADIQ_URLS = {
 } as const;
 
 export const LOADIQ_EMAILS = {
+  noReply: "noreply@karpiloloadiq.com",
   support: "support@karpiloloadiq.com",
+  newsletter: "newsletter@karpiloloadiq.com",
+  updates: "updates@karpiloloadiq.com",
   billing: "billing@karpiloloadiq.com",
-  feedback: "j.karpilo@karpiloendeavortechnologies.com",
+  founderFeedback: "j.karpilo@karpiloloadiq.com",
+  corporate: "Josh.karpilo@karpiloendeavortechnologies.com",
+  feedback: "j.karpilo@karpiloloadiq.com",
+  legal: "Josh.karpilo@karpiloendeavortechnologies.com",
 } as const;
 
 export const LOADIQ_LAUNCH = {
