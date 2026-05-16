@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ElevatedAuthPanel } from "@/components/admin/elevated-auth-panel";
 import { writeAdminAuditEvent } from "@/lib/admin/audit";
+import { getElevatedSessionStatus } from "@/lib/admin/elevated-auth";
 import { requireAdminAccess } from "@/lib/admin/roles";
 
 const adminLinks = [
@@ -55,6 +57,32 @@ export default async function AdminPage() {
     status: "success",
   });
 
+  const elevatedStatus = await getElevatedSessionStatus(result.access);
+
+  if (!elevatedStatus.elevated) {
+    return (
+      <main className="min-h-screen bg-[#060B14] px-6 py-10 text-slate-100">
+        <section className="mx-auto max-w-4xl rounded-2xl border border-sky-400/20 bg-[#0B1220] p-6">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">
+            Karpilo LoadIQ Control Plane
+          </p>
+          <h1 className="mt-3 text-3xl font-black">Admin scaffold</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            Backend role verified as {result.access.highestRole}. Elevated
+            founder/admin authentication is required before control-plane links
+            are shown.
+          </p>
+
+          <ElevatedAuthPanel
+            email={result.access.user.email}
+            role={result.access.highestRole}
+            initialStatus={elevatedStatus}
+          />
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#060B14] px-6 py-10 text-slate-100">
       <section className="mx-auto max-w-4xl rounded-2xl border border-sky-400/20 bg-[#0B1220] p-6">
@@ -64,8 +92,9 @@ export default async function AdminPage() {
         <h1 className="mt-3 text-3xl font-black">Admin scaffold</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">
           Backend role verified as {result.access.highestRole}. This is a
-          functional scaffold only; polished admin UI and elevated email
-          challenge are intentionally not implemented yet.
+          functional scaffold only; polished admin UI is intentionally not
+          implemented yet. Elevated session expires at{" "}
+          {elevatedStatus.expiresAt}.
         </p>
 
         <div className="mt-6 grid gap-3">
