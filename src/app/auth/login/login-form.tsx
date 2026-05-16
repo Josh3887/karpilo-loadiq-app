@@ -73,6 +73,13 @@ export function LoginForm() {
           Create one
         </Link>
       </p>
+
+      <p className="border-t border-slate-800 pt-4 text-sm text-slate-400">
+        Founder/admin?{" "}
+        <Link href="/admin/login" className="text-sky-400">
+          Founder/Admin access
+        </Link>
+      </p>
     </form>
   );
 }

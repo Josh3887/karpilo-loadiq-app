@@ -4,17 +4,44 @@ import { createClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
+const TRUSTED_APP_ORIGINS = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://app.karpiloloadiq.com",
+]);
+
+function getTrustedRequestOrigin(request: NextRequest) {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedOrigin =
+    forwardedProto && forwardedHost
+      ? `${forwardedProto.split(",")[0]?.trim()}://${forwardedHost
+          .split(",")[0]
+          ?.trim()}`
+      : null;
+  const candidateOrigins = [
+    forwardedOrigin,
+    request.nextUrl.origin,
+  ].filter((origin): origin is string => Boolean(origin));
+
+  return (
+    candidateOrigins.find((origin) => TRUSTED_APP_ORIGINS.has(origin)) ??
+    "https://app.karpiloloadiq.com"
+  );
+}
+
 function getSafeRedirectPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(value)
+  ) {
     return "/dashboard";
   }
 
   try {
     const parsed = new URL(value, "https://app.karpiloloadiq.com");
-
-    if (parsed.origin !== "https://app.karpiloloadiq.com") {
-      return "/dashboard";
-    }
 
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
@@ -23,7 +50,8 @@ function getSafeRedirectPath(value: string | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const origin = getTrustedRequestOrigin(request);
   const code = searchParams.get("code");
   const next = getSafeRedirectPath(searchParams.get("next"));
 

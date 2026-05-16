@@ -6,6 +6,7 @@ import {
   buildAdminPasswordlessRedirectUrl,
   getAdminPasswordlessAuditMetadata,
   getAdminPasswordlessEligibility,
+  getTrustedAdminRequestOrigin,
   normalizeAdminLoginEmail,
 } from "@/lib/admin/passwordless-login";
 import { createClient } from "@/lib/supabase-server";
@@ -65,7 +66,9 @@ export async function POST(request: NextRequest) {
       return genericResponse();
     }
 
-    const redirectTo = buildAdminPasswordlessRedirectUrl(request.nextUrl.origin);
+    const redirectTo = buildAdminPasswordlessRedirectUrl(
+      getTrustedAdminRequestOrigin(request),
+    );
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,

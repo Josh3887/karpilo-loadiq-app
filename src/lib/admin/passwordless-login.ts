@@ -44,8 +44,38 @@ export function isCanonicalAdminEmail(email: string) {
   return email === ELEVATED_ADMIN_EMAIL;
 }
 
+const TRUSTED_APP_ORIGINS = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://app.karpiloloadiq.com",
+]);
+
+export function getTrustedAdminRequestOrigin(request: Request) {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedOrigin =
+    forwardedProto && forwardedHost
+      ? `${forwardedProto.split(",")[0]?.trim()}://${forwardedHost
+          .split(",")[0]
+          ?.trim()}`
+      : null;
+  const candidateOrigins = [
+    forwardedOrigin,
+    new URL(request.url).origin,
+  ].filter((origin): origin is string => Boolean(origin));
+
+  const trustedOrigin = candidateOrigins.find((origin) =>
+    TRUSTED_APP_ORIGINS.has(origin),
+  );
+
+  return trustedOrigin ?? "https://app.karpiloloadiq.com";
+}
+
 export function buildAdminPasswordlessRedirectUrl(origin: string) {
-  const callbackUrl = new URL("/auth/callback", origin);
+  const safeOrigin = TRUSTED_APP_ORIGINS.has(origin)
+    ? origin
+    : "https://app.karpiloloadiq.com";
+  const callbackUrl = new URL("/auth/callback", safeOrigin);
   callbackUrl.searchParams.set("next", "/admin/elevated");
   return callbackUrl.toString();
 }
