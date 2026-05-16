@@ -7,6 +7,7 @@ type ElevatedAuthPanelProps = {
   email: string | null | undefined;
   role: string;
   initialStatus: ElevatedStatus;
+  successRedirectTo?: string;
 };
 
 type ElevatedStatus = {
@@ -34,6 +35,7 @@ export function ElevatedAuthPanel({
   email,
   role,
   initialStatus,
+  successRedirectTo,
 }: ElevatedAuthPanelProps) {
   const router = useRouter();
   const [challenge, setChallenge] = useState("");
@@ -110,6 +112,9 @@ export function ElevatedAuthPanel({
       setToken("");
       setStatus({ elevated: Boolean(body.elevated), expiresAt: body.expiresAt });
       setMessage("Elevated session active.");
+      if (successRedirectTo) {
+        router.push(successRedirectTo);
+      }
       router.refresh();
     } catch (requestError) {
       setError(
