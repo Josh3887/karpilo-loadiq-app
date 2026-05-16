@@ -27,5 +27,6 @@ export const GET = withAdminApi(
   {
     allowedRoles: ["admin", "developer", "owner"],
     action: "admin_publication_audiences_read",
+    requiresElevated: true,
   },
 );

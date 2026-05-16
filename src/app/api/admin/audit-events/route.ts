@@ -39,5 +39,6 @@ export const GET = withAdminApi(
   {
     allowedRoles: ["support", "admin", "developer", "owner"],
     action: "admin_audit_events_read",
+    requiresElevated: true,
   },
 );

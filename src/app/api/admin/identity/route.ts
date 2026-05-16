@@ -20,5 +20,6 @@ export const GET = withAdminApi(
   {
     allowedRoles: ["support", "admin", "developer", "owner"],
     action: "admin_identity_read",
+    requiresElevated: true,
   },
 );

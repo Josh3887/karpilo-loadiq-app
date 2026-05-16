@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 
 import { writeAdminAuditEvent } from "@/lib/admin/audit";
 import {
+  clearElevatedSessionCookie,
+  getElevatedSessionStatus,
+} from "@/lib/admin/elevated-auth";
+import {
   type AdminAccess,
   type AdminRole,
   requireAdminAccess,
@@ -18,6 +22,7 @@ type AdminApiHandler = (context: AdminApiContext) => Promise<Response>;
 type AdminApiOptions = {
   allowedRoles: readonly AdminRole[];
   action: string;
+  requiresElevated?: boolean;
 };
 
 export function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -44,6 +49,39 @@ export function withAdminApi(handler: AdminApiHandler, options: AdminApiOptions)
         return jsonResponse({ error: result.error }, { status: result.status });
       }
 
+      if (options.requiresElevated) {
+        const elevatedStatus = await getElevatedSessionStatus(result.access);
+
+        if (!elevatedStatus.elevated) {
+          if (elevatedStatus.reason && elevatedStatus.reason !== "missing") {
+            await clearElevatedSessionCookie();
+          }
+
+          const suspiciousReasons = ["invalid", "inactive", "not_found"];
+          const eventType = suspiciousReasons.includes(
+            elevatedStatus.reason ?? "",
+          )
+            ? "suspicious_admin_attempt"
+            : "admin_api_elevated_access";
+          const status =
+            elevatedStatus.reason === "expired" ? "expired" : "blocked";
+
+          await writeAdminAuditEvent({
+            access: result.access,
+            action: options.action,
+            eventType,
+            status,
+            metadata: {
+              allowed_roles: options.allowedRoles,
+              elevated_required: true,
+              elevated_reason: elevatedStatus.reason ?? "unknown",
+            },
+          });
+
+          return jsonResponse({ error: "elevated_required" }, { status: 403 });
+        }
+      }
+
       await writeAdminAuditEvent({
         access: result.access,
         action: options.action,
@@ -51,6 +89,7 @@ export function withAdminApi(handler: AdminApiHandler, options: AdminApiOptions)
         status: "success",
         metadata: {
           allowed_roles: options.allowedRoles,
+          elevated_required: options.requiresElevated ?? false,
         },
       });
 
