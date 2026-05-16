@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { BRAND } from "@/config/brand";
 import { createClient } from "@/lib/supabase-client";
+import { ensureAppUserProfile } from "@/services/app-user-profile";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -65,6 +66,10 @@ export function RegisterForm() {
       }
 
       if (data.session) {
+        if (data.user) {
+          await ensureAppUserProfile(supabase, data.user);
+        }
+
         setStatus("Account created. Opening dashboard...");
         router.push("/dashboard");
         router.refresh();

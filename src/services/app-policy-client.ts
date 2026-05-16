@@ -10,6 +10,7 @@ import {
   LOADIQ_DISCLAIMER_VERSION,
 } from "@/config/legal";
 import { createClient } from "@/lib/supabase-client";
+import { ensureAppUserProfile } from "@/services/app-user-profile";
 import {
   recordDisclaimerAcceptanceEvent,
   recordOnboardingEvent,
@@ -36,6 +37,14 @@ export async function acceptRequiredAppPolicies() {
 
   const acceptedAt = new Date().toISOString();
   const platform = platformName();
+
+  await ensureAppUserProfile(supabase, user, {
+    disclaimer_accepted_at: acceptedAt,
+    disclaimer_version: LOADIQ_DISCLAIMER_VERSION,
+    disclaimer_last_updated: LOADIQ_DISCLAIMER_LAST_UPDATED,
+    updated_at: acceptedAt,
+  });
+
   const rows = REQUIRED_APP_POLICIES.map((policy) => ({
     user_id: user.id,
     policy_key: policy.key,
@@ -55,18 +64,6 @@ export async function acceptRequiredAppPolicies() {
     .upsert(rows, { onConflict: "user_id,policy_key,policy_version" });
 
   if (error) throw new Error(error.message);
-
-  await supabase.from("users").upsert(
-    {
-      id: user.id,
-      email: user.email,
-      disclaimer_accepted_at: acceptedAt,
-      disclaimer_version: LOADIQ_DISCLAIMER_VERSION,
-      disclaimer_last_updated: LOADIQ_DISCLAIMER_LAST_UPDATED,
-      updated_at: acceptedAt,
-    },
-    { onConflict: "id" }
-  );
 
   await acknowledgeDriverSafety("initial_policy_acceptance");
   await recordDisclaimerAcceptanceEvent({
@@ -97,6 +94,8 @@ export async function acknowledgeDriverSafety(
   if (userError || !user) {
     throw new Error("You must be signed in to acknowledge driver safety.");
   }
+
+  await ensureAppUserProfile(supabase, user);
 
   const { error } = await supabase.from("driver_safety_acknowledgments").insert({
     user_id: user.id,
