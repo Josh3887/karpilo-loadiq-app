@@ -7,7 +7,11 @@ import {
   StripeCheckoutPlan,
   StripePlanTier,
 } from "@/config/stripe";
-import { FOUNDER_ACCESS, PILOT_ACCESS } from "@/config/pricing";
+import {
+  FOUNDER_ACCESS,
+  FUTURE_PLATFORM_FEATURE_SCOPE,
+  PILOT_ACCESS,
+} from "@/config/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 function fromUnixTime(timestamp?: number | null) {
@@ -24,6 +28,58 @@ function planFromPriceId(priceId: string | null | undefined) {
   return Object.values(STRIPE_CHECKOUT_PLANS).find(
     (plan) => plan.priceId && plan.priceId === priceId
   );
+}
+
+function entitlementStatusFromStripe(
+  status: Stripe.Subscription.Status
+): "trialing" | "active" | "past_due" | "canceled" | "expired" | "blocked" | "unknown" {
+  if (status === "trialing") return "trialing";
+  if (status === "active") return "active";
+  if (status === "past_due") return "past_due";
+  if (status === "canceled") return "canceled";
+  if (status === "incomplete_expired") return "expired";
+  if (status === "unpaid") return "blocked";
+  return "unknown";
+}
+
+function trialStatusFromStripe(subscription: Stripe.Subscription) {
+  if (!subscription.trial_start && !subscription.trial_end) return null;
+  const trialEnd = fromUnixTime(subscription.trial_end);
+
+  if (
+    subscription.status === "trialing" &&
+    (!trialEnd || Date.parse(trialEnd) > Date.now())
+  ) {
+    return "active";
+  }
+
+  if (
+    subscription.status === "trialing" &&
+    trialEnd &&
+    Date.parse(trialEnd) <= Date.now()
+  ) {
+    return "expired";
+  }
+
+  if (subscription.status === "canceled") return "ended";
+  return "ended";
+}
+
+function trialDurationDays(subscription: Stripe.Subscription) {
+  if (!subscription.trial_start || !subscription.trial_end) return null;
+  const seconds = subscription.trial_end - subscription.trial_start;
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  return Math.round(seconds / 86_400);
+}
+
+function cohortCapForPlan(plan: StripeCheckoutPlan | null) {
+  if (plan?.requiresProgram === "pilot50") return PILOT_ACCESS.maxSeats;
+  if (plan?.requiresProgram === "launch500") return FOUNDER_ACCESS.maxSeats;
+  return null;
+}
+
+function lifetimeLockForPlan(plan: StripeCheckoutPlan | null) {
+  return plan?.tier === "pilot" || plan?.tier === "launch500";
 }
 
 export function planFromStripeSubscription(
@@ -69,6 +125,7 @@ async function insertPricingLock(params: {
 
   const supabase = createSupabaseAdminClient();
   const isPilot = params.plan.requiresProgram === "pilot50";
+  const hasLifetimeLock = lifetimeLockForPlan(params.plan);
   const { error } = await supabase.from("operator_pricing_locks").insert({
     user_id: params.userId,
     program: params.plan.requiresProgram,
@@ -80,7 +137,13 @@ async function insertPricingLock(params: {
     billing_provider: "stripe",
     provider_price_id: params.subscription.items.data[0]?.price.id ?? null,
     provider_subscription_id: params.subscription.id,
-    lifetime_lock: true,
+    lifetime_lock: hasLifetimeLock,
+    future_feature_access_scope: hasLifetimeLock
+      ? FUTURE_PLATFORM_FEATURE_SCOPE
+      : null,
+    price_subject_to_change: !hasLifetimeLock,
+    cohort_phase: params.plan.requiresProgram,
+    cohort_cap: cohortCapForPlan(params.plan),
     metadata: {
       plan_id: params.plan.id,
       stripe_status: params.subscription.status,
@@ -103,6 +166,7 @@ async function upsertPricingLockStatus(params: {
 
   const supabase = createSupabaseAdminClient();
   const isPilot = params.plan.requiresProgram === "pilot50";
+  const hasLifetimeLock = lifetimeLockForPlan(params.plan);
   const subscriptionStatus = params.subscription.status;
   const lockStatus =
     subscriptionStatus === "active" || subscriptionStatus === "trialing"
@@ -125,6 +189,12 @@ async function upsertPricingLockStatus(params: {
       annual_price: isPilot
         ? PILOT_ACCESS.annualPrice
         : FOUNDER_ACCESS.annualPrice,
+      future_feature_access_scope: hasLifetimeLock
+        ? FUTURE_PLATFORM_FEATURE_SCOPE
+        : null,
+      price_subject_to_change: !hasLifetimeLock,
+      cohort_phase: params.plan.requiresProgram,
+      cohort_cap: cohortCapForPlan(params.plan),
       active_since: now,
       lapsed_at: lockStatus === "lapsed" ? now : null,
       reason:
@@ -187,6 +257,15 @@ export async function rememberStripeCustomer(params: {
     plan_code: "pending",
     tier: "unknown",
     status: "inactive",
+    entitlement_status: "unknown",
+    trial_status: null,
+    trial_duration_days: null,
+    billing_starts_at: null,
+    lifetime_price_lock: false,
+    future_feature_access_scope: null,
+    cohort_phase: null,
+    cohort_cap: null,
+    price_subject_to_change: null,
     metadata: {
       email: params.email ?? null,
       customer_created_by: "checkout_session_route",
@@ -251,6 +330,10 @@ export async function upsertStripeSubscription(params: {
     current_period_start?: number;
     current_period_end?: number;
   };
+  const hasLifetimeLock = lifetimeLockForPlan(plan);
+  const trialEnd = fromUnixTime(subscription.trial_end);
+  const currentPeriodStart = fromUnixTime(subscriptionAny.current_period_start);
+  const currentPeriodEnd = fromUnixTime(subscriptionAny.current_period_end);
 
   const record = {
     user_id: userId,
@@ -260,19 +343,32 @@ export async function upsertStripeSubscription(params: {
     plan_code: plan?.id ?? subscription.items.data[0]?.price.id ?? tier,
     tier,
     status: subscription.status,
+    entitlement_status: entitlementStatusFromStripe(subscription.status),
     billing_interval: plan?.interval ?? subscription.items.data[0]?.price.recurring?.interval ?? null,
     trial_start: fromUnixTime(subscription.trial_start),
-    trial_end: fromUnixTime(subscription.trial_end),
-    current_period_start: fromUnixTime(subscriptionAny.current_period_start),
-    current_period_end: fromUnixTime(subscriptionAny.current_period_end),
+    trial_end: trialEnd,
+    trial_duration_days: trialDurationDays(subscription),
+    trial_status: trialStatusFromStripe(subscription),
+    billing_starts_at: trialEnd ?? currentPeriodStart,
+    current_period_start: currentPeriodStart,
+    current_period_end: currentPeriodEnd,
     cancel_at_period_end: subscription.cancel_at_period_end,
     canceled_at: fromUnixTime(subscription.canceled_at),
-    pilot_pricing_locked: tier === "pilot" || tier === "launch500",
+    pilot_pricing_locked: hasLifetimeLock,
+    lifetime_price_lock: hasLifetimeLock,
+    future_feature_access_scope: hasLifetimeLock
+      ? FUTURE_PLATFORM_FEATURE_SCOPE
+      : null,
+    cohort_phase: plan?.requiresProgram ?? null,
+    cohort_cap: cohortCapForPlan(plan),
+    price_subject_to_change: !hasLifetimeLock,
     metadata: {
       stripe_price_id: subscription.items.data[0]?.price.id ?? null,
       stripe_product_id: asId(subscription.items.data[0]?.price.product),
       stripe_status: subscription.status,
       stripe_metadata: subscription.metadata,
+      trial_duration_days: trialDurationDays(subscription),
+      trial_status: trialStatusFromStripe(subscription),
     },
     updated_at: new Date().toISOString(),
   };
@@ -314,6 +410,7 @@ export async function markStripeSubscriptionPaymentFailed(params: {
     .from("subscriptions")
     .update({
       status: "past_due",
+      entitlement_status: "past_due",
       metadata: {
         last_invoice_payment_failed_at: new Date().toISOString(),
       },

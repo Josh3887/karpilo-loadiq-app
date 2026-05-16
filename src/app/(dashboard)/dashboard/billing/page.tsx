@@ -6,6 +6,7 @@ import { CustomerPortalButton } from "@/components/billing/customer-portal-butto
 import { OperatorBadges } from "@/components/dashboard/operator-badges";
 import {
   FOUNDER_ACCESS,
+  FUTURE_PLATFORM_FEATURE_SCOPE,
   INTERNAL_FOUNDER_PLANS,
   INTERNAL_PILOT_PLANS,
   PILOT_ACCESS,
@@ -168,6 +169,13 @@ function BillingContent({
 }) {
   void founderAccess;
   const activeTier = paymentAccess.tier;
+  const hasLifetimeDisplay =
+    paymentAccess.lifetimePriceLock ||
+    activeTier === "pilot" ||
+    activeTier === "launch500";
+  const futureFeatureScope =
+    paymentAccess.futureFeatureAccessScope ??
+    (hasLifetimeDisplay ? FUTURE_PLATFORM_FEATURE_SCOPE : null);
   const lifecycleDate =
     paymentAccess.billingStartsAt ??
     paymentAccess.trialEnd ??
@@ -227,7 +235,7 @@ function BillingContent({
             />
             <PlanLine
               label="Lifetime lock"
-              value={paymentAccess.lifetimePriceLock ? "Protected" : "Not active"}
+              value={hasLifetimeDisplay ? "Protected" : "Not active"}
             />
             <PlanLine
               label="Cohort"
@@ -235,11 +243,11 @@ function BillingContent({
             />
             <PlanLine
               label="Price status"
-              value={paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
+              value={hasLifetimeDisplay || paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
             />
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-400">
-            {paymentAccess.futureFeatureAccessScope ??
+            {futureFeatureScope ??
               "Gold access is designed as complete operational visibility. Pilot and Legacy Launch records can preserve lifetime pricing and future released platform feature access when assigned."}
           </p>
         </section>

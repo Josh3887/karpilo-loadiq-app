@@ -154,15 +154,20 @@ export function resolvePaymentAccess(
   usage: EntitlementUsage
 ): PaymentAccess {
   const billingProvider = normalizeBillingProvider(subscription?.provider);
-  const entitlementStatus = normalizeEntitlementStatus(
+  const rawEntitlementStatus = normalizeEntitlementStatus(
     subscription?.entitlement_status ?? subscription?.status
   );
+  const currentPeriodEnd = asNullableString(subscription?.current_period_end);
+  const trialEnd = asNullableString(subscription?.trial_end);
+  const hasStaleTrial =
+    rawEntitlementStatus === "trialing" &&
+    Boolean(trialEnd) &&
+    !isFutureIso(trialEnd);
+  const entitlementStatus = hasStaleTrial ? "expired" : rawEntitlementStatus;
   const hasActiveAccess = isActiveEntitlementStatus(entitlementStatus);
   const tier = hasActiveAccess
     ? normalizePlanTier(subscription?.tier)
     : "no_access";
-  const currentPeriodEnd = asNullableString(subscription?.current_period_end);
-  const trialEnd = asNullableString(subscription?.trial_end);
   const trialDurationDays = asNullableNumber(subscription?.trial_duration_days);
   const trialStatus = asNullableString(subscription?.trial_status);
   const billingStartsAt = asNullableString(subscription?.billing_starts_at);

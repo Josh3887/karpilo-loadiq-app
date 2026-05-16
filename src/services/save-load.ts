@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-client";
 
+import { resolvePaymentAccess } from "@/domains/billing/entitlement-service";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { LoadInput, LoadResult } from "@/types/load";
 
@@ -55,34 +56,41 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     throw new Error(formatSupabaseError(profileError));
   }
 
-  const { data: subscription, error: subscriptionError } = await supabase
-    .from("subscriptions")
-    .select("tier,status")
-    .eq("user_id", user.id)
-    .in("status", ["active", "trialing"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [
+    { data: subscription, error: subscriptionError },
+    { count, error: countError },
+  ] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select(
+        "tier,status,provider,provider_customer_id,provider_subscription_id,current_period_end,trial_end,trial_duration_days,trial_status,billing_starts_at,lifetime_price_lock,future_feature_access_scope,cohort_phase,cohort_cap,price_subject_to_change,entitlement_status,cancel_at_period_end,canceled_at"
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("saved_loads")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+  ]);
 
   if (subscriptionError) {
     throw new Error(formatSupabaseError(subscriptionError));
   }
 
-  if (
-    subscription?.tier !== "gold" &&
-    subscription?.tier !== "platinum" &&
-    subscription?.tier !== "pro" &&
-    subscription?.tier !== "founder" &&
-    subscription?.tier !== "pilot" &&
-    subscription?.tier !== "launch500"
-  ) {
-    throw new Error("An active Karpilo LoadIQ subscription is required to save load history.");
+  if (countError) {
+    throw new Error(formatSupabaseError(countError));
   }
 
-  const { count } = await supabase
-    .from("saved_loads")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  const paymentAccess = resolvePaymentAccess(subscription, {
+    monthlyCalculations: 0,
+    savedLoads: count ?? 0,
+  });
+
+  if (!paymentAccess.hasActiveAccess || !paymentAccess.entitlements.canSaveLoad) {
+    throw new Error("An active Karpilo LoadIQ subscription is required to save load history.");
+  }
 
   const loadiqLoadNumber = `LIQ-${String((count ?? 0) + 1).padStart(5, "0")}`;
 

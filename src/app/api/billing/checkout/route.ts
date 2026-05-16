@@ -9,6 +9,83 @@ import {
 import { createClient } from "@/lib/supabase-server";
 import { getStripeServerClient } from "@/lib/stripe-server";
 
+type TrialEligibility = {
+  eligible: boolean;
+  reason: string;
+};
+
+type TrialHistoryRow = {
+  trial_start?: string | null;
+  trial_end?: string | null;
+  trial_status?: string | null;
+  status?: string | null;
+};
+
+function localTrialUsed(row: TrialHistoryRow) {
+  const trialStatus = row.trial_status?.toLowerCase();
+
+  return Boolean(
+    row.trial_start ||
+      row.trial_end ||
+      row.status === "trialing" ||
+      trialStatus === "active" ||
+      trialStatus === "ended" ||
+      trialStatus === "used" ||
+      trialStatus === "expired" ||
+      trialStatus === "ineligible"
+  );
+}
+
+async function resolveTrialEligibility({
+  supabase,
+  stripe,
+  userId,
+  customerId,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  stripe: ReturnType<typeof getStripeServerClient>;
+  userId: string;
+  customerId: string;
+}): Promise<TrialEligibility> {
+  const { data: localRows, error } = await supabase
+    .from("subscriptions")
+    .select("trial_start,trial_end,trial_status,status")
+    .eq("user_id", userId)
+    .limit(100);
+
+  if (error) {
+    return { eligible: false, reason: "local_trial_history_unavailable" };
+  }
+
+  if ((localRows ?? []).some(localTrialUsed)) {
+    return { eligible: false, reason: "local_trial_history_found" };
+  }
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 100,
+    });
+
+    const stripeTrialUsed = subscriptions.data.some((subscription) =>
+      Boolean(
+        subscription.trial_start ||
+          subscription.trial_end ||
+          subscription.status === "trialing"
+      )
+    );
+
+    if (stripeTrialUsed) {
+      return { eligible: false, reason: "stripe_trial_history_found" };
+    }
+  } catch {
+    return { eligible: false, reason: "stripe_trial_history_unavailable" };
+  }
+
+  return { eligible: true, reason: "first_trial_available" };
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -70,6 +147,13 @@ export async function POST(request: Request) {
     });
   }
 
+  const trialEligibility = await resolveTrialEligibility({
+    supabase,
+    stripe,
+    userId: user.id,
+    customerId,
+  });
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -85,14 +169,20 @@ export async function POST(request: Request) {
       plan_id: plan.id,
       tier: plan.tier,
       program: plan.requiresProgram ?? "standard",
+      trial_eligible: String(trialEligibility.eligible),
+      trial_eligibility_reason: trialEligibility.reason,
     },
     subscription_data: {
-      trial_period_days: plan.trialDays,
+      ...(trialEligibility.eligible && plan.trialDays > 0
+        ? { trial_period_days: plan.trialDays }
+        : {}),
       metadata: {
         user_id: user.id,
         plan_id: plan.id,
         tier: plan.tier,
         program: plan.requiresProgram ?? "standard",
+        trial_eligible: String(trialEligibility.eligible),
+        trial_eligibility_reason: trialEligibility.reason,
       },
     },
     allow_promotion_codes: true,

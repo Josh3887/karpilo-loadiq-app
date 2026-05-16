@@ -22,6 +22,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import { LearnMore } from "@/components/ui/learn-more";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { EDUCATION_TOPICS, OVERHEAD_CATEGORY_HELP } from "@/config/education";
+import { GOLD_ACCESS } from "@/config/pricing";
 import { formatCurrency } from "@/utils/format";
 
 const defaultForm = {
@@ -40,7 +41,7 @@ const previewItems: OverheadItem[] = [
     user_id: "preview",
     label: "Karpilo LoadIQ subscription",
     category: "software_subscription",
-    amount: 24.99,
+    amount: GOLD_ACCESS.monthlyPrice,
     amount_type: "flat",
     frequency: "monthly",
     responsibility: "driver",

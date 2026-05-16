@@ -9,6 +9,7 @@ import {
   StatusPill,
 } from "@/components/settings/settings-shell";
 import { BILLING_EMAIL } from "@/config/billing";
+import { FUTURE_PLATFORM_FEATURE_SCOPE } from "@/config/pricing";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { getPreviewPaymentAccess } from "@/lib/preview-data";
@@ -65,6 +66,13 @@ function BillingSettingsContent({
     paymentAccess.canceledAt ??
     paymentAccess.currentPeriodEnd ??
     paymentAccess.trialEnd;
+  const hasLifetimeDisplay =
+    paymentAccess.lifetimePriceLock ||
+    paymentAccess.tier === "pilot" ||
+    paymentAccess.tier === "launch500";
+  const futureFeatureScope =
+    paymentAccess.futureFeatureAccessScope ??
+    (hasLifetimeDisplay ? FUTURE_PLATFORM_FEATURE_SCOPE : null);
 
   return (
     <SettingsPageShell
@@ -107,9 +115,9 @@ function BillingSettingsContent({
         />
         <SettingsMetric
           label="Lifetime Lock"
-          value={paymentAccess.lifetimePriceLock ? "Protected" : "Not active"}
-          detail={paymentAccess.lifetimePriceLock ? "Pilot or Legacy Launch protection" : "Standard price rules"}
-          tone={paymentAccess.lifetimePriceLock ? "green" : "blue"}
+          value={hasLifetimeDisplay ? "Protected" : "Not active"}
+          detail={hasLifetimeDisplay ? "Pilot or Legacy Launch protection" : "Standard price rules"}
+          tone={hasLifetimeDisplay ? "green" : "blue"}
         />
         <SettingsMetric
           label="Cohort"
@@ -118,7 +126,7 @@ function BillingSettingsContent({
         />
         <SettingsMetric
           label="Price Rule"
-          value={paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
+          value={hasLifetimeDisplay || paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
           detail="Gold and Platinum public prices may change for future periods"
         />
       </section>
@@ -128,7 +136,7 @@ function BillingSettingsContent({
         description="Subscription metadata keeps pricing locks separate from feature access so Stripe, Apple, Google Play, and manual reconciliation can share one access decision."
       >
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-300">
-          {paymentAccess.futureFeatureAccessScope ??
+          {futureFeatureScope ??
             "Pilot and Legacy Launch accounts can carry lifetime pricing protection and future released Karpilo LoadIQ platform feature access when assigned by backend entitlement records. Gold remains the complete operational feature tier; Platinum is planned as enhanced intelligence."}
         </div>
       </SettingsPanel>
