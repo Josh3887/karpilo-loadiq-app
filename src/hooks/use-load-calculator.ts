@@ -13,6 +13,7 @@ type CalculatorDefaults = {
   targetTrueRpm?: number;
   defaultMpg?: number;
   defaultPayStructure?: LoadInput["payStructure"];
+  reserveAllocation?: number;
   maintenanceReserve?: number;
   tireReserve?: number;
   trailerFee?: number;
@@ -64,6 +65,19 @@ export const useLoadCalculator =
           input.mpg > 0 ? input.mpg : get().defaults.defaultMpg ?? 6.5,
         payStructure:
           input.payStructure ?? get().defaults.defaultPayStructure,
+        reserveAllocation:
+          input.reserveAllocationValue > 0
+            ? input.reserveAllocationValue
+            : input.reserveAllocation > 0
+              ? input.reserveAllocation
+              : get().defaults.reserveAllocation ?? 0,
+        reserveAllocationValue:
+          input.reserveAllocationValue > 0
+            ? input.reserveAllocationValue
+            : input.reserveAllocation > 0
+              ? input.reserveAllocation
+              : get().defaults.reserveAllocation ?? 0,
+        reserveAllocationMode: input.reserveAllocationMode ?? "flat",
         maintenanceReserve:
           input.maintenanceReserve > 0
             ? input.maintenanceReserve
@@ -116,6 +130,10 @@ export const useLoadCalculator =
           factoringPercent:
             input.profileDerivedValues?.factoringPercent ??
             get().defaults.factoringPercent ??
+            0,
+          reserveAllocation:
+            input.profileDerivedValues?.reserveAllocation ??
+            get().defaults.reserveAllocation ??
             0,
           maintenanceReserve:
             input.profileDerivedValues?.maintenanceReserve ??

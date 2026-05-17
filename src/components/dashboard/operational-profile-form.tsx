@@ -362,6 +362,17 @@ export function OperationalProfileForm() {
 
         <div className="grid gap-5 md:grid-cols-3">
           <InputField
+            label="General Reserve Allocation"
+            type="number"
+            value={String(profile.defaultReserveAllocation)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                defaultReserveAllocation: Number(value),
+              }))
+            }
+          />
+          <InputField
             label="Maintenance Reserve"
             type="number"
             value={String(profile.defaultMaintenanceReserve)}

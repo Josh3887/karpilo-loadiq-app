@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-client";
 import { getClientEntitlementState } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { LoadInput, LoadResult } from "@/types/load";
+import { roundFuelPrice } from "@/utils/format";
 
 type SaveLoadPayload = {
   input: LoadInput;
@@ -105,7 +106,7 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     total_miles: result.totalMiles,
     fuel_cost: result.fuelCost,
     fuel_estimate_source: input.fuelPriceSource,
-    estimated_fuel_price: input.fuelPrice,
+    estimated_fuel_price: roundFuelPrice(input.fuelPrice),
     actual_fuel_price: null,
     fuel_override: input.fuelPriceSource === "USER_OVERRIDE",
     eia_period: input.fuelPricePeriod || null,

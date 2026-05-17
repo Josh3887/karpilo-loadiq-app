@@ -21,6 +21,7 @@ export type OperationalProfile = {
   truckYear: number;
   truckEngine: string;
   truckOdometer: number;
+  defaultReserveAllocation: number;
   defaultMaintenanceReserve: number;
   defaultTireReserve: number;
   defaultTrailerFee: number;
@@ -55,6 +56,7 @@ export const defaultOperationalProfile: OperationalProfile = {
   truckYear: 0,
   truckEngine: "",
   truckOdometer: 0,
+  defaultReserveAllocation: 0,
   defaultMaintenanceReserve: 0,
   defaultTireReserve: 0,
   defaultTrailerFee: 0,
@@ -177,6 +179,9 @@ export async function getOperationalProfile() {
     truckYear: Number(truckResult.data?.year ?? 0),
     truckEngine: truckResult.data?.engine ?? "",
     truckOdometer: Number(truckResult.data?.odometer ?? 0),
+    defaultReserveAllocation: Number(
+      settingsResult.data?.default_reserve_allocation ?? 0
+    ),
     defaultMaintenanceReserve: Number(
       settingsResult.data?.default_maintenance_reserve ?? 0
     ),
@@ -230,6 +235,7 @@ export async function saveOperationalProfile(profile: OperationalProfile) {
     operating_days_per_month:
       profile.operatingDaysPerMonth || profile.operatingDaysPerWeek * 4.33,
     default_mpg: profile.defaultMpg,
+    default_reserve_allocation: profile.defaultReserveAllocation,
     default_maintenance_reserve: profile.defaultMaintenanceReserve,
     default_tire_reserve: profile.defaultTireReserve,
     default_trailer_fee: profile.defaultTrailerFee,

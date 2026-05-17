@@ -93,6 +93,7 @@ export default function DashboardClientPage({
           targetTrueRpm: defaults.targetTrueRpm,
           defaultMpg: defaults.defaultMpg,
           defaultPayStructure: defaults.defaultPayStructure,
+          reserveAllocation: defaults.reserveAllocation,
           maintenanceReserve: defaults.maintenanceReserve,
           tireReserve: defaults.tireReserve,
           trailerFee: defaults.trailerFee,

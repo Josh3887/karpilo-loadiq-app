@@ -167,6 +167,7 @@ export function ResultsPanel({
             <BreakdownRow label="Profit Per Hour" value={formatCurrency(result.profitPerHour)} />
             <BreakdownRow label="Fuel % of Gross" value={formatPercent(result.fuelPercentOfGross)} />
             <BreakdownRow label="Profit Margin" value={formatPercent(result.profitMarginPercent)} />
+            <BreakdownRow label="Reserve Allocation" value={formatCurrency(result.reserveAllocationResolved)} />
             <BreakdownRow label="Retained Earnings" value={formatCurrency(result.retainedEarnings)} />
             <BreakdownRow label="Dispatch Cost" value={formatCurrency(result.dispatchCost)} />
             <BreakdownRow label="Factoring Cost" value={formatCurrency(result.factoringCost)} />

@@ -4,7 +4,9 @@ import {
   LoadWarning,
   PayStructure,
   ProfitabilityBand,
+  ReserveAllocationMode,
 } from "@/types/load";
+import { roundFuelPrice } from "@/utils/format";
 
 export const CALCULATION_VERSION = "loadiq-v1.1-profile-overhead";
 
@@ -85,6 +87,47 @@ function calculatePayableRevenue(input: LoadInput, baseRevenue: number) {
   return eligibleRevenue * calculatePercentageMultiplier(payStructure.percentageChain);
 }
 
+function resolveReserveAllocation(
+  input: LoadInput,
+  grossRevenue: number,
+  totalMiles: number
+) {
+  const mode: ReserveAllocationMode = input.reserveAllocationMode ?? "flat";
+  const baseValue = Number(
+    input.reserveAllocationValue ?? input.reserveAllocation ?? 0
+  );
+
+  if (!Number.isFinite(baseValue) || baseValue <= 0) {
+    return {
+      mode,
+      baseValue: 0,
+      resolvedAmount: 0,
+    };
+  }
+
+  if (mode === "cpm") {
+    return {
+      mode,
+      baseValue,
+      resolvedAmount: totalMiles * baseValue,
+    };
+  }
+
+  if (mode === "percent") {
+    return {
+      mode,
+      baseValue,
+      resolvedAmount: grossRevenue * (baseValue / 100),
+    };
+  }
+
+  return {
+    mode,
+    baseValue,
+    resolvedAmount: baseValue,
+  };
+}
+
 export function calculateLoadMetrics(input: LoadInput): LoadResult {
   const accessorialRevenue = input.accessorialItems
     .filter((item) => item.direction === "revenue")
@@ -112,14 +155,22 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
   const payableRevenue = calculatePayableRevenue(input, linehaulRevenue);
   const netRevenue = payableRevenue;
   const totalMiles = input.loadedMiles + input.deadheadMiles;
-  const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * input.fuelPrice : 0;
+  const fuelPrice = roundFuelPrice(input.fuelPrice);
+  const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * fuelPrice : 0;
   const variableCosts = totalMiles * input.variableCostPerMile;
   const trueRpm = totalMiles > 0 ? grossRevenue / totalMiles : 0;
   const rpmAfterDeadhead = trueRpm;
   const dispatchCost = grossRevenue * (input.dispatchPercent / 100);
   const factoringCost = grossRevenue * (input.factoringPercent / 100);
+  const reserveAllocation = resolveReserveAllocation(
+    input,
+    grossRevenue,
+    totalMiles
+  );
   const reserves =
-    input.reserveAllocation + input.maintenanceReserve + input.tireReserve;
+    reserveAllocation.resolvedAmount +
+    input.maintenanceReserve +
+    input.tireReserve;
   const dispatchDays = Math.max(input.dispatchDays, 1);
   const dailyFixedOverhead = Math.max(input.overhead, 0);
   const loadOverheadApplied = dailyFixedOverhead * dispatchDays;
@@ -241,7 +292,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
 
   if (fuelCost > 0) {
     explanations.push(
-      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(input.fuelPrice)}/gal, giving visibility into pump-price and MPG variance.`
+      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(fuelPrice)}/gal, giving visibility into pump-price and MPG variance.`
     );
   }
 
@@ -286,6 +337,9 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     breakEvenRpm: round(breakEvenRpm),
     dailyProfitability: round(dailyProfitability),
     hourlyProfitability: round(hourlyProfitability),
+    reserveAllocationMode: reserveAllocation.mode,
+    reserveAllocationValue: round(reserveAllocation.baseValue),
+    reserveAllocationResolved: round(reserveAllocation.resolvedAmount),
     profitabilityScore,
     profitabilityBand: getProfitabilityBand(profitabilityScore),
     costBreakdown: {
@@ -296,7 +350,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       lumpers: round(input.lumpers),
       dispatch: round(dispatchCost),
       factoring: round(factoringCost),
-      reserves: round(input.reserveAllocation),
+      reserves: round(reserveAllocation.resolvedAmount),
       maintenanceReserve: round(input.maintenanceReserve),
       tireReserve: round(input.tireReserve),
       overhead: round(loadOverheadApplied),

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase-server";
 import { SavedLoadActuals } from "@/types/saved-load";
 import {
   formatCurrency,
+  formatFuelPrice,
   formatNumber,
   formatPercent,
   formatRpm,
@@ -69,6 +70,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
     costPerMile?: number;
     breakEvenRpm?: number;
     dailyProfitability?: number;
+    fuelPercentOfGross?: number;
     explanations?: string[];
   } | null;
   const actuals = load.actuals_snapshot as Partial<SavedLoadActuals> | null;
@@ -78,8 +80,10 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
       : Number(load.actual_net);
   const variance =
     actualNet === null ? null : actualNet - Number(load.estimated_net);
-  const fuelPercent =
-    Number(load.gross_revenue) > 0
+  const snapshotFuelPercent = Number(result?.fuelPercentOfGross);
+  const fuelPercent = Number.isFinite(snapshotFuelPercent)
+    ? snapshotFuelPercent
+    : Number(load.gross_revenue) > 0
       ? (Number(load.fuel_cost) / Number(load.gross_revenue)) * 100
       : 0;
 
@@ -132,7 +136,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
             label="Fuel Estimate"
             value={
               load.estimated_fuel_price
-                ? `${formatCurrency(Number(load.estimated_fuel_price))}/gal`
+                ? formatFuelPrice(Number(load.estimated_fuel_price))
                 : "Not stored"
             }
           />
@@ -140,7 +144,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
             label="Actual Fuel"
             value={
               load.actual_fuel_price
-                ? `${formatCurrency(Number(load.actual_fuel_price))}/gal`
+                ? formatFuelPrice(Number(load.actual_fuel_price))
                 : "Pending"
             }
           />
@@ -196,7 +200,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
             />
             <ReportRow
               label="Actual Fuel $/Gal"
-              value={formatCurrency(Number(actuals?.actualFuelPrice ?? 0))}
+              value={formatFuelPrice(Number(actuals?.actualFuelPrice ?? 0))}
             />
             <ReportRow
               label="Tolls"

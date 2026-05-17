@@ -16,6 +16,8 @@ export type PayStructure = {
 
 export type LoadRunStatus = "ran" | "test" | "planned";
 
+export type ReserveAllocationMode = "flat" | "cpm" | "percent";
+
 export type CalculationValueSource =
   | "profile"
   | "load_input"
@@ -28,6 +30,7 @@ export type ProfileDerivedValues = {
   operatingDaysPerMonth: number;
   dispatchPercent: number;
   factoringPercent: number;
+  reserveAllocation: number;
   maintenanceReserve: number;
   tireReserve: number;
   trailerFee: number;
@@ -87,6 +90,8 @@ export type LoadInput = {
   temporaryOverrides: TemporaryOverrides;
   calculationSource: CalculationValueSource;
   accessorialItems: AccessorialInputItem[];
+  reserveAllocationMode: ReserveAllocationMode;
+  reserveAllocationValue: number;
   reserveAllocation: number;
   maintenanceReserve: number;
   tireReserve: number;
@@ -176,6 +181,9 @@ export type LoadResult = {
   breakEvenRpm: number;
   dailyProfitability: number;
   hourlyProfitability: number;
+  reserveAllocationMode: ReserveAllocationMode;
+  reserveAllocationValue: number;
+  reserveAllocationResolved: number;
   profitabilityScore: number;
   profitabilityBand: ProfitabilityBand;
   costBreakdown: CostBreakdown;

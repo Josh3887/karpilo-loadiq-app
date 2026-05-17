@@ -8,6 +8,7 @@ import { SavedLoadActuals } from "@/types/saved-load";
 
 import {
   formatCurrency,
+  formatFuelPrice,
   formatPercent,
   formatRpm,
 } from "@/utils/format";
@@ -44,18 +45,22 @@ export default async function LoadDetailPage({
     notFound();
   }
 
-  const fuelPercent =
-    Number(load.gross_revenue) > 0
-      ? (Number(load.fuel_cost) /
-          Number(load.gross_revenue)) *
-        100
+  const resultSnapshot = load.result_snapshot as {
+    fuelPercentOfGross?: number;
+    profitMarginPercent?: number;
+  } | null;
+  const snapshotFuelPercent = Number(resultSnapshot?.fuelPercentOfGross);
+  const snapshotMarginPercent = Number(resultSnapshot?.profitMarginPercent);
+  const fuelPercent = Number.isFinite(snapshotFuelPercent)
+    ? snapshotFuelPercent
+    : Number(load.gross_revenue) > 0
+      ? (Number(load.fuel_cost) / Number(load.gross_revenue)) * 100
       : 0;
 
-  const marginPercent =
-    Number(load.gross_revenue) > 0
-      ? (Number(load.estimated_net) /
-          Number(load.gross_revenue)) *
-        100
+  const marginPercent = Number.isFinite(snapshotMarginPercent)
+    ? snapshotMarginPercent
+    : Number(load.gross_revenue) > 0
+      ? (Number(load.estimated_net) / Number(load.gross_revenue)) * 100
       : 0;
   const actualNet =
     load.actual_net === null || load.actual_net === undefined
@@ -137,7 +142,7 @@ export default async function LoadDetailPage({
             label="Fuel Estimate"
             value={
               load.estimated_fuel_price
-                ? `${formatCurrency(Number(load.estimated_fuel_price))}/gal`
+                ? formatFuelPrice(Number(load.estimated_fuel_price))
                 : "Not stored"
             }
           />
@@ -155,7 +160,7 @@ export default async function LoadDetailPage({
             label="Actual Fuel"
             value={
               load.actual_fuel_price
-                ? `${formatCurrency(Number(load.actual_fuel_price))}/gal`
+                ? formatFuelPrice(Number(load.actual_fuel_price))
                 : "Pending"
             }
           />
@@ -204,7 +209,7 @@ export default async function LoadDetailPage({
               />
               <BreakdownRow
                 label="Actual Fuel $/Gal"
-                value={formatCurrency(Number(actuals?.actualFuelPrice ?? 0))}
+                value={formatFuelPrice(Number(actuals?.actualFuelPrice ?? 0))}
               />
               <BreakdownRow
                 label="Tolls"

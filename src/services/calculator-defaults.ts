@@ -26,6 +26,7 @@ export type CalculatorDefaults = {
   targetTrueRpm: number;
   defaultMpg: number;
   defaultPayStructure?: PayStructure;
+  reserveAllocation: number;
   maintenanceReserve: number;
   tireReserve: number;
   trailerFee: number;
@@ -56,10 +57,7 @@ export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
     profile?.incomeTargetAmount ?? 60000,
     profile?.incomeTargetPeriod ?? "yearly"
   );
-  const targetTrueRpm =
-    weeklyOverhead > 0
-      ? Math.max(2, (incomeTargets.weekly + weeklyOverhead) / 2000)
-      : 2;
+  const targetTrueRpm = profile?.minimumTrueRpm ?? 2;
 
   return {
     weeklyOverhead,
@@ -76,6 +74,7 @@ export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
     targetTrueRpm,
     defaultMpg: profile?.defaultMpg ?? 6.5,
     defaultPayStructure: payTemplate?.structure,
+    reserveAllocation: profile?.defaultReserveAllocation ?? 0,
     maintenanceReserve: profile?.defaultMaintenanceReserve ?? 0,
     tireReserve: profile?.defaultTireReserve ?? 0,
     trailerFee: profile?.defaultTrailerFee ?? 0,

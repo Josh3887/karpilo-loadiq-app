@@ -19,8 +19,8 @@ import {
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
 import { AccessorialInputItem } from "@/types/accessorial";
-import { ProfileDerivedValues } from "@/types/load";
-import { formatCurrency, formatRpm } from "@/utils/format";
+import { ProfileDerivedValues, ReserveAllocationMode } from "@/types/load";
+import { formatCurrency, formatRpm, roundFuelPrice } from "@/utils/format";
 
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
 
@@ -36,6 +36,7 @@ const PREVIEW_PROFILE_VALUES: ProfileDerivedValues = {
   operatingDaysPerMonth: 23.82,
   dispatchPercent: 8,
   factoringPercent: 2.5,
+  reserveAllocation: 0,
   maintenanceReserve: 0.14,
   tireReserve: 0.04,
   trailerFee: 0,
@@ -96,6 +97,9 @@ export function LoadInputForm({
       setValue("overhead", PREVIEW_PROFILE_VALUES.dailyFixedOverhead);
       setValue("targetTrueRpm", PREVIEW_PROFILE_VALUES.targetTrueRpm);
       setValue("mpg", PREVIEW_PROFILE_VALUES.mpg);
+      setValue("reserveAllocation", PREVIEW_PROFILE_VALUES.reserveAllocation);
+      setValue("reserveAllocationValue", PREVIEW_PROFILE_VALUES.reserveAllocation);
+      setValue("reserveAllocationMode", "flat");
       setValue("maintenanceReserve", PREVIEW_PROFILE_VALUES.maintenanceReserve);
       setValue("tireReserve", PREVIEW_PROFILE_VALUES.tireReserve);
       setValue("trailerFee", PREVIEW_PROFILE_VALUES.trailerFee);
@@ -116,6 +120,7 @@ export function LoadInputForm({
           operatingDaysPerMonth: defaults.operatingDaysPerMonth,
           dispatchPercent: defaults.dispatchPercent,
           factoringPercent: defaults.factoringPercent,
+          reserveAllocation: defaults.reserveAllocation,
           maintenanceReserve: defaults.maintenanceReserve,
           tireReserve: defaults.tireReserve,
           trailerFee: defaults.trailerFee,
@@ -139,6 +144,9 @@ export function LoadInputForm({
         });
         setValue("targetTrueRpm", defaults.targetTrueRpm);
         setValue("mpg", defaults.defaultMpg);
+        setValue("reserveAllocation", defaults.reserveAllocation);
+        setValue("reserveAllocationValue", defaults.reserveAllocation);
+        setValue("reserveAllocationMode", "flat");
         setValue("maintenanceReserve", defaults.maintenanceReserve);
         setValue("tireReserve", defaults.tireReserve);
         setValue("trailerFee", defaults.trailerFee);
@@ -171,7 +179,7 @@ export function LoadInputForm({
         }
 
         if (fuel.status === "available" && fuel.fuel) {
-          setValue("fuelPrice", fuel.fuel.pricePerGallon, {
+          setValue("fuelPrice", roundFuelPrice(fuel.fuel.pricePerGallon), {
             shouldDirty: false,
             shouldValidate: true,
           });
@@ -248,6 +256,10 @@ export function LoadInputForm({
       accessorialItems,
       profileDerivedValues: profileValues ?? values.profileDerivedValues,
     });
+    const reserveAllocationValue =
+      parsedValues.reserveAllocationValue > 0
+        ? parsedValues.reserveAllocationValue
+        : parsedValues.reserveAllocation;
 
     const derivedLinehaul =
       parsedValues.revenueInputMode === "gross"
@@ -267,6 +279,9 @@ export function LoadInputForm({
     onCalculate({
       ...parsedValues,
       ratePerMile: derivedRatePerMile,
+      fuelPrice: roundFuelPrice(parsedValues.fuelPrice),
+      reserveAllocation: reserveAllocationValue,
+      reserveAllocationValue,
       grossRevenue:
         parsedValues.revenueInputMode === "gross"
           ? parsedValues.grossRevenue
@@ -297,6 +312,12 @@ export function LoadInputForm({
       shouldDirty: true,
       shouldValidate: true,
     });
+    if (field === "reserveAllocation") {
+      setValue("reserveAllocation", value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
     setValue(
       "temporaryOverrides",
       {
@@ -315,6 +336,7 @@ export function LoadInputForm({
       dailyFixedOverhead: "overhead",
       dispatchPercent: "dispatchPercent",
       factoringPercent: "factoringPercent",
+      reserveAllocation: "reserveAllocationValue",
       maintenanceReserve: "maintenanceReserve",
       tireReserve: "tireReserve",
       trailerFee: "trailerFee",
@@ -342,9 +364,23 @@ export function LoadInputForm({
   const fuelPriceField = register("fuelPrice");
   const fuelSurchargeIncludedField = register("fuelSurchargeIncludedInGross");
   const revenueInputMode = watchedValues?.revenueInputMode ?? "rpm";
+  const reserveAllocationMode =
+    watchedValues?.reserveAllocationMode ?? "flat";
   const fuelSurchargeIncludedInGross = Boolean(
     watchedValues?.fuelSurchargeIncludedInGross
   );
+
+  function selectReserveAllocationMode(mode: ReserveAllocationMode) {
+    if (preview.enabled) {
+      preview.explain("overhead-item");
+      return;
+    }
+
+    setValue("reserveAllocationMode", mode, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-8">
@@ -357,6 +393,8 @@ export function LoadInputForm({
       <input type="hidden" {...register("loadRunStatus")} />
       <input type="hidden" {...register("overhead")} />
       <input type="hidden" {...register("mpg")} />
+      <input type="hidden" {...register("reserveAllocation")} />
+      <input type="hidden" {...register("reserveAllocationMode")} />
       <input type="hidden" {...register("maintenanceReserve")} />
       <input type="hidden" {...register("tireReserve")} />
       <input type="hidden" {...register("trailerFee")} />
@@ -537,6 +575,20 @@ export function LoadInputForm({
               }
             />
             <ProfileValueField
+              label="Default Reserve Allocation"
+              value={watchedNumber(
+                "reserveAllocationValue",
+                profileValues.reserveAllocation
+              )}
+              formatter={formatCurrency}
+              help="General reserve allocation comes from Settings and is resolved by the selected flat, CPM, or percent mode for this load."
+              isOverride={overrideFields.reserveAllocation}
+              onEnableOverride={() => enableTemporaryOverride("reserveAllocation")}
+              onOverride={(value) =>
+                recordTemporaryOverride("reserveAllocation", value)
+              }
+            />
+            <ProfileValueField
               label="Variable Cost / Mile"
               value={
                 watchedNumber(
@@ -683,6 +735,52 @@ export function LoadInputForm({
           </div>
         )}
 
+        <div className="space-y-3 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+              Reserve Allocation Mode
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Karpilo LoadIQ resolves this into a trip dollar amount before net
+              and retained earnings are calculated.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {(["flat", "cpm", "percent"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                data-preview-explain="overhead-item"
+                onClick={() => selectReserveAllocationMode(mode)}
+                onFocus={() => preview.enabled && preview.explain("overhead-item")}
+                className={
+                  reserveAllocationMode === mode
+                    ? "rounded-lg bg-sky-400 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#060B14]"
+                    : "rounded-lg border border-slate-800 px-3 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+                }
+              >
+                {mode === "flat" ? "Flat" : mode === "cpm" ? "CPM" : "%"}
+              </button>
+            ))}
+          </div>
+
+          <InputField
+            label={
+              reserveAllocationMode === "cpm"
+                ? "Reserve CPM"
+                : reserveAllocationMode === "percent"
+                  ? "Reserve %"
+                  : "Reserve Amount"
+            }
+            type="number"
+            step="0.01"
+            error={errors.reserveAllocationValue?.message}
+            previewKey="overhead-item"
+            {...register("reserveAllocationValue")}
+          />
+        </div>
+
         <AccessorialManager
           items={accessorialItems}
           onChange={setAccessorialItems}
@@ -762,7 +860,9 @@ function ProfileValueField({
       ? "mpg"
       : label.toLowerCase().includes("rpm")
         ? "rpm"
-        : "settings-station";
+        : label.toLowerCase().includes("reserve")
+          ? "overhead-item"
+          : "settings-station";
 
   return (
     <div

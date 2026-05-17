@@ -5,6 +5,20 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+export function roundTo(value: number, fractionDigits = 2) {
+  if (!Number.isFinite(value)) return 0;
+
+  return Number(value.toFixed(fractionDigits));
+}
+
+export function roundFuelPrice(value: number) {
+  return roundTo(value, 2);
+}
+
+export function formatFuelPrice(value: number) {
+  return `${formatCurrency(roundFuelPrice(value))}/gal`;
+}
+
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
