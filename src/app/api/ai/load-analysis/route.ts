@@ -5,6 +5,7 @@ import {
   isLoadIqAiDevEnabled,
 } from "@/lib/ai/openai-client";
 import { validateLoadAnalysisPayload } from "@/lib/ai/validate-load-analysis-payload";
+import { createClient } from "@/lib/supabase-server";
 import type { LoadIqAiLoadAnalysisOutput } from "@/types/ai-load-analysis";
 
 export const runtime = "nodejs";
@@ -115,6 +116,15 @@ function sanitizeAiOutput(value: unknown): LoadIqAiLoadAnalysisOutput {
 export async function POST(request: Request) {
   if (!isLoadIqAiDevEnabled()) {
     return Response.json({ error: "ai_dev_disabled" }, { status: 404 });
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
   let body: unknown;
