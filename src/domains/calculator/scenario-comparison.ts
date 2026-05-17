@@ -21,6 +21,8 @@ function percentagePay(
     dailyRate: 0,
     includeFuelSurcharge: true,
     includeAccessorials: true,
+    payCalculationBasis: "gross",
+    payPeriodMode: "by_load",
   };
 }
 

@@ -2,6 +2,8 @@ import {
   LoadInput,
   LoadResult,
   LoadWarning,
+  PayCalculationBasis,
+  PayPeriodMode,
   PayStructure,
   ProfitabilityBand,
   ReserveAllocationMode,
@@ -45,6 +47,18 @@ function defaultPayStructure(): PayStructure {
     dailyRate: 0,
     includeFuelSurcharge: true,
     includeAccessorials: true,
+    payCalculationBasis: "gross",
+    payPeriodMode: "by_load",
+  };
+}
+
+function resolvePayStructure(input: LoadInput): PayStructure {
+  const structure = input.payStructure ?? defaultPayStructure();
+
+  return {
+    ...structure,
+    payCalculationBasis: structure.payCalculationBasis ?? "gross",
+    payPeriodMode: structure.payPeriodMode ?? "by_load",
   };
 }
 
@@ -56,35 +70,69 @@ function calculatePercentageMultiplier(percentageChain: number[]) {
   }, 1);
 }
 
-function calculatePayableRevenue(input: LoadInput, baseRevenue: number) {
-  const payStructure = input.payStructure ?? defaultPayStructure();
-  const accessorialRevenue = input.accessorialItems
-    .filter((item) => item.direction === "revenue")
-    .reduce((total, item) => total + Number(item.amount), 0);
-  const reimbursedRevenue = input.accessorialItems
-    .filter((item) => item.direction === "expense" && item.isReimbursed)
-    .reduce((total, item) => total + Number(item.amount), 0);
+function calculatePayableRevenue(
+  input: LoadInput,
+  baseRevenue: number,
+  payStructure: PayStructure,
+  accessorialRevenue: number,
+  reimbursedRevenue: number
+) {
+  const basis: PayCalculationBasis =
+    payStructure.payCalculationBasis ?? "gross";
+  const payPeriodMode: PayPeriodMode = payStructure.payPeriodMode ?? "by_load";
+  const includedAccessorials = payStructure.includeAccessorials
+    ? accessorialRevenue + reimbursedRevenue
+    : 0;
 
-  const eligibleRevenue =
+  const driverPayBase = Math.max(
     baseRevenue +
-    (payStructure.includeFuelSurcharge ? input.fuelSurcharge : 0) +
-    (payStructure.includeAccessorials
-      ? accessorialRevenue + reimbursedRevenue
-      : 0);
+      (basis === "gross" && payStructure.includeFuelSurcharge
+        ? input.fuelSurcharge
+        : 0) +
+      includedAccessorials,
+    0
+  );
 
   if (payStructure.type === "cpm") {
-    return input.loadedMiles * payStructure.cpmRate;
+    return {
+      payableRevenue: input.loadedMiles * payStructure.cpmRate,
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
   if (payStructure.type === "flat") {
-    return payStructure.flatAmount;
+    return {
+      payableRevenue: payStructure.flatAmount,
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
   if (payStructure.type === "daily") {
-    return payStructure.dailyRate * Math.max(input.dispatchDays, 1);
+    return {
+      payableRevenue: payStructure.dailyRate * Math.max(input.dispatchDays, 1),
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
-  return eligibleRevenue * calculatePercentageMultiplier(payStructure.percentageChain);
+  const driverPercentagePay =
+    driverPayBase * calculatePercentageMultiplier(payStructure.percentageChain);
+
+  return {
+    payableRevenue: driverPercentagePay,
+    driverPayBase,
+    driverPercentagePay,
+    payCalculationBasis: basis,
+    payPeriodMode,
+  };
 }
 
 function resolveReserveAllocation(
@@ -147,12 +195,20 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
 
   const linehaulRevenue = input.loadedMiles * input.ratePerMile;
   const fuelSurchargeRevenue = input.fuelSurcharge;
+  const payStructure = resolvePayStructure(input);
   const grossRevenue =
     linehaulRevenue +
     fuelSurchargeRevenue +
     accessorialRevenue +
     reimbursedRevenue;
-  const payableRevenue = calculatePayableRevenue(input, linehaulRevenue);
+  const payResolution = calculatePayableRevenue(
+    input,
+    linehaulRevenue,
+    payStructure,
+    accessorialRevenue,
+    reimbursedRevenue
+  );
+  const payableRevenue = payResolution.payableRevenue;
   const netRevenue = payableRevenue;
   const totalMiles = input.loadedMiles + input.deadheadMiles;
   const stopOffCount = input.routeStops?.length ?? 0;
@@ -304,6 +360,15 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     );
   }
 
+  if (
+    payStructure.type === "percentage" &&
+    payResolution.payCalculationBasis === "gross_minus_fsc"
+  ) {
+    explanations.push(
+      `Driver percentage pay is modeled from ${money(payResolution.driverPayBase)} after fuel surcharge revenue is excluded from the pay base.`
+    );
+  }
+
   return {
     calculationVersion: CALCULATION_VERSION,
     linehaulRevenue: round(linehaulRevenue),
@@ -311,6 +376,10 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     accessorialRevenue: round(accessorialRevenue),
     reimbursedRevenue: round(reimbursedRevenue),
     grossRevenue: round(grossRevenue),
+    driverPayBase: round(payResolution.driverPayBase),
+    driverPercentagePay: round(payResolution.driverPercentagePay),
+    payCalculationBasis: payResolution.payCalculationBasis,
+    payPeriodMode: payResolution.payPeriodMode,
     payableRevenue: round(payableRevenue),
     netRevenue: round(netRevenue),
     totalMiles: round(totalMiles),

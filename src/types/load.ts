@@ -2,6 +2,8 @@ import { AccessorialInputItem } from "@/types/accessorial";
 import { FuelPriceSource } from "@/types/fuel";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
+export type PayCalculationBasis = "gross" | "gross_minus_fsc";
+export type PayPeriodMode = "by_load" | "weekly";
 
 export type PayStructure = {
   type: PayStructureType;
@@ -12,6 +14,8 @@ export type PayStructure = {
   dailyRate: number;
   includeFuelSurcharge: boolean;
   includeAccessorials: boolean;
+  payCalculationBasis: PayCalculationBasis;
+  payPeriodMode: PayPeriodMode;
 };
 
 export type LoadRunStatus = "ran" | "test" | "planned";
@@ -85,6 +89,11 @@ export type LoadInput = {
 
   dispatchDays: number;
   deadheadDays: number;
+  dispatchDate: string;
+  deadheadStartDate: string;
+  deadheadEndDate: string;
+  payPeriodStartDate: string;
+  payPeriodEndDate: string;
   loadRunStatus: LoadRunStatus;
 
   revenueInputMode: "rpm" | "gross";
@@ -170,6 +179,10 @@ export type LoadResult = {
   accessorialRevenue: number;
   reimbursedRevenue: number;
   grossRevenue: number;
+  driverPayBase: number;
+  driverPercentagePay: number;
+  payCalculationBasis: PayCalculationBasis;
+  payPeriodMode: PayPeriodMode;
   payableRevenue: number;
   netRevenue: number;
   totalMiles: number;

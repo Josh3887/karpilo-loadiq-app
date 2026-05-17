@@ -93,6 +93,7 @@ export function AccessorialManager({
             ["parking", "Parking"],
             ["detention", "Detention"],
             ["layover", "Layover"],
+            ["tarp_pay", "Tarp Pay"],
             ["tonu", "TONU"],
             ["extra_stop", "Extra Stop"],
             ["permit", "Permit"],
@@ -173,7 +174,7 @@ export function AccessorialManager({
           >
             <div>
               <div className="font-semibold text-slate-100">
-                {item.category} • {item.direction}
+                {formatAccessorialCategory(item.category)} • {item.direction}
               </div>
 
               <div className="mt-1 text-sm text-slate-400">
@@ -196,6 +197,27 @@ export function AccessorialManager({
       </div>
     </section>
   );
+}
+
+function formatAccessorialCategory(category: AccessorialCategory) {
+  const labels: Record<AccessorialCategory, string> = {
+    toll: "Toll",
+    lumper: "Lumper",
+    scale: "CAT Scale",
+    gate_fee: "Gate Fee",
+    washout: "Washout",
+    parking: "Parking",
+    detention: "Detention",
+    layover: "Layover",
+    tarp_pay: "Tarp Pay",
+    tonu: "TONU",
+    extra_stop: "Extra Stop",
+    permit: "Permit",
+    escort: "Escort",
+    misc: "Misc",
+  };
+
+  return labels[category];
 }
 
 function Summary({ label, value }: { label: string; value: string }) {

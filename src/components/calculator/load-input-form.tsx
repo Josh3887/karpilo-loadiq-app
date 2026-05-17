@@ -714,6 +714,50 @@ export function LoadInputForm({
             {...register("deadheadDays")}
           />
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InputField
+            label="Dispatch Date"
+            type="date"
+            error={errors.dispatchDate?.message}
+            previewKey="calculator-field"
+            {...register("dispatchDate")}
+          />
+          <InputField
+            label="Deadhead Start Date"
+            type="date"
+            error={errors.deadheadStartDate?.message}
+            previewKey="calculator-field"
+            {...register("deadheadStartDate")}
+          />
+          <InputField
+            label="Deadhead End Date"
+            type="date"
+            error={errors.deadheadEndDate?.message}
+            previewKey="calculator-field"
+            {...register("deadheadEndDate")}
+          />
+          <InputField
+            label="Pay Period Start"
+            type="date"
+            error={errors.payPeriodStartDate?.message}
+            previewKey="calculator-field"
+            {...register("payPeriodStartDate")}
+          />
+          <InputField
+            label="Pay Period End"
+            type="date"
+            error={errors.payPeriodEndDate?.message}
+            previewKey="calculator-field"
+            {...register("payPeriodEndDate")}
+          />
+        </div>
+
+        <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+          Dates are optional planning hooks for weekly pay grouping. They do not
+          change trip math unless your pay template uses weekly settlement
+          logic later.
+        </p>
       </section>
 
       <section className="space-y-4">
@@ -995,23 +1039,11 @@ export function LoadInputForm({
           onChange={setAccessorialItems}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <InputField
-            label="Tolls"
-            type="number"
-            step="0.01"
-            error={errors.tolls?.message}
-            {...register("tolls")}
-          />
-
-          <InputField
-            label="Lumpers"
-            type="number"
-            step="0.01"
-            error={errors.lumpers?.message}
-            {...register("lumpers")}
-          />
-        </div>
+        <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-400">
+          Tolls, lumpers, tarp pay, detention, layover, stop-off pay, and other
+          accessorials are tracked in the accessorial dropdown so revenue,
+          expenses, and reimbursements stay in one place.
+        </p>
 
         <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
           Operational overhead, pay template, MPG, reserves, dispatch, factoring,

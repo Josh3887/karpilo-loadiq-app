@@ -55,6 +55,11 @@ export const loadInputSchema = z.object({
     message: "Dispatch days must be at least 1.",
   }),
   deadheadDays: numberField.refine((value) => value >= 0),
+  dispatchDate: z.string().optional().default(""),
+  deadheadStartDate: z.string().optional().default(""),
+  deadheadEndDate: z.string().optional().default(""),
+  payPeriodStartDate: z.string().optional().default(""),
+  payPeriodEndDate: z.string().optional().default(""),
   loadRunStatus: z.enum(["ran", "test", "planned"]).default("planned"),
 
   revenueInputMode: z.enum(["rpm", "gross"]).default("rpm"),
@@ -152,6 +157,10 @@ export const loadInputSchema = z.object({
       dailyRate: numberField,
       includeFuelSurcharge: z.boolean(),
       includeAccessorials: z.boolean(),
+      payCalculationBasis: z
+        .enum(["gross", "gross_minus_fsc"])
+        .default("gross"),
+      payPeriodMode: z.enum(["by_load", "weekly"]).default("by_load"),
     })
     .optional(),
 }).superRefine((value, context) => {
@@ -203,6 +212,11 @@ export const defaultLoadInputValues: LoadInputFormValues = {
 
   dispatchDays: 1,
   deadheadDays: 0,
+  dispatchDate: "",
+  deadheadStartDate: "",
+  deadheadEndDate: "",
+  payPeriodStartDate: "",
+  payPeriodEndDate: "",
   loadRunStatus: "planned",
 
   revenueInputMode: "rpm",
@@ -268,5 +282,7 @@ export const defaultLoadInputValues: LoadInputFormValues = {
     dailyRate: 0,
     includeFuelSurcharge: true,
     includeAccessorials: true,
+    payCalculationBasis: "gross",
+    payPeriodMode: "by_load",
   },
 };

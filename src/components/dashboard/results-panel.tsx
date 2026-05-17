@@ -168,6 +168,22 @@ export function ResultsPanel({
             <BreakdownRow label="Profit Per Hour" value={formatCurrency(result.profitPerHour)} />
             <BreakdownRow label="Fuel % of Gross" value={formatPercent(result.fuelPercentOfGross)} />
             <BreakdownRow label="Profit Margin" value={formatPercent(result.profitMarginPercent)} />
+            <BreakdownRow
+              label="Driver Pay Base"
+              value={formatCurrency(result.driverPayBase)}
+            />
+            <BreakdownRow
+              label="Driver Percentage Pay"
+              value={formatCurrency(result.driverPercentagePay)}
+            />
+            <BreakdownRow
+              label="Pay Basis"
+              value={formatPayBasis(result.payCalculationBasis)}
+            />
+            <BreakdownRow
+              label="Pay Period Mode"
+              value={formatPayPeriod(result.payPeriodMode)}
+            />
             <BreakdownRow label="Reserve Allocation" value={formatCurrency(result.reserveAllocationResolved)} />
             <BreakdownRow label="Retained Earnings" value={formatCurrency(result.retainedEarnings)} />
             <BreakdownRow label="Dispatch Cost" value={formatCurrency(result.dispatchCost)} />
@@ -238,6 +254,16 @@ export function ResultsPanel({
       </div>
     </DashboardCard>
   );
+}
+
+function formatPayBasis(basis: LoadResult["payCalculationBasis"]) {
+  if (basis === "gross_minus_fsc") return "Gross minus fuel surcharge";
+  return "Gross revenue";
+}
+
+function formatPayPeriod(mode: LoadResult["payPeriodMode"]) {
+  if (mode === "weekly") return "Weekly";
+  return "By load";
 }
 
 function RouteIntelligenceContext({

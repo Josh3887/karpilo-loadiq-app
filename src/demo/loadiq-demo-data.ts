@@ -108,6 +108,11 @@ export const demoLoadInput: LoadInput = {
   actualDeadheadMiles: 0,
   dispatchDays: 2.5,
   deadheadDays: 0.25,
+  dispatchDate: "",
+  deadheadStartDate: "",
+  deadheadEndDate: "",
+  payPeriodStartDate: "",
+  payPeriodEndDate: "",
   loadRunStatus: "planned",
   revenueInputMode: "rpm",
   grossRevenue: 0,
@@ -176,6 +181,8 @@ export const demoLoadInput: LoadInput = {
     dailyRate: 0,
     includeFuelSurcharge: true,
     includeAccessorials: true,
+    payCalculationBasis: "gross_minus_fsc",
+    payPeriodMode: "weekly",
   },
 };
 

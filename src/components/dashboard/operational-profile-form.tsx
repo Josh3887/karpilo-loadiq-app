@@ -31,6 +31,8 @@ const defaultPayForm = {
   cpmRate: 0,
   flatAmount: 0,
   dailyRate: 0,
+  payCalculationBasis: "gross" as PayStructure["payCalculationBasis"],
+  payPeriodMode: "by_load" as PayStructure["payPeriodMode"],
   isDefault: true,
 };
 
@@ -61,6 +63,8 @@ export function OperationalProfileForm() {
             dailyRate: 0,
             includeFuelSurcharge: true,
             includeAccessorials: true,
+            payCalculationBasis: "gross",
+            payPeriodMode: "by_load",
           },
           is_default: true,
         },
@@ -131,6 +135,8 @@ export function OperationalProfileForm() {
         dailyRate: payForm.dailyRate,
         includeFuelSurcharge: payForm.type === "percentage",
         includeAccessorials: payForm.type === "percentage",
+        payCalculationBasis: payForm.payCalculationBasis,
+        payPeriodMode: payForm.payPeriodMode,
       };
 
       await createPayTemplate(payForm.name, structure, payForm.isDefault);
@@ -579,6 +585,35 @@ export function OperationalProfileForm() {
                   }))
                 }
               />
+              <SelectField
+                label="Driver Percentage Basis"
+                value={payForm.payCalculationBasis}
+                onChange={(value) =>
+                  setPayForm((prev) => ({
+                    ...prev,
+                    payCalculationBasis:
+                      value as PayStructure["payCalculationBasis"],
+                  }))
+                }
+                options={[
+                  ["gross", "Gross Revenue"],
+                  ["gross_minus_fsc", "Gross Revenue Minus Fuel Surcharge"],
+                ]}
+              />
+              <SelectField
+                label="Pay Period"
+                value={payForm.payPeriodMode}
+                onChange={(value) =>
+                  setPayForm((prev) => ({
+                    ...prev,
+                    payPeriodMode: value as PayStructure["payPeriodMode"],
+                  }))
+                }
+                options={[
+                  ["by_load", "By Load"],
+                  ["weekly", "Weekly"],
+                ]}
+              />
             </>
           )}
           {payForm.type === "flat" && (
@@ -607,6 +642,44 @@ export function OperationalProfileForm() {
             />
           )}
         </div>
+
+        {payForm.type === "percentage" && (
+          <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+            <p>
+              Use Gross Minus Fuel Surcharge when the driver percentage is paid
+              after FSC is excluded from the pay base.
+            </p>
+            <p>
+              Weekly pay mode allows loads, dispatch days, and deadhead days to
+              be grouped into a pay period.
+            </p>
+            {payForm.payCalculationBasis === "gross_minus_fsc" && (
+              <p className="font-semibold text-sky-200">
+                Fuel surcharge revenue is excluded from the driver percentage
+                calculation base.
+              </p>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          data-preview-explain="pay-template"
+          onClick={() =>
+            setPayForm((prev) => ({
+              ...prev,
+              name: "Karpilo LoadIQ FSC Protected Percentage",
+              type: "percentage",
+              primaryPercent: prev.primaryPercent || 88,
+              nestedPercent: prev.nestedPercent || 100,
+              payCalculationBasis: "gross_minus_fsc",
+              payPeriodMode: "weekly",
+            }))
+          }
+          className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-emerald-200 transition hover:bg-emerald-400/20"
+        >
+          Use FSC Protected Percentage Preset
+        </button>
 
         <label className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-800 bg-[#060B14] px-4 text-sm font-semibold uppercase tracking-[0.12em] text-slate-300">
           <input
@@ -645,6 +718,9 @@ export function OperationalProfileForm() {
               </div>
               <div className="mt-1 text-sm text-slate-400">
                 {template.structure.type}{" "}
+                {template.structure.type === "percentage"
+                  ? `• ${formatPayBasis(template.structure.payCalculationBasis)} • ${formatPayPeriod(template.structure.payPeriodMode)}`
+                  : ""}
                 {template.is_default ? "• default" : ""}
               </div>
             </div>
@@ -655,6 +731,16 @@ export function OperationalProfileForm() {
       {status && <p className="text-sm text-slate-400">{status}</p>}
     </div>
   );
+}
+
+function formatPayBasis(basis: PayStructure["payCalculationBasis"]) {
+  if (basis === "gross_minus_fsc") return "Gross minus FSC";
+  return "Gross";
+}
+
+function formatPayPeriod(mode: PayStructure["payPeriodMode"]) {
+  if (mode === "weekly") return "Weekly";
+  return "By load";
 }
 
 function SectionTitle({ title }: { title: string }) {

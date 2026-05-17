@@ -128,6 +128,21 @@ export function deriveIncomeTargets(
   };
 }
 
+function normalizePayStructure(structure: Partial<PayStructure>): PayStructure {
+  return {
+    type: structure.type ?? "percentage",
+    label: structure.label ?? "100% gross",
+    percentageChain: structure.percentageChain ?? [100],
+    cpmRate: Number(structure.cpmRate ?? 0),
+    flatAmount: Number(structure.flatAmount ?? 0),
+    dailyRate: Number(structure.dailyRate ?? 0),
+    includeFuelSurcharge: structure.includeFuelSurcharge ?? true,
+    includeAccessorials: structure.includeAccessorials ?? true,
+    payCalculationBasis: structure.payCalculationBasis ?? "gross",
+    payPeriodMode: structure.payPeriodMode ?? "by_load",
+  };
+}
+
 export async function getOperationalProfile() {
   const supabase = createClient();
   const user = await getCurrentUser();
@@ -226,7 +241,12 @@ export async function getOperationalProfile() {
 
   return {
     profile,
-    payTemplates: (templatesResult.data ?? []) as PayTemplate[],
+    payTemplates: (templatesResult.data ?? []).map((template) => ({
+      ...template,
+      structure: normalizePayStructure(
+        (template.structure ?? {}) as Partial<PayStructure>
+      ),
+    })) as PayTemplate[],
   };
 }
 
