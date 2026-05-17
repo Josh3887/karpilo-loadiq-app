@@ -46,11 +46,11 @@ export function AtlasIntelligenceSettingsCard({
   return (
     <AtlasRuntimeFrame
       layer={coreLayer}
-      description="Atlas Core coordinates embedded freight, route, and educational intelligence as one operational runtime inside Karpilo LoadIQ."
+      description="Karpilo Atlas AI provides educational, informational, and analytical support inside the Karpilo LoadIQ calculator environment."
       action={
         <div className="grid min-w-0 gap-3 sm:min-w-80">
           <ToggleRow
-            label="Atlas Educational Intelligence"
+            label="Atlas Educational Support"
             description="Enable contextual educational guidance while navigating inputs, buttons, dialogs, result tiles, and LearnMore elements."
             checked={enabled && educationalEnabled}
             disabled={!enabled}
@@ -59,7 +59,7 @@ export function AtlasIntelligenceSettingsCard({
           />
           <ToggleRow
             label="Compatibility overlay"
-            description="Optional legacy overlay while embedded Atlas surfaces continue rolling out."
+            description="Optional overlay while embedded Atlas guidance surfaces continue rolling out."
             checked={enabled && showCompatibilityOverlay}
             disabled={!enabled}
             onChange={updateVisibility}
@@ -77,7 +77,7 @@ export function AtlasIntelligenceSettingsCard({
       <div className="mt-4 grid gap-4">
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-            Embedded Runtime
+            Embedded Support
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-300">
             {ATLAS_PROCESSING_DISCLOSURE}
@@ -86,8 +86,8 @@ export function AtlasIntelligenceSettingsCard({
             {ATLAS_PROPRIETARY_STATEMENT}
           </p>
           <p className="mt-3 text-xs leading-6 text-slate-500">
-            Atlas Core active orchestration intentionally deferred to protect
-            calculator authority.
+            Active automated orchestration is intentionally deferred to protect
+            calculator authority and user decision responsibility.
           </p>
         </div>
       </div>

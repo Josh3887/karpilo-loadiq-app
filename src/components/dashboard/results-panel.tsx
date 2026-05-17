@@ -239,7 +239,7 @@ export function ResultsPanel({
           title="Operational Meaning Layer"
           signal="Deadhead, cost per mile, break-even RPM, and daily net are connected signals. A strong gross rate can still weaken when unpaid movement or timing pressure expands."
           consequence="Use the deterministic numbers above as the operating baseline, then read the context below to understand what each pressure point does to the load."
-          operatorReminder="Atlas Educational Intelligence explains the significance of app outputs. It does not make dispatch, financial, legal, tax, or compliance decisions."
+          operatorReminder="Karpilo Atlas AI explains the significance of app outputs. It does not make dispatch, financial, legal, tax, safety, routing, broker, or compliance decisions."
         />
 
         <OperationalValueNotes result={result} />

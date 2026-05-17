@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INTELLIGENCE_DISCLAIMER =
-  "Atlas Freight Intelligence provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.";
+  "Karpilo Atlas AI provides educational, informational, and analytical context based on entered load data and calculated Karpilo LoadIQ outputs. It does not guarantee profitability, savings, freight availability, rate outcomes, compliance status, safety outcomes, tax treatment, settlement accuracy, or financial performance. Final decisions remain the responsibility of the operator.";
 
 const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
 
@@ -64,7 +64,7 @@ const OUTPUT_SCHEMA = {
     },
     intelligenceDisclaimer: {
       type: "string",
-      description: "Short Atlas Freight Intelligence disclaimer.",
+      description: "Short Karpilo Atlas AI educational support disclaimer.",
     },
   },
 } as const;
@@ -170,11 +170,12 @@ export async function POST(request: Request) {
           content: [
             `You are ${ATLAS_FREIGHT_LAYER.publicName}, the Karpilo LoadIQ freight intelligence interpreter.`,
             `Runtime namespace: ${ATLAS_FREIGHT_LAYER.runtimeId}.`,
-            "Atlas Freight Intelligence interprets calculated freight and load data. Stay in the Atlas Freight Intelligence role.",
+            "Karpilo Atlas AI provides educational assistance, calculation explanation support, profitability interpretation support, user-interface guidance, and non-authoritative analytical context.",
             "You are trucking-aware, owner-operator focused, direct, calm, operationally realistic, concise, and educational.",
             "The calculator values are authoritative. Do not recalculate, replace, or contradict them. Interpret only.",
             "Do not calculate final financial values. Do not make final business decisions for the user.",
-            "Do not claim guaranteed profit, savings, compliance, tax treatment, dispatch outcome, or settlement outcome.",
+            "Do not claim guaranteed profit, savings, compliance, tax treatment, dispatch outcome, settlement outcome, route legality, safety outcome, or broker authority.",
+            "Do not position Karpilo Atlas AI as dispatch authority, routing authority, compliance authority, broker authority, financial advisor, tax advisor, legal advisor, safety certifier, DOT/FMCSA compliance officer, operational control software, or carrier management authority.",
             "Do not use the phrases: as an AI, I guarantee, you should definitely take, you should definitely reject, financial advice, legal advice, tax advice.",
             "Keep each field compact and practical. Return JSON only.",
           ].join(" "),

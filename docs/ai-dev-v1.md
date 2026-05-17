@@ -1,19 +1,19 @@
-# Karpilo LoadIQ Atlas Intelligence Dev V1
+# Karpilo LoadIQ Atlas AI Dev V1
 
 ## Purpose
 
-Atlas Intelligence Dev V1 adds embedded operational intelligence surfaces inside the authenticated Karpilo LoadIQ app:
+Karpilo Atlas AI Dev V1 adds embedded educational and analytical support surfaces inside the authenticated Karpilo LoadIQ app:
 
-- **Atlas Core**: runtime orchestration and infrastructure cognition.
-- **Atlas Freight Intelligence**: freight economics, margin pressure, deadhead exposure, broker traffic, road signals, and dispatch-quality interpretation.
-- **Atlas Route Intelligence**: route vectors, corridor awareness, movement telemetry, and future predictive route flow.
-- **Atlas Educational Intelligence**: contextual operational explanations for app workflows, fields, buttons, forms, and settings.
+- **Karpilo Atlas AI**: educational, informational, and analytical support for the Karpilo LoadIQ calculator environment.
+- **Atlas Analysis Assistance**: profitability estimate interpretation, margin pressure, deadhead exposure, fuel pressure, and RPM context.
+- **Atlas Operational Context**: entered route-variable context such as deadhead, stop complexity, timing, and distance assumptions.
+- **Atlas Educational Support**: contextual explanations for app workflows, fields, buttons, forms, and settings.
 
-Atlas is embedded operational intelligence infrastructure. The deterministic Karpilo LoadIQ calculator remains authoritative.
+Atlas is supplemental educational and analytical support. The deterministic Karpilo LoadIQ calculator remains authoritative.
 
 ## App-Only Scope
 
-Functional Atlas behavior lives only in the APP project. The website may describe the concepts for marketing/disclosure purposes, but it must not call OpenAI, expose API keys, or provide functional AI.
+Functional Karpilo Atlas AI behavior lives only in the APP project. The website may describe the concepts for marketing/disclosure purposes, but it must not call OpenAI, expose API keys, or provide functional AI.
 
 AI Dev V1 does not change public pricing, Stripe billing, account deletion, Supabase schema, or subscription entitlement logic.
 
@@ -41,17 +41,17 @@ Feature flag:
 ENABLE_LOADIQ_AI_DEV=false
 ```
 
-Set `ENABLE_LOADIQ_AI_DEV=true` only where Atlas development surfaces and the API route should be visible/callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`.
+Set `ENABLE_LOADIQ_AI_DEV=true` only where Karpilo Atlas AI development surfaces and the API route should be visible/callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`.
 
 ## Embedded Behavior
 
-Atlas Freight Intelligence renders as an embedded operational readout on calculator results when AI Dev V1 is enabled. The legacy overlay remains opt-in compatibility from settings while Atlas surfaces are moved into native workflows.
+Atlas Analysis Assistance renders as an embedded educational readout on calculator results when AI Dev V1 is enabled. The legacy overlay remains opt-in compatibility from settings while Atlas surfaces are moved into native workflows.
 
 No Supabase schema is used for the hide/show preference. It is stored locally and can be restored from settings.
 
-Atlas Route Intelligence renders as movement telemetry inside route/result and saved-load surfaces. It interprets deadhead exposure, pickup-to-delivery flow, stop complexity, timing pressure, and route structure without changing route math or acting as a routing API.
+Atlas Operational Context renders inside route/result and saved-load surfaces. It explains deadhead exposure, pickup-to-delivery flow, stop complexity, timing pressure, and route structure without changing route math or acting as a routing API.
 
-Atlas Educational Intelligence appears as inline operational context near workflows and reusable guidance surfaces. It explains why fields and metrics matter without becoming a tutorial modal or detached assistant layer.
+Atlas Educational Support appears as inline operational context near workflows and reusable guidance surfaces. It explains why fields and metrics matter without becoming a tutorial modal or detached assistant layer.
 
 Phase 5 adds a local preference for contextual educational guidance:
 
@@ -59,11 +59,11 @@ Phase 5 adds a local preference for contextual educational guidance:
 loadiq.atlasEducational.enabled
 ```
 
-When disabled, Atlas Educational navigation listeners and the legacy educational overlay path are hidden. The current educational layer is deterministic registry-based and does not call OpenAI.
+When disabled, Atlas Educational Support navigation listeners and the legacy educational overlay path are hidden. The current educational layer is deterministic registry-based and does not call OpenAI.
 
-## Atlas Educational Intelligence
+## Atlas Educational Support
 
-Atlas Educational Intelligence currently uses compatibility help hooks in `src/lib/ai/iation-help-registry.ts` to explain supported app surfaces. Educational output includes:
+Atlas Educational Support currently uses compatibility help hooks to explain supported app surfaces. Educational output includes:
 
 1. Feature Signal
 2. What This Does
@@ -74,11 +74,11 @@ Atlas Educational Intelligence currently uses compatibility help hooks in `src/l
 
 Educational disclaimer:
 
-> Atlas Educational Intelligence provides contextual guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve operational understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.
+> Karpilo Atlas AI provides contextual educational support for navigating Karpilo LoadIQ features, workflows, and app tools. It explains functionality and calculation context only. It does not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.
 
-## Atlas Freight Intelligence
+## Atlas Analysis Assistance
 
-Atlas Freight Intelligence activates from calculated load context. The calculator values are authoritative; Atlas interprets only.
+Atlas Analysis Assistance activates from calculated load context. The calculator values are authoritative; Atlas interprets only.
 
 Route:
 
@@ -119,13 +119,13 @@ Expected response shape:
 }
 ```
 
-Intelligence disclaimer:
+Output disclaimer:
 
-> Atlas Freight Intelligence provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.
+> Karpilo Atlas AI provides educational, informational, and analytical context based on entered load data and calculated Karpilo LoadIQ outputs. It does not guarantee profitability, savings, freight availability, rate outcomes, compliance status, safety outcomes, tax treatment, settlement accuracy, or financial performance. Final decisions remain the responsibility of the operator.
 
 ## Proprietary Statement
 
-> Atlas Core, Atlas Freight Intelligence, Atlas Route Intelligence, and Atlas Educational Intelligence are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems support embedded operational guidance, freight interpretation, route context, and runtime orchestration through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving operational context.
+> Karpilo Atlas AI, Atlas Insights, Atlas Guidance, Atlas Educational Support, and Atlas Operational Context are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.
 
 ## Security Rules
 
@@ -158,7 +158,7 @@ curl -X POST http://localhost:3000/api/ai/load-analysis \
 Then test through the dashboard:
 
 1. Analyze a load normally.
-2. Confirm the embedded Atlas Freight Intelligence surface appears only when enabled.
+2. Confirm the embedded Atlas Analysis Assistance surface appears only when enabled.
 3. Generate or refresh the freight signal.
 4. Confirm the optional compatibility overlay can be enabled from settings.
 5. Hide/show the compatibility overlay from settings.

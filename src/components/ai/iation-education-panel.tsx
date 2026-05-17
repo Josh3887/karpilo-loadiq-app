@@ -15,7 +15,7 @@ type IationEducationPanelProps = {
 };
 
 const defaultEntry: IationHelpEntry = {
-  featureSignal: "Atlas Educational Intelligence",
+  featureSignal: "Atlas Educational Support",
   whatThisDoes:
     "Provides embedded context for Karpilo LoadIQ tools, panels, forms, settings, and workflow actions.",
   whyItMatters:
@@ -23,7 +23,7 @@ const defaultEntry: IationHelpEntry = {
   howToUseIt:
     "Tap supported controls or page areas to see a practical explanation, then continue the workflow normally.",
   operatorReminder:
-    "Atlas Educational Intelligence explains workflow meaning. It does not decide whether to accept, reject, dispatch, price, or legally classify freight.",
+    "Karpilo Atlas AI explains workflow meaning. It does not decide whether to accept, reject, dispatch, price, route, or legally classify freight.",
 };
 
 const ATLAS_EDUCATIONAL_LAYER = ATLAS_INTELLIGENCE_LAYERS.educational;
@@ -40,7 +40,7 @@ export function IationEducationPanel({
         <div className="overflow-hidden rounded-2xl border border-sky-400/20 bg-[#050B14]">
           <Image
             src={ATLAS_EDUCATIONAL_LAYER.assets.dashboard}
-            alt="Atlas Educational Intelligence"
+            alt="Atlas Educational Support"
             width={640}
             height={360}
             className="h-36 w-full object-cover opacity-80"

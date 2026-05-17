@@ -289,7 +289,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
           <PhoneStack>
             <PhoneHero
               title={`Welcome, ${demoProfile.operatorName}`}
-              body="Build the profile, understand the numbers, then use the app as decision support before committing to freight."
+              body="Build the profile, understand the numbers, then use the app as estimation support before making independent freight decisions."
             />
             <PhoneMetricList
               metrics={[
@@ -631,7 +631,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
           <PhoneStack>
             <PhoneHero
               title="Karpilo LoadIQ in Action"
-              body="Understand freight before committing to it, improve margin awareness, and make better decisions with real operating numbers."
+              body="Understand freight estimates, improve margin awareness, and make independent decisions with clearer operating numbers."
               tone="success"
             />
             <PhonePrimaryButton label="Join Pilot" />
@@ -857,7 +857,7 @@ export function DemoWalkthrough({ recording }: DemoWalkthroughProps) {
                 <p className="text-lg font-semibold leading-8 text-slate-200">
                   Welcome to the {BRAND.productName} demo. This walkthrough shows how
                   an owner-operator can set up a profile, calculate loads, save
-                  results, and understand true profitability before committing
+                  results, and understand estimated profitability before making
                   to freight.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -2109,7 +2109,7 @@ function getRecordingActionLabel(key: DemoStepKey, elapsedMs: number) {
       [5600, "Calculating profit per hour"],
     ],
     calculationReview: [
-      [0, "Running profitability engine"],
+      [0, "Running profitability estimate"],
       [3000, "Applying overhead"],
       [6200, "Comparing against target"],
     ],

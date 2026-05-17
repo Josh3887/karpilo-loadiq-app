@@ -46,13 +46,13 @@ export function AtlasFreightIntelligenceSurface({
   async function requestIntelligence() {
     if (!payload) {
       setStatus(
-        "Atlas Freight Intelligence needs complete calculated load values to generate a freight intelligence readout."
+        "Atlas Analysis Assistance needs complete calculated load values to generate an educational readout."
       );
       return;
     }
 
     setLoading(true);
-    setStatus(`${ATLAS_FREIGHT_LAYER.runtimeId} processing freight signal...`);
+    setStatus(`${ATLAS_FREIGHT_LAYER.runtimeId} processing Atlas analysis context...`);
 
     try {
       const response = await fetch("/api/ai/load-analysis", {
@@ -67,8 +67,8 @@ export function AtlasFreightIntelligenceSurface({
       if (!response.ok || !data.analysis) {
         setStatus(
           data.error === "ai_not_configured"
-            ? "Atlas Freight Intelligence is not configured on this server."
-            : "Atlas Freight Intelligence is temporarily unavailable."
+            ? "Karpilo Atlas AI is not configured on this server."
+            : "Karpilo Atlas AI analysis support is temporarily unavailable."
         );
         return;
       }
@@ -77,7 +77,7 @@ export function AtlasFreightIntelligenceSurface({
       setAnalysisPayloadKey(payloadKey);
       setStatus("");
     } catch {
-      setStatus("Atlas Freight Intelligence is temporarily unavailable.");
+      setStatus("Karpilo Atlas AI analysis support is temporarily unavailable.");
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export function AtlasFreightIntelligenceSurface({
     <AtlasRuntimeFrame
       layer={ATLAS_FREIGHT_LAYER}
       compact={variant === "overlay"}
-      description="Embedded freight cognition for margin pressure, deadhead exposure, FSC recovery, cost-per-mile strain, and dispatch quality. Calculator values remain authoritative."
+      description="Embedded educational context for margin pressure, deadhead exposure, FSC recovery, cost-per-mile strain, and load-quality signals. Calculator values remain authoritative."
       action={
         <button
           type="button"
@@ -100,7 +100,7 @@ export function AtlasFreightIntelligenceSurface({
           ) : (
             <RadioTower className="h-4 w-4" aria-hidden="true" />
           )}
-          {visibleAnalysis ? "Refresh Freight Signal" : "Update Freight Signal"}
+          {visibleAnalysis ? "Refresh Atlas Insight" : "Update Atlas Insight"}
         </button>
       }
     >
@@ -119,7 +119,7 @@ export function AtlasFreightIntelligenceSurface({
               layer={ATLAS_FREIGHT_LAYER}
             />
             <AtlasMetricTile
-              label="Dispatch Quality"
+              label="Load Quality"
               value={baselineReadout.dispatchSignal}
               detail={baselineReadout.dispatchDetail}
               layer={ATLAS_FREIGHT_LAYER}
@@ -194,11 +194,11 @@ function buildFreightBaselineReadout(
   if (!payload) {
     return {
       marginSignal: "Awaiting Output",
-      marginDetail: "Freight Intelligence activates after calculator output exists.",
+      marginDetail: "Atlas Analysis Assistance activates after calculator output exists.",
       deadheadSignal: "Route Pending",
       deadheadDetail: "Deadhead exposure needs completed load values.",
       dispatchSignal: "No Readout",
-      dispatchDetail: "Run Analyze Load before requesting freight interpretation.",
+      dispatchDetail: "Run Analyze Load before requesting Atlas interpretation.",
     };
   }
 

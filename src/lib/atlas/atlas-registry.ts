@@ -36,7 +36,7 @@ export const ATLAS_ASSET_ROOT = "/branding/atlas";
 export const ATLAS_INTELLIGENCE_LAYERS = {
   core: {
     key: "core",
-    publicName: "Atlas Core",
+    publicName: "Karpilo Atlas AI",
     runtimeId: ATLAS_RUNTIME_IDS.core,
     colorIdentity: {
       name: "purple",
@@ -51,11 +51,11 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-core-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Unified runtime cognition, orchestration, synchronization, and infrastructure intelligence.",
+      "Educational and analytical support for explaining Karpilo LoadIQ calculations and user-interface context.",
   },
   freight: {
     key: "freight",
-    publicName: "Atlas Freight Intelligence",
+    publicName: "Atlas Analysis Assistance",
     runtimeId: ATLAS_RUNTIME_IDS.freight,
     colorIdentity: {
       name: "green",
@@ -70,11 +70,11 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-freight-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Freight cognition for load economics, lane profitability, dispatch context, and operational margin pressure.",
+      "Calculation interpretation support for profitability estimates, margin pressure, deadhead, fuel, RPM, and overhead context.",
   },
   route: {
     key: "route",
-    publicName: "Atlas Route Intelligence",
+    publicName: "Atlas Operational Context",
     runtimeId: ATLAS_RUNTIME_IDS.route,
     colorIdentity: {
       name: "red",
@@ -89,11 +89,11 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-route-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Movement cognition for route vectors, corridor awareness, navigation telemetry, and predictive route flow.",
+      "Informational context for entered route variables, deadhead exposure, stop complexity, timing, and distance assumptions.",
   },
   educational: {
     key: "educational",
-    publicName: "Atlas Educational Intelligence",
+    publicName: "Atlas Educational Support",
     runtimeId: ATLAS_RUNTIME_IDS.educational,
     colorIdentity: {
       name: "blue",
@@ -108,7 +108,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-educational-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Contextual operational understanding for workflow guidance, feature explanation, and embedded app cognition.",
+      "User-interface guidance that explains fields, workflow meaning, and how user-supplied inputs affect estimates.",
   },
 } as const satisfies Record<AtlasLayerKey, AtlasIntelligenceLayer>;
 
@@ -120,13 +120,13 @@ export const ATLAS_LAYER_ORDER: AtlasLayerKey[] = [
 ];
 
 export const ATLAS_PROCESSING_DISCLOSURE =
-  "Atlas runs as embedded Karpilo LoadIQ operational intelligence. OpenAI powers intelligence processing underneath Atlas where applicable, while users experience Atlas as native Karpilo LoadIQ intelligence rather than a third-party assistant.";
+  "Karpilo Atlas AI provides embedded educational, informational, and analytical support inside Karpilo LoadIQ. Where applicable, third-party AI infrastructure may help process explanations, but Atlas remains supplemental to the calculator and does not make operational decisions.";
 
 export const ATLAS_PROPRIETARY_STATEMENT =
-  "Atlas Core, Atlas Freight Intelligence, Atlas Route Intelligence, and Atlas Educational Intelligence are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems support embedded operational guidance, freight interpretation, route context, and runtime orchestration through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving operational context.";
+  "Karpilo Atlas AI, Atlas Insights, Atlas Guidance, Atlas Educational Support, and Atlas Operational Context are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
 
 export const ATLAS_EDUCATIONAL_DISCLAIMER =
-  "Atlas Educational Intelligence provides contextual guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve operational understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.";
+  "Karpilo Atlas AI provides contextual educational support for navigating Karpilo LoadIQ features, workflows, and app tools. It explains functionality and calculation context only. It does not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
 
 // TODO(Atlas Core): active orchestration intentionally deferred to protect
 // deterministic calculator authority.

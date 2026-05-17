@@ -132,7 +132,7 @@ export function AtlasEducationalContextRail({
           type="button"
           onClick={() => setDismissedKey(visibleContext.key)}
           className="rounded-full border border-slate-700 bg-slate-950 p-2 text-slate-400 transition hover:border-sky-400/50 hover:text-sky-200"
-          aria-label="Dismiss Atlas Educational Intelligence context"
+          aria-label="Dismiss Atlas Educational Support context"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

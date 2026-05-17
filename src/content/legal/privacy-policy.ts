@@ -3,7 +3,7 @@ import {
   type LegalSection,
 } from "@/content/legal/billing-disclosures";
 
-export const PRIVACY_POLICY_LAST_UPDATED = "May 11, 2026";
+export const PRIVACY_POLICY_LAST_UPDATED = "May 17, 2026";
 
 export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
   {
@@ -11,7 +11,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     title: "Privacy Policy Overview",
     paragraphs: [
       "This Privacy Policy explains how Karpilo Endeavor Technologies LLC collects, uses, stores, shares, protects, and deletes information for Karpilo LoadIQ.",
-      "Karpilo LoadIQ is an operational profitability and trucking intelligence tool. The app may process account information, subscription status, saved load calculations, operational assumptions, support requests, analytics events, and future cloud synchronization data.",
+      "Karpilo LoadIQ is a transportation profitability calculator and operational estimation platform with educational and analytical support features. The app may process account information, subscription status, saved load calculations, operational assumptions, support requests, analytics events, and future cloud synchronization data.",
     ],
   },
   {
@@ -78,9 +78,10 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
   },
   {
     id: "future-ai",
-    title: "Future Cloud Sync and Intelligence Systems",
+    title: "Future Cloud Sync and Karpilo Atlas AI Support",
     paragraphs: [
-      "Future Karpilo LoadIQ features may include cloud synchronization, team or fleet dashboards, predictive intelligence, AI-assisted review, route enrichment, market context, or other operational intelligence systems.",
+      "Future Karpilo LoadIQ features may include cloud synchronization, team or fleet dashboards, Karpilo Atlas AI educational support, calculation explanation support, route context, market context, or other informational analysis tools.",
+      "Karpilo Atlas AI features, where enabled, are intended to provide educational assistance, calculation interpretation support, user-interface guidance, analytical context, and operational awareness enhancement. They are not dispatch, routing, compliance, broker, tax, legal, financial, safety certification, DOT/FMCSA, or operational-control authority.",
       "If future features materially change what data is collected or how it is used, Karpilo LoadIQ should update disclosures and request any legally required consent before enabling those uses.",
     ],
   },

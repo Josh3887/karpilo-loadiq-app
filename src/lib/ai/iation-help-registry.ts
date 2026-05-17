@@ -95,7 +95,7 @@ export const IATION_HELP_REGISTRY: Record<string, IationHelpEntry> = {
     howToUseIt:
       "Use the guidance as context near MPG, fuel price, load weight, route timing, and actual-trip review. Adjust calculator inputs only when you have a better operating assumption.",
     operatorReminder:
-      "Atlas Educational Intelligence does not promise a specific MPG improvement or safety outcome.",
+      "Karpilo Atlas AI does not promise a specific MPG improvement or safety outcome.",
   },
   "calculator-field": {
     featureSignal: "Calculator Field",

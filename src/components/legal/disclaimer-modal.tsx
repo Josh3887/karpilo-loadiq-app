@@ -103,11 +103,19 @@ export function DisclaimerModal({
               </h3>
               <p className="mt-2">
                 Karpilo LoadIQ is provided solely as an informational
-                decision-support and operational forecasting tool for trucking
-                profitability review. Karpilo LoadIQ does not guarantee
+                transportation profitability calculator and operational
+                estimation platform for trucking profitability review. Karpilo
+                LoadIQ does not guarantee
                 profitability, business success, operational performance,
                 income, margins, freight availability, fuel costs, or any
                 business outcome.
+              </p>
+              <p className="mt-2">
+                The platform is intended for informational, educational,
+                analytical, and estimation purposes only and does not replace
+                independent business judgment, professional accounting, legal
+                advice, regulatory guidance, safety review, or operational
+                decision-making.
               </p>
             </section>
 
@@ -125,6 +133,18 @@ export function DisclaimerModal({
                 structure, insurance, trailer arrangement, business model, and
                 other conditions outside platform control.
               </p>
+              <p className="mt-2">
+                Users acknowledge that all calculations are dependent on
+                user-supplied inputs, assumptions, market conditions, and
+                operational variables that may materially alter real-world
+                outcomes.
+              </p>
+              <p className="mt-2">
+                Actual operational conditions including rates, weather, fuel
+                pricing, traffic, detention, maintenance events, compliance
+                events, driver behavior, market volatility, and third-party
+                conditions materially affect real-world outcomes.
+              </p>
             </section>
 
             <section>
@@ -135,10 +155,18 @@ export function DisclaimerModal({
                 Karpilo LoadIQ does not provide financial advice, legal advice,
                 accounting advice, tax advice, dispatch advice, investment
                 advice, regulatory advice, or regulatory guarantees. Users are
-                solely responsible for verifying freight decisions, operating
-                costs, routes, rate terms, compliance obligations, settlement
-                terms, and business assumptions before accepting or rejecting
-                any load.
+                solely responsible for dispatch decisions, route selection,
+                HOS/FMCSA compliance, weight compliance, tax and IFTA filings,
+                maintenance decisions, safety decisions, cargo securement,
+                weather review, tolls, bridge restrictions, settlement terms,
+                vehicle legality, and business profitability.
+              </p>
+              <p className="mt-2">
+                Karpilo LoadIQ does not dispatch freight, direct drivers,
+                supervise carriers, control equipment, certify route legality,
+                enforce compliance, or operate as a freight brokerage,
+                compliance authority, routing authority, or operational control
+                system.
               </p>
             </section>
 

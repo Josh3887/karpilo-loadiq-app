@@ -106,4 +106,4 @@ export const PLATFORM_BILLING_DISCLOSURES: LegalSection[] = [
 ];
 
 export const CHECKOUT_ACKNOWLEDGEMENT_TEXT =
-  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand eligible paid tiers include a 7-day free trial where supported by the payment provider, and understand paid subscriptions renew unless canceled through the applicable billing platform before the trial or billing period ends.";
+  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand Karpilo LoadIQ provides informational estimates based on user-supplied inputs, understand eligible paid tiers include a 7-day free trial where supported by the payment provider, and understand paid subscriptions renew unless canceled through the applicable billing platform before the trial or billing period ends.";

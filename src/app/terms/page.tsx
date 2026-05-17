@@ -20,7 +20,7 @@ export default function TermsPage() {
       eyebrow="Karpilo LoadIQ"
       title="Terms of Service"
       lastUpdated={TERMS_LAST_UPDATED}
-      description="These terms describe how Karpilo LoadIQ may be used as an operational trucking profitability decision-support platform."
+      description="These terms describe how Karpilo LoadIQ may be used as a transportation profitability calculator, operational estimation platform, and educational analytics tool."
     >
       <div className="grid gap-6">
         <LegalContent sections={TERMS_SECTIONS} />

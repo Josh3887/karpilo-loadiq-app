@@ -164,8 +164,8 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
                 </p>
                 <p className="text-sm font-black text-slate-100">
                   {mode === "core"
-                    ? "Atlas Freight Intelligence"
-                    : "Atlas Educational Intelligence"}
+                    ? "Atlas Analysis Assistance"
+                    : "Atlas Educational Support"}
                 </p>
               </div>
             </div>

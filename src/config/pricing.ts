@@ -13,7 +13,7 @@ export type BillingInterval = "month" | "year";
 
 export const SUBSCRIPTION_TRIAL_DAYS = 7;
 export const FUTURE_PLATFORM_FEATURE_SCOPE =
-  "Future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem.";
+  "Future released Karpilo LoadIQ features made generally available within the purchased entitlement scope and current product family.";
 
 export const GOLD_ACCESS = {
   name: "Gold",
@@ -72,7 +72,7 @@ export const FOUNDER_ACCESS = {
   monthlyPrice: 19.99,
   annualPrice: 149.99,
   lifetimeLockRule:
-    "Legacy Launch pricing remains locked while the subscription stays active and includes future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem.",
+    "Legacy Launch pricing remains locked while the subscription stays active and applies to the purchased entitlement scope and current Karpilo LoadIQ product family.",
 } as const;
 
 export const PILOT_ACCESS = {
@@ -84,7 +84,7 @@ export const PILOT_ACCESS = {
   monthlyPrice: 14.99,
   annualPrice: 129.99,
   lifetimeLockRule:
-    "Pilot pricing remains locked while the subscription stays active and includes future released Karpilo LoadIQ platform features made generally available inside the platform ecosystem. It is lost if canceled, deleted, or transferred.",
+    "Pilot pricing remains locked while the subscription stays active and applies to the purchased entitlement scope and current Karpilo LoadIQ product family. It is lost if canceled, deleted, or transferred.",
 } as const;
 
 export const PUBLIC_PRICING_PLANS = [
@@ -94,7 +94,7 @@ export const PUBLIC_PRICING_PLANS = [
     name: "Gold Monthly",
     price: GOLD_ACCESS.monthlyPrice,
     interval: "month",
-    description: "Complete operational access for load, fuel, overhead, and margin decisions.",
+    description: "Complete operational access for estimating load, fuel, overhead, and margin context.",
     cta: "Upgrade when checkout is wired",
     featured: true,
     bullets: [
@@ -103,7 +103,7 @@ export const PUBLIC_PRICING_PLANS = [
       "Saved load history",
       "Pay templates and lane templates",
       "Post-trip actual comparison",
-      "Operational decision support",
+      "Operational estimation support",
       "Prices subject to change",
     ],
   },
@@ -113,7 +113,7 @@ export const PUBLIC_PRICING_PLANS = [
     name: "Gold Annual",
     price: GOLD_ACCESS.annualPrice,
     interval: "year",
-    description: "Annual operational discipline for year-round freight decisions.",
+    description: "Annual operational discipline for year-round freight estimation.",
     cta: "Annual plan",
     savingsLabel: `Save $${GOLD_ACCESS.annualSavings.toFixed(2)} vs monthly`,
     bullets: [

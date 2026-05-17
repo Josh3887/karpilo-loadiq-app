@@ -83,12 +83,12 @@ const PREVIEW_EXPLANATIONS = {
   },
   "calculator-field": {
     title: "Calculator Field",
-    body: "Calculator fields collect route, revenue, miles, fuel, equipment, time, and expense assumptions. In live mode, those values feed the profitability engine.",
+    body: "Calculator fields collect route, revenue, miles, fuel, equipment, time, and expense assumptions. In live mode, those values feed the Karpilo LoadIQ estimation calculator.",
     unlock: "Preview mode explains the field and blocks typing so no production input or usage event is created.",
   },
   "analyze-load": {
     title: "Analyze Load",
-    body: "Analyze runs the freight profitability engine using route, revenue, fuel, overhead, reserves, and profile assumptions. Preview mode blocks execution so no usage or production records are created.",
+    body: "Analyze runs the freight profitability estimate using route, revenue, fuel, overhead, reserves, and profile assumptions. Preview mode blocks execution so no usage or production records are created.",
     unlock: "Activate Gold, Pilot, Legacy Launch, or Platinum access to run real analyses.",
   },
   "save-load": {

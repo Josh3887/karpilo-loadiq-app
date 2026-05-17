@@ -675,11 +675,11 @@ export function LoadInputForm({
       </section>
 
       <section className="space-y-4">
-        <SectionTitle title="Atlas Route Intelligence" />
+        <SectionTitle title="Atlas Operational Context" />
 
         <AtlasEducationalSignal
           title="Route Field Meaning"
-          signal="Atlas Educational Intelligence reads route inputs as movement context. Loaded miles drive revenue efficiency, while deadhead miles dilute true RPM because unpaid movement still consumes time, fuel, tires, and maintenance."
+          signal="Atlas Educational Support reads route inputs as entered movement context. Loaded miles drive revenue efficiency, while deadhead miles dilute true RPM because unpaid movement still consumes time, fuel, tires, and maintenance."
           consequence="Deadhead start, pickup, delivery, stop-off, and timing fields help preserve the operational structure behind the calculation without replacing manual mileage authority."
         />
 
@@ -1209,7 +1209,7 @@ export function LoadInputForm({
 
         <AtlasEducationalSignal
           title="Fuel Efficiency Behavior Signals"
-          signal="Atlas Educational Intelligence treats MPG and fuel price as operating assumptions. It does not change the calculator formula."
+          signal="Atlas Educational Support treats MPG and fuel price as operating assumptions. It does not change the calculator formula."
           consequence="Higher speed can increase aerodynamic drag; heavier loads can increase rolling resistance and acceleration demand; terrain, wind, stop frequency, idle time, tire pressure awareness, route consistency, following distance, braking, and throttle discipline can all pressure real-world fuel efficiency."
           operatorReminder="Use this as operational context only. Atlas does not promise a specific MPG improvement or safety outcome."
         />

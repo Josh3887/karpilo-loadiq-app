@@ -1,9 +1,9 @@
 export const LOADIQ_BRAND = {
   name: "Karpilo LoadIQ",
   shortName: "K-LIQ",
-  tagline: "Freight profitability intelligence built by the mile.",
+  tagline: "Freight profitability estimates built by the mile.",
   description:
-    "A tactical load profitability decision engine for owner-operators and small fleets.",
+    "A transportation profitability calculator and operational estimation platform for owner-operators and small fleets.",
 } as const;
 
 export const LOADIQ_URLS = {

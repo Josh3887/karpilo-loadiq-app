@@ -7,7 +7,7 @@ export const demoSteps: DemoStep[] = [
     eyebrow: "Step 1",
     title: "Demo introduction",
     narration:
-      "Welcome to the Karpilo LoadIQ demo. This walkthrough shows how an owner-operator can set up a profile, calculate loads, save results, and understand true profitability before committing to freight.",
+      "Welcome to the Karpilo LoadIQ demo. This walkthrough shows how an owner-operator can set up a profile, calculate loads, save results, and review estimated profitability before making independent freight decisions.",
   },
   {
     key: "login",
@@ -103,7 +103,7 @@ export const demoSteps: DemoStep[] = [
     eyebrow: "Step 13",
     title: "Dashboard home",
     narration:
-      "The dashboard becomes the operator's command center. It summarizes profitability, targets, warnings, and recent load activity.",
+      "The dashboard becomes the operator's estimation workspace. It summarizes profitability estimates, targets, warnings, and recent load activity.",
   },
   {
     key: "startLoad",
@@ -223,7 +223,7 @@ export const demoSteps: DemoStep[] = [
     eyebrow: "Step 28",
     title: "Settings and profile update",
     narration:
-      "As costs change, users must update their profile. Profitability intelligence only works when the operating profile stays current.",
+      "As costs change, users should update their profile. Profitability estimates only work when the operating profile stays current.",
   },
   {
     key: "final",
@@ -231,6 +231,6 @@ export const demoSteps: DemoStep[] = [
     eyebrow: "Step 29",
     title: "Final demo CTA",
     narration:
-      "Karpilo LoadIQ is built to help operators understand freight before they commit to it, protect their margin, and make better decisions with real operating numbers.",
+      "Karpilo LoadIQ is built to help operators understand freight estimates, review margin pressure, and make independent decisions with clearer operating numbers.",
   },
 ];

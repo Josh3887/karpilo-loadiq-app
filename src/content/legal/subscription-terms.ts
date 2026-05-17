@@ -4,7 +4,7 @@ import {
   type LegalSection,
 } from "@/content/legal/billing-disclosures";
 
-export const SUBSCRIPTION_TERMS_LAST_UPDATED = "May 11, 2026";
+export const SUBSCRIPTION_TERMS_LAST_UPDATED = "May 17, 2026";
 
 export const SUBSCRIPTION_TERMS_SECTIONS: LegalSection[] = [
   {
@@ -21,8 +21,18 @@ export const SUBSCRIPTION_TERMS_SECTIONS: LegalSection[] = [
     id: "plan-access",
     title: "Plan Access and Feature Gates",
     paragraphs: [
-      "Gold, Platinum, Pilot, Legacy Launch, promotional, and future plan tiers may include different feature limits, saved-load access, exports, templates, comparisons, support paths, or usage limits. Features may be adjusted for future billing periods as the product evolves.",
+      "Gold and Platinum are current paid subscription tiers. Pilot and Legacy Launch are protected legacy or lifetime-access programs within their purchased entitlement scope. Future tiers or products, including reserved Pro or Karpilo FleetOS-related offerings, may have different pricing, eligibility, feature limits, support paths, usage limits, or licensing terms.",
       "Subscription access is tied to the account and billing platform used at purchase. Promotional access may not be transferable between accounts, platforms, businesses, or app stores.",
+      "Feature availability may evolve for future billing periods, future subscribers, future product modules, enterprise licensing, or separately licensed offerings where permitted by law and platform rules.",
+    ],
+  },
+  {
+    id: "pilot-launch-scope",
+    title: "Pilot and Legacy Launch Entitlement Scope",
+    paragraphs: [
+      "Pilot and Legacy Launch lifetime or grandfathered access applies to the qualifying account, purchased entitlement scope, applicable subscription class, and current Karpilo LoadIQ product family features made generally available for that entitlement class.",
+      "Pilot and Legacy Launch access does not grant ownership of Karpilo LoadIQ, unlimited future platform access, automatic access to all future enterprise products, Karpilo FleetOS systems, fleet-management modules, Pro/FleetOS capabilities, API products, team accounts, or separately licensed future offerings.",
+      "Karpilo Endeavor Technologies LLC reserves the right to create future pricing, future enterprise licensing, future feature segmentation, future operational modules, and separately licensed products without converting every legacy entitlement into those future offerings.",
     ],
   },
   {
@@ -61,7 +71,7 @@ export const SUBSCRIPTION_TERMS_SECTIONS: LegalSection[] = [
     id: "future-products",
     title: "Future Products and Enterprise Plans",
     paragraphs: [
-      "These terms are designed to support future Karpilo products, Karpilo FleetOS subscriptions, team accounts, enterprise licensing, API subscriptions, usage-based plans, annual contracts, and B2B agreements. Enterprise or separately signed agreements may include different billing, refund, cancellation, data, or service terms.",
+      "These terms are designed to support future Karpilo products, Karpilo FleetOS subscriptions, team accounts, enterprise licensing, API subscriptions, usage-based plans, annual contracts, and B2B agreements. Enterprise, Pro, FleetOS, API, team, or separately signed agreements may include different billing, refund, cancellation, data, access, and service terms.",
     ],
   },
 ];

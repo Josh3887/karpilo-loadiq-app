@@ -214,7 +214,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
 
           <div>
             <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
-              Atlas Route Intelligence
+              Atlas Operational Context
             </h2>
             <p className="mb-3 text-xs leading-5 text-slate-500">
               K-ATLS-RTE movement context for deadhead exposure, modeled stops,

@@ -70,7 +70,7 @@ export function AtlasRouteIntelligenceSurface({
     <AtlasRuntimeFrame
       layer={ATLAS_ROUTE_LAYER}
       compact={compact}
-      description="Movement telemetry for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, and corridor efficiency. Route values remain user-entered operational context."
+      description="Educational context for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, and route assumptions. Route values remain user-entered context."
       signal={
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
           <div className="grid gap-3 md:grid-cols-3">
@@ -240,7 +240,7 @@ function getRouteSignal({
     return {
       title: "Elevated Repositioning Pressure",
       body:
-        "Atlas Route Intelligence detected deadhead imbalance against loaded efficiency.",
+        "Atlas Operational Context detected deadhead imbalance against loaded efficiency.",
       movementSummary,
       corridorPressure,
       timingInterpretation,

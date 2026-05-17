@@ -18,21 +18,21 @@ export type ProductWebsiteSection = {
 
 export const PRODUCT_HERO = {
   eyebrow: "Karpilo LoadIQ",
-  title: "Freight profitability intelligence built by the mile.",
+  title: "Freight profitability estimates built by the mile.",
   description:
-    "A mobile-first command center for owner operators and independent contractors who want to pressure-test freight before accepting it.",
+    "A mobile-first estimation workspace for owner operators and independent contractors who want to pressure-test freight before making independent business decisions.",
 } satisfies ProductWebsiteSection;
 
 export const PRODUCT_FEATURES = [
   {
     title: "Freight profitability analysis",
     description:
-      "Estimate gross revenue, operating cost, net profit, break-even RPM, and margin before accepting freight.",
+      "Estimate gross revenue, operating cost, net profit, break-even RPM, and margin before making independent freight decisions.",
   },
   {
     title: "True RPM and deadhead exposure",
     description:
-      "Model loaded miles and deadhead together so unpaid repositioning miles are visible before dispatch.",
+      "Model loaded miles and deadhead together so unpaid repositioning miles are visible before independent route and load decisions.",
   },
   {
     title: "EIA diesel estimate auto-fill",
@@ -60,7 +60,7 @@ export const PRODUCT_FEATURES = [
       "Support percentage pay, nested percentage splits, CPM, and flat-rate workflows without cluttering the calculator.",
   },
   {
-    title: "Mobile-first command center",
+    title: "Mobile-first estimation workspace",
     description:
       "A dark operational interface designed for fast checks from the cab, desk, or dispatch call.",
   },

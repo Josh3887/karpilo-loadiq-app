@@ -30,7 +30,7 @@ export const REQUIRED_APP_POLICIES: RequiredPolicy[] = [
     title: "Terms & Conditions",
     version: REQUIRED_POLICY_VERSION,
     href: "/terms",
-    summary: "General platform rules, acceptable operation, and account terms.",
+    summary: "General platform rules, estimation limits, acceptable use, and account terms.",
   },
   {
     key: "privacy_policy",
@@ -80,7 +80,7 @@ export const REQUIRED_APP_POLICIES: RequiredPolicy[] = [
     version: REQUIRED_POLICY_VERSION,
     href: "/refund-policy",
     summary:
-      "Founder and launch pricing remains locked only while the subscription stays active and in good standing.",
+      "Pilot and launch pricing locks are limited to qualifying accounts, entitlement scope, and current Karpilo LoadIQ product-family access.",
   },
   {
     key: "data_usage_disclosure",
@@ -93,7 +93,7 @@ export const REQUIRED_APP_POLICIES: RequiredPolicy[] = [
     key: "informational_use_disclaimer",
     title: "Informational Use Disclaimer",
     version: REQUIRED_POLICY_VERSION,
-    summary: "Karpilo LoadIQ is an informational decision-support tool and does not guarantee outcomes.",
+    summary: "Karpilo LoadIQ provides informational, educational, analytical, and estimation support only and does not guarantee outcomes.",
   },
   {
     key: "limitation_of_liability",

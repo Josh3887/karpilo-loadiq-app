@@ -14,7 +14,7 @@ export default function LoginPage() {
           </p>
           <h1 className="mt-2 text-3xl font-black">Login</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Access your freight profitability command center.
+            Access your freight profitability estimation workspace.
           </p>
           <LoginForm />
         </section>

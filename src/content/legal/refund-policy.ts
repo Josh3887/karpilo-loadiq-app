@@ -5,14 +5,14 @@ import {
   type LegalSection,
 } from "@/content/legal/billing-disclosures";
 
-export const REFUND_POLICY_LAST_UPDATED = "May 11, 2026";
+export const REFUND_POLICY_LAST_UPDATED = "May 17, 2026";
 
 export const REFUND_POLICY_SECTIONS: LegalSection[] = [
   {
     id: "overview",
     title: "Refund Policy Overview",
     paragraphs: [
-      "Karpilo LoadIQ is a digital subscription service that provides software access, profitability estimates, saved-load tools, profile-driven calculations, and operational intelligence features. This Refund Policy explains how refunds are handled for direct website billing, Stripe-powered subscriptions, Apple App Store purchases, Google Play purchases, pilot access, promotional pricing, and trial offers.",
+      "Karpilo LoadIQ is a digital subscription service that provides software access, transportation profitability estimates, saved-load tools, profile-driven calculations, educational guidance, and analytical operational insight features. This Refund Policy explains how refunds are handled for direct website billing, Stripe-powered subscriptions, Apple App Store purchases, Google Play purchases, pilot access, promotional pricing, and trial offers.",
       "This policy is intended to be fair, transparent, and operationally practical. It does not limit rights that may be required by applicable law or by Apple, Google, Stripe, card networks, or other payment providers.",
     ],
   },
@@ -56,7 +56,8 @@ export const REFUND_POLICY_SECTIONS: LegalSection[] = [
     title: "Pilot, Founder, and Promotional Pricing",
     paragraphs: [
       "Pilot Operator Access, Founding Operator Access, invite codes, coupons, trial offers, and other promotional plans may have special eligibility conditions. Promotional pricing is not guaranteed to remain available if a subscription is canceled, deleted, transferred, disputed, or allowed to lapse.",
-      "Pilot pricing may remain locked only while the qualifying subscription remains active and in good standing. If the account is canceled, deleted, transferred, or terminated, the promotional rate may be forfeited and may not be restorable.",
+      "Any lifetime or grandfathered pricing lock is limited to the qualifying account, purchased entitlement scope, applicable subscription class, and current Karpilo LoadIQ product family. It does not guarantee access to every future enterprise, FleetOS, Pro, API, team, or separately licensed product.",
+      "Pilot or legacy pricing may remain locked only while the qualifying subscription remains active and in good standing. If the account is canceled, deleted, transferred, disputed, or terminated, the promotional rate may be forfeited and may not be restorable where permitted by law and platform rules.",
     ],
   },
   {
