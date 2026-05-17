@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { FieldErrors, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -75,6 +75,7 @@ export function LoadInputForm({
   const [fuelStatus, setFuelStatus] = useState(
     previewActive ? PREVIEW_FUEL_STATUS : ""
   );
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [profileValues, setProfileValues] =
     useState<ProfileDerivedValues | null>(
       previewActive ? PREVIEW_PROFILE_VALUES : null
@@ -261,12 +262,33 @@ export function LoadInputForm({
       return;
     }
 
-    const parsedValues = loadInputSchema.parse({
-      ...values,
-      accessorialItems,
-      routeStops: normalizeRouteStops(routeStops),
-      profileDerivedValues: profileValues ?? values.profileDerivedValues,
-    });
+    const stopError = getRouteStopValidationError(routeStops);
+    if (stopError) {
+      setSubmitError(stopError);
+      return;
+    }
+
+    let parsedValues: LoadInputFormValues;
+    try {
+      parsedValues = loadInputSchema.parse({
+        ...values,
+        accessorialItems,
+        routeStops: normalizeRouteStops(routeStops),
+        profileDerivedValues: profileValues ?? values.profileDerivedValues,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setSubmitError(
+          error.issues[0]?.message ??
+            "Review the highlighted fields before analyzing this load."
+        );
+        return;
+      }
+
+      throw error;
+    }
+
+    setSubmitError(null);
     const reserveAllocationValue =
       parsedValues.reserveAllocationValue > 0
         ? parsedValues.reserveAllocationValue
@@ -303,6 +325,14 @@ export function LoadInputForm({
           ? parsedValues.grossRevenue
           : derivedLinehaul + parsedValues.fuelSurcharge,
     });
+  }
+
+  function handleInvalidSubmit(errors: FieldErrors<LoadInputRawValues>) {
+    const firstError = findFirstFormError(errors);
+    setSubmitError(
+      firstError ??
+        "Review the highlighted fields before analyzing this load."
+    );
   }
 
   function handleManualFuelOverride() {
@@ -430,7 +460,11 @@ export function LoadInputForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-8">
+    <form
+      noValidate
+      onSubmit={handleSubmit(submit, handleInvalidSubmit)}
+      className="space-y-8"
+    >
       <input type="hidden" {...register("fuelPriceSource")} />
       <input type="hidden" {...register("fuelPriceSourceLabel")} />
       <input type="hidden" {...register("fuelPriceRegion")} />
@@ -456,6 +490,12 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Load Identity" />
+
+        {submitError && (
+          <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm leading-6 text-red-100">
+            {submitError}
+          </div>
+        )}
 
         <InputField
           label="Trip Number / Broker Reference"
@@ -1081,6 +1121,46 @@ function StopInputField({
       />
     </label>
   );
+}
+
+function getRouteStopValidationError(stops: RouteStopInput[]) {
+  for (const [index, stop] of stops.entries()) {
+    const stopNumber = index + 1;
+    const numericChecks: Array<[string, number]> = [
+      ["miles from previous", stop.milesFromPrevious],
+      ["stop revenue", stop.stopRevenue],
+      ["stop expense", stop.stopExpense],
+    ];
+
+    for (const [label, value] of numericChecks) {
+      if (!Number.isFinite(Number(value))) {
+        return `Stop-Off ${stopNumber}: ${label} must be a valid number.`;
+      }
+
+      if (Number(value) < 0) {
+        return `Stop-Off ${stopNumber}: ${label} cannot be negative.`;
+      }
+    }
+  }
+
+  return null;
+}
+
+function findFirstFormError(errors: FieldErrors<LoadInputRawValues>) {
+  const queue: unknown[] = Object.values(errors);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== "object") continue;
+
+    if ("message" in current && typeof current.message === "string") {
+      return current.message;
+    }
+
+    queue.push(...Object.values(current));
+  }
+
+  return null;
 }
 
 type ProfileValueFieldProps = {
