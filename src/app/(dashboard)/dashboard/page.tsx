@@ -14,6 +14,7 @@ import {
   getAdminAccessForUser,
   type AdminRole,
 } from "@/lib/admin/roles";
+import { isLoadIqAiDevEnabled } from "@/lib/ai/openai-client";
 import { createClient } from "@/lib/supabase-server";
 
 import DashboardClientPage from "./page.client";
@@ -68,6 +69,7 @@ export default async function DashboardPage({
         claimedOperatorCount={551}
         previewMode
         adminControlPlaneAccess={null}
+        aiDevEnabled={false}
       />
     );
   }
@@ -123,6 +125,7 @@ export default async function DashboardPage({
       claimedOperatorCount={claimedOperatorCount}
       previewMode={previewMode}
       adminControlPlaneAccess={adminControlPlaneAccess}
+      aiDevEnabled={isLoadIqAiDevEnabled()}
     />
   );
 }

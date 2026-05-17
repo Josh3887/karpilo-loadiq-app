@@ -46,6 +46,7 @@ type DashboardClientPageProps = {
   adminControlPlaneAccess?: {
     highestRole: "owner" | "admin" | "developer";
   } | null;
+  aiDevEnabled?: boolean;
 };
 
 export default function DashboardClientPage({
@@ -58,6 +59,7 @@ export default function DashboardClientPage({
   claimedOperatorCount,
   previewMode = false,
   adminControlPlaneAccess = null,
+  aiDevEnabled = false,
 }: DashboardClientPageProps) {
   const preview = usePreviewMode();
   const {
@@ -387,6 +389,7 @@ export default function DashboardClientPage({
             canCompareScenarios={
               entitlementState?.entitlements.canCompareScenarios ?? false
             }
+            aiDevEnabled={aiDevEnabled}
             onLoadSaved={handleLoadSaved}
             previewMode={previewMode}
           />

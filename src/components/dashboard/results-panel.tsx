@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
+import { LoadIqEducationalInsightCard } from "@/components/ai/loadiq-educational-insight-card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
@@ -24,6 +25,7 @@ type ResultsPanelProps = {
   input: LoadInput | null;
   canSaveLoad?: boolean;
   canCompareScenarios?: boolean;
+  aiDevEnabled?: boolean;
   onLoadSaved?: () => void;
   previewMode?: boolean;
 };
@@ -33,6 +35,7 @@ export function ResultsPanel({
   input,
   canSaveLoad = false,
   canCompareScenarios = false,
+  aiDevEnabled = false,
   onLoadSaved,
   previewMode = false,
 }: ResultsPanelProps) {
@@ -199,6 +202,10 @@ export function ResultsPanel({
         {input && <RouteIntelligenceContext input={input} result={result} />}
 
         <OperationalValueNotes result={result} />
+
+        {aiDevEnabled && input && !previewMode && (
+          <LoadIqEducationalInsightCard input={input} result={result} />
+        )}
 
         {result.explanations.length > 0 && (
           <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-5">
