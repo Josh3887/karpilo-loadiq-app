@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { AlertTriangle, Loader2, RadioTower } from "lucide-react";
 
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import type {
   LoadIqAiLoadAnalysisInput,
   LoadIqAiLoadAnalysisOutput,
@@ -18,6 +19,10 @@ type AiResponse = {
   error?: string;
 };
 
+const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
+
+// TODO(Atlas migration): rename this compatibility component after the
+// existing iAtion overlay is replaced by embedded Atlas surfaces.
 export function IationCoreFreightPanel({
   payload,
 }: IationCoreFreightPanelProps) {
@@ -33,13 +38,13 @@ export function IationCoreFreightPanel({
   async function requestIntelligence() {
     if (!payload) {
       setStatus(
-        "iAtion Core needs complete calculated load values to generate a freight intelligence readout."
+        "Atlas Freight Intelligence needs complete calculated load values to generate a freight intelligence readout."
       );
       return;
     }
 
     setLoading(true);
-    setStatus("Reading freight signal...");
+    setStatus(`${ATLAS_FREIGHT_LAYER.runtimeId} reading freight signal...`);
 
     try {
       const response = await fetch("/api/ai/load-analysis", {
@@ -54,8 +59,8 @@ export function IationCoreFreightPanel({
       if (!response.ok || !data.analysis) {
         setStatus(
           data.error === "ai_not_configured"
-            ? "iAtion Core is not configured on this server."
-            : "iAtion Core freight intelligence is temporarily unavailable."
+            ? "Atlas Freight Intelligence is not configured on this server."
+            : "Atlas Freight Intelligence is temporarily unavailable."
         );
         return;
       }
@@ -64,7 +69,7 @@ export function IationCoreFreightPanel({
       setAnalysisPayloadKey(payloadKey);
       setStatus("");
     } catch {
-      setStatus("iAtion Core freight intelligence is temporarily unavailable.");
+      setStatus("Atlas Freight Intelligence is temporarily unavailable.");
     } finally {
       setLoading(false);
     }
@@ -76,8 +81,8 @@ export function IationCoreFreightPanel({
         <div className="flex items-start gap-4">
           <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-sky-300/25 bg-sky-400/10 shadow-[0_0_24px_rgba(56,189,248,0.16)]">
             <Image
-              src="/brand/iation-core-freight-intelligence-icon.webp"
-              alt="iAtion Core freight intelligence"
+              src={ATLAS_FREIGHT_LAYER.assets.emblem}
+              alt="Atlas Freight Intelligence"
               fill
               sizes="56px"
               className="h-full w-full object-cover"
@@ -85,10 +90,10 @@ export function IationCoreFreightPanel({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-              iAtion Core
+              {ATLAS_FREIGHT_LAYER.runtimeId}
             </p>
             <h3 className="mt-1 text-xl font-black text-slate-50">
-              Freight Intelligence
+              {ATLAS_FREIGHT_LAYER.publicName}
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-400">
               Interprets calculated load data, margin pressure, broker traffic,
@@ -110,8 +115,8 @@ export function IationCoreFreightPanel({
             <RadioTower className="h-4 w-4" aria-hidden="true" />
           )}
           {visibleAnalysis
-            ? "Refresh iAtion Core"
-            : "Generate iAtion Core Readout"}
+            ? "Refresh Atlas Freight"
+            : "Generate Atlas Freight Readout"}
         </button>
       </div>
 

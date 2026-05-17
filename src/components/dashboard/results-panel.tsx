@@ -8,6 +8,7 @@ import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { IATION_CORE_EVENT } from "@/lib/ai/iation-events";
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import { LoadInput, LoadResult } from "@/types/load";
 import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 import { saveLoad } from "@/services/save-load";
@@ -205,7 +206,7 @@ export function ResultsPanel({
         <OperationalValueNotes result={result} />
 
         {aiDevEnabled && input && !previewMode && (
-          <IationCoreAction input={input} result={result} />
+          <AtlasFreightAction input={input} result={result} />
         )}
 
         {result.explanations.length > 0 && (
@@ -265,7 +266,9 @@ export function ResultsPanel({
   );
 }
 
-function IationCoreAction({
+const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
+
+function AtlasFreightAction({
   input,
   result,
 }: {
@@ -290,10 +293,10 @@ function IationCoreAction({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-            iAtion Core
+            {ATLAS_FREIGHT_LAYER.runtimeId}
           </p>
           <h3 className="mt-2 text-xl font-black text-slate-50">
-            Freight Intelligence
+            {ATLAS_FREIGHT_LAYER.publicName}
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-400">
             Freight intelligence based on this load&apos;s calculated numbers.
@@ -306,7 +309,7 @@ function IationCoreAction({
           data-iation-help="analyze-load"
         >
           <RadioTower className="h-4 w-4" aria-hidden="true" />
-          Open iAtion Core
+          Open Atlas Freight
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import {
   isLoadIqAiDevEnabled,
 } from "@/lib/ai/openai-client";
 import { validateLoadAnalysisPayload } from "@/lib/ai/validate-load-analysis-payload";
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import { createClient } from "@/lib/supabase-server";
 import type { LoadIqAiLoadAnalysisOutput } from "@/types/ai-load-analysis";
 
@@ -12,7 +13,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INTELLIGENCE_DISCLAIMER =
-  "iAtion Core provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.";
+  "Atlas Freight Intelligence provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.";
+
+const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
 
 const OUTPUT_SCHEMA = {
   type: "object",
@@ -61,7 +64,7 @@ const OUTPUT_SCHEMA = {
     },
     intelligenceDisclaimer: {
       type: "string",
-      description: "Short iAtion Core intelligence disclaimer.",
+      description: "Short Atlas Freight Intelligence disclaimer.",
     },
   },
 } as const;
@@ -73,7 +76,7 @@ function truncate(value: unknown, maxLength: number) {
 
 function sanitizeModelText(value: unknown, maxLength = 520) {
   return truncate(value, maxLength)
-    .replace(/\bas an AI\b/gi, "as an educational assistant")
+    .replace(/\bas an AI\b/gi, "as an operational intelligence layer")
     .replace(/\bI guarantee\b/gi, "This does not guarantee")
     .replace(/\byou should definitely take\b/gi, "one way to evaluate")
     .replace(/\byou should definitely reject\b/gi, "one way to evaluate")
@@ -156,7 +159,7 @@ export async function POST(request: Request) {
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "loadiq_educational_load_analysis",
+          name: "atlas_freight_load_analysis",
           strict: true,
           schema: OUTPUT_SCHEMA,
         },
@@ -165,8 +168,9 @@ export async function POST(request: Request) {
         {
           role: "system",
           content: [
-            "You are iAtion Core, the Karpilo LoadIQ freight intelligence interpreter.",
-            "iAtion teaches the app; iAtion Core interprets calculated freight and load data. Stay in the iAtion Core freight-intelligence role.",
+            `You are ${ATLAS_FREIGHT_LAYER.publicName}, the Karpilo LoadIQ freight intelligence interpreter.`,
+            `Runtime namespace: ${ATLAS_FREIGHT_LAYER.runtimeId}.`,
+            "Atlas Freight Intelligence interprets calculated freight and load data. Stay in the Atlas Freight Intelligence role.",
             "You are trucking-aware, owner-operator focused, direct, calm, operationally realistic, concise, and educational.",
             "The calculator values are authoritative. Do not recalculate, replace, or contradict them. Interpret only.",
             "Do not calculate final financial values. Do not make final business decisions for the user.",

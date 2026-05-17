@@ -1,3 +1,6 @@
+// TODO(Atlas migration): these iAtion event/storage keys remain as
+// compatibility wiring until the floating overlay is replaced by embedded
+// Atlas Intelligence surfaces.
 export const IATION_VISIBILITY_STORAGE_KEY = "loadiq.iationOverlay.visible";
 export const IATION_CORE_EVENT = "loadiq:iation-core-open";
 export const IATION_VISIBILITY_EVENT = "loadiq:iation-visibility-updated";

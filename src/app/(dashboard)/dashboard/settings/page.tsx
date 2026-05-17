@@ -194,8 +194,8 @@ function SettingsContent({
 
       {aiDevEnabled && (
         <SettingsPanel
-          title="iAtion Intelligence Systems"
-          description="Control the Karpilo LoadIQ educational and freight-intelligence overlay inside authenticated app surfaces."
+          title="Atlas Intelligence Systems"
+          description="Control Karpilo LoadIQ intelligence overlays while the Atlas embedded intelligence surfaces are phased in."
           kicker="Signal Control"
         >
           <IationSettingsCard enabled={aiDevEnabled} />
