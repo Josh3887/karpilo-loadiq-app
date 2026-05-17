@@ -1,17 +1,19 @@
-# Karpilo LoadIQ AI Dev V1
+# Karpilo LoadIQ Atlas Intelligence Dev V1
 
 ## Purpose
 
-AI Dev V1 adds two branded intelligence surfaces inside the authenticated Karpilo LoadIQ app:
+Atlas Intelligence Dev V1 adds embedded operational intelligence surfaces inside the authenticated Karpilo LoadIQ app:
 
-- **iAtion**: educational guidance for navigating app pages, features, buttons, forms, tiles, dialogs, workflows, and settings.
-- **iAtion Core**: freight intelligence that interprets calculated load outputs, margin pressure, deadhead impact, fuel exposure, broker traffic, road signals, and operational significance.
+- **Atlas Core**: runtime orchestration and infrastructure cognition.
+- **Atlas Freight Intelligence**: freight economics, margin pressure, deadhead exposure, broker traffic, road signals, and dispatch-quality interpretation.
+- **Atlas Route Intelligence**: route vectors, corridor awareness, movement telemetry, and future predictive route flow.
+- **Atlas Educational Intelligence**: contextual operational explanations for app workflows, fields, buttons, forms, and settings.
 
-iAtion teaches the app. iAtion Core interprets the freight. The deterministic Karpilo LoadIQ calculator remains authoritative.
+Atlas is embedded operational intelligence infrastructure. The deterministic Karpilo LoadIQ calculator remains authoritative.
 
 ## App-Only Scope
 
-Functional iAtion and iAtion Core behavior lives only in the APP project. The website may describe the concepts for marketing/disclosure purposes, but it must not call OpenAI, expose API keys, or provide functional AI.
+Functional Atlas behavior lives only in the APP project. The website may describe the concepts for marketing/disclosure purposes, but it must not call OpenAI, expose API keys, or provide functional AI.
 
 AI Dev V1 does not change public pricing, Stripe billing, account deletion, Supabase schema, or subscription entitlement logic.
 
@@ -19,11 +21,11 @@ AI Dev V1 does not change public pricing, Stripe billing, account deletion, Supa
 
 Expected app assets:
 
-- `public/brand/iation-signal-active-icon.webp`
-- `public/brand/iation-core-freight-intelligence-icon.webp`
-- `public/brand/iation-core-hero.jpg`
-- `public/brand/iation-core-mark.png`
-- `public/brand/iation-philosophy-hero.jpg`
+- `public/branding/atlas/core/*`
+- `public/branding/atlas/freight/*`
+- `public/branding/atlas/route/*`
+- `public/branding/atlas/educational/*`
+- `public/branding/atlas/backdrops/*`
 
 ## Environment Variables
 
@@ -39,17 +41,17 @@ Feature flag:
 ENABLE_LOADIQ_AI_DEV=false
 ```
 
-Set `ENABLE_LOADIQ_AI_DEV=true` only where the overlay and API route should be visible/callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`.
+Set `ENABLE_LOADIQ_AI_DEV=true` only where Atlas development surfaces and the API route should be visible/callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`.
 
-## Overlay Behavior
+## Embedded Behavior
 
-The authenticated app shell mounts the iAtion overlay when AI Dev V1 is enabled. The launcher uses a restrained industrial signal style and can be hidden locally with the **Show iAtion** settings control.
+Atlas Freight Intelligence renders as an embedded operational readout on calculator results when AI Dev V1 is enabled. The legacy overlay remains opt-in compatibility from settings while Atlas surfaces are moved into native workflows.
 
 No Supabase schema is used for the hide/show preference. It is stored locally and can be restored from settings.
 
-## Educational Mode
+## Atlas Educational Intelligence
 
-iAtion uses `src/lib/ai/iation-help-registry.ts` to explain supported app surfaces. Educational output includes:
+Atlas Educational Intelligence currently uses compatibility help hooks in `src/lib/ai/iation-help-registry.ts` to explain supported app surfaces. Educational output includes:
 
 1. Feature Signal
 2. What This Does
@@ -60,11 +62,11 @@ iAtion uses `src/lib/ai/iation-help-registry.ts` to explain supported app surfac
 
 Educational disclaimer:
 
-> iAtion provides educational guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve user understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.
+> Atlas Educational Intelligence provides contextual guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve operational understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.
 
-## Freight Intelligence Mode
+## Atlas Freight Intelligence
 
-iAtion Core activates from calculated load context. The calculator values are authoritative; iAtion Core interprets only.
+Atlas Freight Intelligence activates from calculated load context. The calculator values are authoritative; Atlas interprets only.
 
 Route:
 
@@ -107,11 +109,11 @@ Expected response shape:
 
 Intelligence disclaimer:
 
-> iAtion Core provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.
+> Atlas Freight Intelligence provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.
 
 ## Proprietary Statement
 
-> iAtion and iAtion Core are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems are designed to support educational app guidance and operational freight intelligence through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving freight-market context.
+> Atlas Core, Atlas Freight Intelligence, Atlas Route Intelligence, and Atlas Educational Intelligence are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems support embedded operational guidance, freight interpretation, route context, and runtime orchestration through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving operational context.
 
 ## Security Rules
 
@@ -144,10 +146,10 @@ curl -X POST http://localhost:3000/api/ai/load-analysis \
 Then test through the dashboard:
 
 1. Analyze a load normally.
-2. Confirm the floating iAtion launcher appears only when enabled.
-3. Confirm **Open iAtion Core** appears after a result exists.
-4. Generate the iAtion Core readout.
-5. Hide/show the overlay from settings.
+2. Confirm the embedded Atlas Freight Intelligence surface appears only when enabled.
+3. Generate or refresh the freight signal.
+4. Confirm the optional compatibility overlay can be enabled from settings.
+5. Hide/show the compatibility overlay from settings.
 6. Confirm calculator results remain unchanged if the AI call fails.
 
 ## Future Phases

@@ -7,6 +7,7 @@ import {
   IATION_PROPRIETARY_STATEMENT,
   type IationHelpEntry,
 } from "@/lib/ai/iation-help-registry";
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 
 type IationEducationPanelProps = {
   helpEntry: IationHelpEntry | null;
@@ -14,16 +15,18 @@ type IationEducationPanelProps = {
 };
 
 const defaultEntry: IationHelpEntry = {
-  featureSignal: "iAtion Signal",
+  featureSignal: "Atlas Educational Intelligence",
   whatThisDoes:
-    "Provides educational guidance for navigating Karpilo LoadIQ tools, panels, forms, settings, and workflow actions.",
+    "Provides embedded context for Karpilo LoadIQ tools, panels, forms, settings, and workflow actions.",
   whyItMatters:
     "The app contains operational systems that work best when the user understands what each control is for.",
   howToUseIt:
     "Tap supported controls or page areas to see a practical explanation, then continue the workflow normally.",
   operatorReminder:
-    "iAtion explains how the app works. It does not decide whether to accept, reject, dispatch, price, or legally classify freight.",
+    "Atlas Educational Intelligence explains workflow meaning. It does not decide whether to accept, reject, dispatch, price, or legally classify freight.",
 };
+
+const ATLAS_EDUCATIONAL_LAYER = ATLAS_INTELLIGENCE_LAYERS.educational;
 
 export function IationEducationPanel({
   helpEntry,
@@ -36,8 +39,8 @@ export function IationEducationPanel({
       {!helpEntry && (
         <div className="overflow-hidden rounded-2xl border border-sky-400/20 bg-[#050B14]">
           <Image
-            src="/brand/iation-philosophy-hero.jpg"
-            alt="iAtion educational guidance philosophy"
+            src={ATLAS_EDUCATIONAL_LAYER.assets.dashboard}
+            alt="Atlas Educational Intelligence"
             width={640}
             height={360}
             className="h-36 w-full object-cover opacity-80"

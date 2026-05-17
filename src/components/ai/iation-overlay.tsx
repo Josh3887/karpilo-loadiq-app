@@ -24,6 +24,7 @@ import {
   subscribeIationVisibility,
   writeIationVisibility,
 } from "@/lib/ai/iation-events";
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 
 type OverlayMode = "education" | "core";
@@ -32,12 +33,17 @@ type IationCoreEventDetail = {
   payload?: LoadIqAiLoadAnalysisInput | null;
 };
 
+const ATLAS_EDUCATIONAL_LAYER = ATLAS_INTELLIGENCE_LAYERS.educational;
+const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
+
+// TODO(Atlas migration): compatibility overlay remains available from settings
+// while primary Atlas Freight Intelligence renders in workflow surfaces.
 export function IationOverlay({ enabled }: { enabled: boolean }) {
   const pathname = usePathname();
   const visible = useSyncExternalStore(
     subscribeIationVisibility,
     readIationVisibility,
-    () => true
+    () => false
   );
   const [panelOpen, setPanelOpen] = useState(false);
   const [mode, setMode] = useState<OverlayMode>("education");
@@ -130,8 +136,8 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
                 <Image
                   src={
                     mode === "core"
-                      ? "/brand/iation-core-freight-intelligence-icon.webp"
-                      : "/brand/iation-signal-active-icon.webp"
+                      ? ATLAS_FREIGHT_LAYER.assets.emblem
+                      : ATLAS_EDUCATIONAL_LAYER.assets.emblem
                   }
                   alt=""
                   fill
@@ -142,10 +148,14 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-                  {mode === "core" ? "iAtion Core" : "iAtion"}
+                  {mode === "core"
+                    ? ATLAS_FREIGHT_LAYER.runtimeId
+                    : ATLAS_EDUCATIONAL_LAYER.runtimeId}
                 </p>
                 <p className="text-sm font-black text-slate-100">
-                  {mode === "core" ? "Freight Intelligence" : "Educational Guidance"}
+                  {mode === "core"
+                    ? "Atlas Freight Intelligence"
+                    : "Atlas Educational Intelligence"}
                 </p>
               </div>
             </div>
@@ -153,7 +163,7 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
               type="button"
               onClick={() => setPanelOpen(false)}
               className="rounded-full border border-slate-700 bg-slate-950 p-2 text-slate-400 transition hover:border-sky-400/50 hover:text-sky-200"
-              aria-label="Minimize iAtion panel"
+              aria-label="Minimize Atlas compatibility panel"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -165,14 +175,14 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
               onClick={() => setMode("education")}
               icon={<BookOpen className="h-4 w-4" aria-hidden="true" />}
             >
-              iAtion
+              EDU
             </ModeButton>
             <ModeButton
               active={mode === "core"}
               onClick={() => setMode("core")}
               icon={<RadioTower className="h-4 w-4" aria-hidden="true" />}
             >
-              Core
+              Freight
             </ModeButton>
           </div>
 

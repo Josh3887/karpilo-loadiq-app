@@ -1,3 +1,8 @@
+import {
+  ATLAS_EDUCATIONAL_DISCLAIMER,
+  ATLAS_PROPRIETARY_STATEMENT,
+} from "@/lib/atlas/atlas-registry";
+
 export type IationHelpEntry = {
   featureSignal: string;
   whatThisDoes: string;
@@ -6,11 +11,11 @@ export type IationHelpEntry = {
   operatorReminder: string;
 };
 
-export const IATION_EDUCATIONAL_DISCLAIMER =
-  "iAtion provides educational guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve user understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.";
+// TODO(Atlas migration): keep legacy export names while contextual help hooks
+// move from iAtion terminology to Atlas Educational Intelligence.
+export const IATION_EDUCATIONAL_DISCLAIMER = ATLAS_EDUCATIONAL_DISCLAIMER;
 
-export const IATION_PROPRIETARY_STATEMENT =
-  "iAtion and iAtion Core are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems are designed to support educational app guidance and operational freight intelligence through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving freight-market context.";
+export const IATION_PROPRIETARY_STATEMENT = ATLAS_PROPRIETARY_STATEMENT;
 
 export const IATION_HELP_REGISTRY: Record<string, IationHelpEntry> = {
   "analyze-load": {

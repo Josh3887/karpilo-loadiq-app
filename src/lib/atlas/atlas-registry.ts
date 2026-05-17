@@ -119,6 +119,15 @@ export const ATLAS_LAYER_ORDER: AtlasLayerKey[] = [
   "educational",
 ];
 
+export const ATLAS_PROCESSING_DISCLOSURE =
+  "Atlas runs as embedded Karpilo LoadIQ operational intelligence. OpenAI powers intelligence processing underneath Atlas where applicable, while users experience Atlas as native LoadIQ intelligence rather than a third-party chatbot.";
+
+export const ATLAS_PROPRIETARY_STATEMENT =
+  "Atlas Core, Atlas Freight Intelligence, Atlas Route Intelligence, and Atlas Educational Intelligence are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems support embedded operational guidance, freight interpretation, route context, and runtime orchestration through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving operational context.";
+
+export const ATLAS_EDUCATIONAL_DISCLAIMER =
+  "Atlas Educational Intelligence provides contextual guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve operational understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.";
+
 // TODO(Atlas migration): remove these legacy aliases after iAtion/iAtion Core
 // references are fully replaced across APP and WEBSITE.
 export const ATLAS_LEGACY_COMPATIBILITY_ALIASES = {

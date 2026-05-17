@@ -6,9 +6,9 @@ export const IATION_CORE_EVENT = "loadiq:iation-core-open";
 export const IATION_VISIBILITY_EVENT = "loadiq:iation-visibility-updated";
 
 export function readIationVisibility() {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
 
-  return window.localStorage.getItem(IATION_VISIBILITY_STORAGE_KEY) !== "false";
+  return window.localStorage.getItem(IATION_VISIBILITY_STORAGE_KEY) === "true";
 }
 
 export function writeIationVisibility(visible: boolean) {

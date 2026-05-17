@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { IationSettingsCard } from "@/components/ai/iation-settings-card";
+import { AtlasIntelligenceSettingsCard } from "@/components/ai/atlas-intelligence-settings-card";
 import {
   LOADIQ_SETTINGS_LINKS,
   SettingsMetric,
@@ -195,10 +195,10 @@ function SettingsContent({
       {aiDevEnabled && (
         <SettingsPanel
           title="Atlas Intelligence Systems"
-          description="Control Karpilo LoadIQ intelligence overlays while the Atlas embedded intelligence surfaces are phased in."
+          description="Review embedded operational intelligence layers and control the optional compatibility overlay while Atlas surfaces move into native workflows."
           kicker="Signal Control"
         >
-          <IationSettingsCard enabled={aiDevEnabled} />
+          <AtlasIntelligenceSettingsCard enabled={aiDevEnabled} />
         </SettingsPanel>
       )}
 
