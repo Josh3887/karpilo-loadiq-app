@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AccountDeletionRequestForm } from "@/components/legal/account-deletion-request-form";
 import { AccountSecurityPanel } from "@/components/settings/account-security-panel";
 import {
   SettingsMetric,
@@ -113,6 +114,14 @@ function AccountSettingsContent({
         description="Email, password, forgot-password access, and logout stay attached to the existing Supabase Auth user."
       >
         <AccountSecurityPanel currentEmail={email} />
+      </SettingsPanel>
+
+      <SettingsPanel
+        title="Danger Zone"
+        description="Request account deletion without deleting billing, subscription, saved-load, pricing-lock, or audit records automatically."
+        kicker="Account Deletion"
+      >
+        <AccountDeletionRequestForm defaultContactEmail={email} />
       </SettingsPanel>
     </SettingsPageShell>
   );

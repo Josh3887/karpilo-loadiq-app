@@ -7,12 +7,17 @@ import {
   type AccountDeletionPayload,
 } from "@/services/account-deletion";
 
-export function AccountDeletionRequestForm() {
+export function AccountDeletionRequestForm({
+  defaultContactEmail = "",
+}: {
+  defaultContactEmail?: string;
+}) {
   const [payload, setPayload] = useState<AccountDeletionPayload>({
-    contactEmail: "",
+    contactEmail: defaultContactEmail,
     reason: "",
     requestedScope: "account_and_data",
     acknowledgedSubscriptionWarning: false,
+    confirmationPhrase: "",
   });
   const [status, setStatus] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -23,10 +28,11 @@ export function AccountDeletionRequestForm() {
       await requestAccountDeletion(payload);
       setConfirming(false);
       setPayload({
-        contactEmail: "",
+        contactEmail: defaultContactEmail,
         reason: "",
         requestedScope: "account_and_data",
         acknowledgedSubscriptionWarning: false,
+        confirmationPhrase: "",
       });
       setStatus(
         "Deletion request received. Support will review billing, retention, and identity requirements before completion."
@@ -124,12 +130,31 @@ export function AccountDeletionRequestForm() {
             security reasons.
           </span>
         </label>
+
+        <label className="block">
+          <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+            Type DELETE to confirm
+          </span>
+          <input
+            type="text"
+            value={payload.confirmationPhrase}
+            onChange={(event) =>
+              setPayload((prev) => ({
+                ...prev,
+                confirmationPhrase: event.target.value,
+              }))
+            }
+            className="h-12 w-full rounded-xl border border-red-400/30 bg-[#060B14] px-4 text-slate-100 outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-300/20"
+          />
+        </label>
       </div>
 
       <button
         type="button"
         disabled={
-          !payload.contactEmail || !payload.acknowledgedSubscriptionWarning
+          !payload.contactEmail ||
+          !payload.acknowledgedSubscriptionWarning ||
+          payload.confirmationPhrase.trim() !== "DELETE"
         }
         onClick={() => setConfirming(true)}
         className="mt-5 rounded-xl border border-red-300/40 bg-red-500/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"

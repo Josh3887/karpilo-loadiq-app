@@ -19,16 +19,29 @@ export async function POST() {
 
   if (!customerId) {
     return NextResponse.json(
-      { error: "No Stripe customer found for this account." },
+      {
+        error:
+          "Subscription management is temporarily unavailable. Please contact support.",
+      },
       { status: 404 }
     );
   }
 
   const stripe = getStripeServerClient();
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${getAppUrl()}/dashboard/billing`,
-  });
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${getAppUrl()}/dashboard/billing`,
+    });
 
-  return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url });
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Subscription management is temporarily unavailable. Please contact support.",
+      },
+      { status: 503 }
+    );
+  }
 }
