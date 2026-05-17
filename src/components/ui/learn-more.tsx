@@ -9,9 +9,15 @@ type LearnMoreProps = {
   title: string;
   summary: string;
   detail: string;
+  atlasEduKey?: string;
 };
 
-export function LearnMore({ title, summary, detail }: LearnMoreProps) {
+export function LearnMore({
+  title,
+  summary,
+  detail,
+  atlasEduKey = "calculator-field",
+}: LearnMoreProps) {
   const [open, setOpen] = useState(false);
   const educationalLayer = ATLAS_INTELLIGENCE_LAYERS.educational;
 
@@ -19,6 +25,7 @@ export function LearnMore({ title, summary, detail }: LearnMoreProps) {
     <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
       <button
         type="button"
+        data-atlas-edu={atlasEduKey}
         onClick={() => setOpen((value) => !value)}
         className="flex w-full items-start gap-3 text-left"
       >

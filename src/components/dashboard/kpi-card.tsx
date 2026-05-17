@@ -5,6 +5,7 @@ type KpiCardProps = {
   value: string;
   tone?: "blue" | "red" | "green" | "silver";
   previewExplanation?: PreviewExplanationKey;
+  atlasEduKey?: string;
 };
 
 const toneMap = {
@@ -19,10 +20,12 @@ export function KpiCard({
   value,
   tone = "silver",
   previewExplanation = "analyze-load",
+  atlasEduKey,
 }: KpiCardProps) {
   return (
     <div
       data-preview-explain={previewExplanation}
+      data-atlas-edu={atlasEduKey ?? previewExplanation}
       className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
     >
       <div className="mb-2 text-xs uppercase tracking-[0.15em] text-slate-500">

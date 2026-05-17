@@ -4,6 +4,11 @@ import Image from "next/image";
 import { useSyncExternalStore } from "react";
 
 import {
+  readAtlasEducationalEnabled,
+  subscribeAtlasEducationalEnabled,
+  writeAtlasEducationalEnabled,
+} from "@/lib/ai/atlas-educational-preferences";
+import {
   readIationVisibility,
   subscribeIationVisibility,
   writeIationVisibility,
@@ -23,6 +28,11 @@ export function AtlasIntelligenceSettingsCard({
   enabled: boolean;
 }) {
   const coreLayer = ATLAS_INTELLIGENCE_LAYERS.core;
+  const educationalEnabled = useSyncExternalStore(
+    subscribeAtlasEducationalEnabled,
+    readAtlasEducationalEnabled,
+    () => true
+  );
   const showCompatibilityOverlay = useSyncExternalStore(
     subscribeIationVisibility,
     readIationVisibility,
@@ -38,24 +48,24 @@ export function AtlasIntelligenceSettingsCard({
       layer={coreLayer}
       description="Atlas Core coordinates embedded freight, route, and educational intelligence as one operational runtime inside Karpilo LoadIQ."
       action={
-        <label className="flex min-w-0 cursor-pointer items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:min-w-64">
-          <span>
-            <span className="block text-sm font-black text-slate-100">
-              Compatibility overlay
-            </span>
-            <span className="mt-1 block text-xs leading-5 text-slate-500">
-              Optional legacy overlay while embedded Atlas surfaces continue
-              rolling out.
-            </span>
-          </span>
-          <input
-            type="checkbox"
+        <div className="grid min-w-0 gap-3 sm:min-w-80">
+          <ToggleRow
+            label="Atlas Educational Intelligence"
+            description="Enable contextual educational guidance while navigating inputs, buttons, dialogs, result tiles, and LearnMore elements."
+            checked={enabled && educationalEnabled}
+            disabled={!enabled}
+            onChange={writeAtlasEducationalEnabled}
+            accent="sky"
+          />
+          <ToggleRow
+            label="Compatibility overlay"
+            description="Optional legacy overlay while embedded Atlas surfaces continue rolling out."
             checked={enabled && showCompatibilityOverlay}
             disabled={!enabled}
-            onChange={(event) => updateVisibility(event.target.checked)}
-            className="h-5 w-5 shrink-0 accent-purple-400"
+            onChange={updateVisibility}
+            accent="purple"
           />
-        </label>
+        </div>
       }
     >
       <div className="grid gap-4 md:grid-cols-2">
@@ -75,6 +85,10 @@ export function AtlasIntelligenceSettingsCard({
           <p className="mt-3 text-xs leading-6 text-slate-500">
             {ATLAS_PROPRIETARY_STATEMENT}
           </p>
+          <p className="mt-3 text-xs leading-6 text-slate-500">
+            Atlas Core active orchestration intentionally deferred to protect
+            calculator authority.
+          </p>
         </div>
       </div>
 
@@ -84,6 +98,46 @@ export function AtlasIntelligenceSettingsCard({
         </p>
       )}
     </AtlasRuntimeFrame>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+  accent,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+  accent: "purple" | "sky";
+}) {
+  return (
+    <label className="flex min-w-0 cursor-pointer items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+      <span>
+        <span className="block text-sm font-black text-slate-100">
+          {label}
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {description}
+        </span>
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className={
+          accent === "sky"
+            ? "h-5 w-5 shrink-0 accent-sky-400"
+            : "h-5 w-5 shrink-0 accent-purple-400"
+        }
+      />
+    </label>
   );
 }
 

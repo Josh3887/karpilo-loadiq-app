@@ -129,6 +129,7 @@ export function ResultsPanel({
               type="button"
               onClick={handleSaveLoad}
               disabled={!loadRunStatus}
+              data-atlas-edu="save-load"
               className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
             >
               Save Load
@@ -143,17 +144,18 @@ export function ResultsPanel({
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <KpiCard label="Gross Revenue" value={formatCurrency(result.grossRevenue)} tone="green" />
           <KpiCard label="Estimated Net" value={formatCurrency(result.estimatedNet)} tone={result.estimatedNet > 0 ? "blue" : "red"} />
-          <KpiCard label="True RPM" value={formatRpm(result.trueRpm)} tone="silver" />
+          <KpiCard label="True RPM" value={formatRpm(result.trueRpm)} tone="silver" atlasEduKey="result-true-rpm" />
           <KpiCard label="Fuel Cost" value={formatCurrency(result.fuelCost)} tone="red" />
-          <KpiCard label="Break-Even RPM" value={formatRpm(result.breakEvenRpm)} tone={input && input.ratePerMile < result.breakEvenRpm ? "red" : "silver"} />
-          <KpiCard label="Daily Net" value={formatCurrency(result.dailyProfitability)} tone={result.dailyProfitability > 0 ? "green" : "red"} />
+          <KpiCard label="Break-Even RPM" value={formatRpm(result.breakEvenRpm)} tone={input && input.ratePerMile < result.breakEvenRpm ? "red" : "silver"} atlasEduKey="result-break-even" />
+          <KpiCard label="Daily Net" value={formatCurrency(result.dailyProfitability)} tone={result.dailyProfitability > 0 ? "green" : "red"} atlasEduKey="result-daily-net" />
           <KpiCard label="Net / Total Mi" value={formatRpm(result.profitPerTotalMile)} tone={result.profitPerTotalMile > 0 ? "green" : "red"} />
           <KpiCard label="Net / Loaded Mi" value={formatRpm(result.profitPerLoadedMile)} tone={result.profitPerLoadedMile > 0 ? "green" : "red"} />
-          <KpiCard label="Deadhead" value={formatPercent(result.deadheadPercent)} tone={result.deadheadPercent > 25 ? "red" : "silver"} />
+          <KpiCard label="Deadhead" value={formatPercent(result.deadheadPercent)} tone={result.deadheadPercent > 25 ? "red" : "silver"} atlasEduKey="result-deadhead" />
           <KpiCard
             label="Profitability"
             value={`${result.profitabilityScore}/100`}
             tone={result.profitabilityScore >= 75 ? "green" : result.profitabilityScore >= 60 ? "blue" : "red"}
+            atlasEduKey="result-margin"
           />
         </div>
 
@@ -361,36 +363,42 @@ function OperationalValueNotes({ result }: { result: LoadResult }) {
     {
       label: "Cost per mile",
       value: formatRpm(result.costPerMile),
+      atlasEduKey: "result-cost-per-mile",
       body:
         "Shows the estimated operating pressure each total mile carries, including deadhead and fixed overhead.",
     },
     {
       label: "Break-even RPM",
       value: formatRpm(result.breakEvenRpm),
+      atlasEduKey: "result-break-even",
       body:
         "Marks the estimated loaded-mile rate needed before the trip starts producing margin.",
     },
     {
       label: "Deadhead",
       value: formatPercent(result.deadheadPercent),
+      atlasEduKey: "result-deadhead",
       body:
         "Keeps unpaid miles visible so route decisions are not judged by linehaul rate alone.",
     },
     {
       label: "Fuel share",
       value: formatPercent(result.fuelPercentOfGross),
+      atlasEduKey: "result-fuel-share",
       body:
         "Highlights fuel variance exposure when pump price, MPG, or routing assumptions move.",
     },
     {
       label: "Daily net",
       value: formatCurrency(result.dailyProfitability),
+      atlasEduKey: "result-daily-net",
       body:
         "Connects margin to time so a load can be compared against the days it occupies the truck.",
     },
     {
       label: "Trip margin",
       value: formatPercent(result.profitMarginPercent),
+      atlasEduKey: "result-margin",
       body:
         "Provides directional profitability visibility; it is not a guarantee of settlement or final net income.",
     },
@@ -410,6 +418,7 @@ function OperationalValueNotes({ result }: { result: LoadResult }) {
         {notes.map((note) => (
           <div
             key={note.label}
+            data-atlas-edu={note.atlasEduKey}
             className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
           >
             <div className="flex items-center justify-between gap-3">

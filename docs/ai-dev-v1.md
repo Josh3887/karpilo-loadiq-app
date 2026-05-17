@@ -51,7 +51,15 @@ No Supabase schema is used for the hide/show preference. It is stored locally an
 
 Atlas Route Intelligence renders as movement telemetry inside route/result and saved-load surfaces. It interprets deadhead exposure, pickup-to-delivery flow, stop complexity, timing pressure, and route structure without changing route math or acting as a routing API.
 
-Atlas Educational Intelligence appears as inline operational context near workflows and reusable guidance surfaces. It explains why fields and metrics matter without becoming a tutorial modal or chatbot.
+Atlas Educational Intelligence appears as inline operational context near workflows and reusable guidance surfaces. It explains why fields and metrics matter without becoming a tutorial modal or detached assistant layer.
+
+Phase 5 adds a local preference for contextual educational guidance:
+
+```text
+loadiq.atlasEducational.enabled
+```
+
+When disabled, Atlas Educational navigation listeners and the legacy educational overlay path are hidden. The current educational layer is deterministic registry-based and does not call OpenAI.
 
 ## Atlas Educational Intelligence
 

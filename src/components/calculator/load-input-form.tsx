@@ -760,6 +760,7 @@ export function LoadInputForm({
             label="Loaded Miles"
             type="number"
             error={errors.loadedMiles?.message}
+            atlasEduKey="loaded-miles"
             {...register("loadedMiles")}
           />
 
@@ -767,6 +768,7 @@ export function LoadInputForm({
             label="Deadhead Miles"
             type="number"
             error={errors.deadheadMiles?.message}
+            atlasEduKey="deadhead-miles"
             {...register("deadheadMiles")}
           />
         </div>
@@ -776,6 +778,7 @@ export function LoadInputForm({
           type="number"
           error={errors.estimatedLoadWeightLbs?.message}
           previewKey="calculator-field"
+          atlasEduKey="estimated-load-weight"
           {...register("estimatedLoadWeightLbs")}
         />
         <p className="text-xs leading-5 text-slate-500">
@@ -799,6 +802,7 @@ export function LoadInputForm({
             <button
               type="button"
               data-preview-explain="calculator-field"
+              data-atlas-edu="route-stop"
               onClick={addRouteStop}
               className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
             >
@@ -838,6 +842,7 @@ export function LoadInputForm({
             value={watchedNumber("dispatchDays", 1)}
             error={errors.dispatchDays?.message}
             helper="Used anywhere the calculator already assigns daily overhead or daily profitability to the loaded/dispatch portion."
+            atlasEduKey="dispatch-dates"
             {...dispatchDaysField}
             onChange={(event) => {
               userOverrodeDispatchDays.current = true;
@@ -864,6 +869,7 @@ export function LoadInputForm({
             value={watchedNumber("deadheadDays", 0)}
             error={errors.deadheadDays?.message}
             helper="Used for daily profitability timing when the load carries deadhead movement before pickup."
+            atlasEduKey="dispatch-dates"
             {...deadheadDaysField}
             onChange={(event) => {
               userOverrodeDeadheadDays.current = true;
@@ -891,6 +897,7 @@ export function LoadInputForm({
             error={errors.dispatchDate?.message}
             helper="Date the load was assigned or placed in Karpilo LoadIQ. This is not the pickup date."
             previewKey="calculator-field"
+            atlasEduKey="dispatch-dates"
             {...dispatchDateField}
           />
           <InputField
@@ -899,6 +906,7 @@ export function LoadInputForm({
             error={errors.pickupDate?.message}
             helper="Date freight is picked up."
             previewKey="calculator-field"
+            atlasEduKey="dispatch-dates"
             {...pickupDateField}
             onChange={(event) => {
               void pickupDateField.onChange(event);
@@ -911,6 +919,7 @@ export function LoadInputForm({
             error={errors.deliveryDate?.message ?? dateErrors.deliveryDate}
             helper="Date freight is delivered or dropped."
             previewKey="calculator-field"
+            atlasEduKey="dispatch-dates"
             {...deliveryDateField}
             onChange={(event) => {
               void deliveryDateField.onChange(event);
@@ -923,6 +932,7 @@ export function LoadInputForm({
             error={errors.deadheadStartDate?.message}
             helper="Date deadhead movement toward this load begins."
             previewKey="calculator-field"
+            atlasEduKey="dispatch-dates"
             {...deadheadStartDateField}
             onChange={(event) => {
               void deadheadStartDateField.onChange(event);
@@ -935,6 +945,7 @@ export function LoadInputForm({
             error={errors.deadheadEndDate?.message ?? dateErrors.deadheadEndDate}
             helper="Date deadhead movement ends, usually at pickup or staging."
             previewKey="calculator-field"
+            atlasEduKey="dispatch-dates"
             {...deadheadEndDateField}
             onChange={(event) => {
               void deadheadEndDateField.onChange(event);
@@ -1086,6 +1097,7 @@ export function LoadInputForm({
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-2">
           <button
             type="button"
+            data-atlas-edu="rpm"
             onClick={() => setValue("revenueInputMode", "rpm", { shouldDirty: true })}
             onFocus={() => preview.enabled && preview.explain("rpm")}
             className={
@@ -1098,6 +1110,7 @@ export function LoadInputForm({
           </button>
           <button
             type="button"
+            data-atlas-edu="gross-revenue"
             onClick={() => setValue("revenueInputMode", "gross", { shouldDirty: true })}
             onFocus={() => preview.enabled && preview.explain("gross-revenue")}
             className={
@@ -1145,6 +1158,7 @@ export function LoadInputForm({
           <label className="flex items-start gap-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-sky-100">
             <input
               {...fuelSurchargeIncludedField}
+              data-atlas-edu="fuel-surcharge"
               type="checkbox"
               className="mt-1 h-4 w-4 rounded border-slate-700 bg-[#060B14]"
               checked={fuelSurchargeIncludedInGross}
@@ -1172,6 +1186,7 @@ export function LoadInputForm({
             step="0.01"
             error={errors.fuelPrice?.message}
             previewKey="fuel-price"
+            atlasEduKey="fuel-efficiency"
             {...fuelPriceField}
             onChange={(event) => {
               void fuelPriceField.onChange(event);
@@ -1192,6 +1207,13 @@ export function LoadInputForm({
           </div>
         )}
 
+        <AtlasEducationalSignal
+          title="Fuel Efficiency Behavior Signals"
+          signal="Atlas Educational Intelligence treats MPG and fuel price as operating assumptions. It does not change the calculator formula."
+          consequence="Higher speed can increase aerodynamic drag; heavier loads can increase rolling resistance and acceleration demand; terrain, wind, stop frequency, idle time, tire pressure awareness, route consistency, following distance, braking, and throttle discipline can all pressure real-world fuel efficiency."
+          operatorReminder="Use this as operational context only. Atlas does not promise a specific MPG improvement or safety outcome."
+        />
+
         <div className="space-y-3 rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <div>
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -1209,6 +1231,7 @@ export function LoadInputForm({
                 key={mode}
                 type="button"
                 data-preview-explain="overhead-item"
+                data-atlas-edu="overhead-item"
                 onClick={() => selectReserveAllocationMode(mode)}
                 onFocus={() => preview.enabled && preview.explain("overhead-item")}
                 className={
@@ -1234,6 +1257,7 @@ export function LoadInputForm({
             step="0.01"
             error={errors.reserveAllocationValue?.message}
             previewKey="overhead-item"
+            atlasEduKey="overhead-item"
             {...register("reserveAllocationValue")}
           />
         </div>
@@ -1261,6 +1285,7 @@ export function LoadInputForm({
           type="submit"
           onClick={() => preview.enabled && preview.explain("analyze-load")}
           data-iation-help="analyze-load"
+          data-atlas-edu="analyze-load"
           className="w-full rounded-xl bg-sky-400 px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-[#060B14] shadow-[0_0_25px_rgba(56,189,248,0.35)] transition hover:bg-sky-300"
         >
           Analyze Load
@@ -1297,6 +1322,7 @@ function RouteStopEditor({
   return (
     <div
       data-preview-explain="calculator-field"
+      data-atlas-edu="route-stop"
       className="rounded-xl border border-slate-800 bg-[#0B1220] p-4"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -1359,6 +1385,7 @@ function RouteStopEditor({
         </span>
         <input
           data-preview-explain="calculator-field"
+          data-atlas-edu="route-stop"
           value={stop.notes}
           onChange={(event) => onChange({ notes: event.target.value })}
           className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
@@ -1386,6 +1413,7 @@ function StopInputField({
       </span>
       <input
         data-preview-explain="calculator-field"
+        data-atlas-edu="route-stop"
         type={type}
         min={type === "number" ? "0" : undefined}
         step={type === "number" ? "0.01" : undefined}
@@ -1605,6 +1633,7 @@ type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
   helper?: string;
   previewKey?: PreviewExplanationKey;
+  atlasEduKey?: string;
 };
 
 function InputField({
@@ -1612,6 +1641,7 @@ function InputField({
   error,
   helper,
   previewKey,
+  atlasEduKey,
   ...props
 }: InputFieldProps) {
   const preview = usePreviewMode();
@@ -1625,6 +1655,7 @@ function InputField({
       <input
         {...props}
         data-preview-explain={previewKey}
+        data-atlas-edu={atlasEduKey ?? previewKey}
         readOnly={preview.enabled || props.readOnly}
         aria-readonly={preview.enabled || props.readOnly}
         onFocus={(event) => {
@@ -1660,6 +1691,7 @@ function DayInputField({
   error,
   helper,
   previewKey,
+  atlasEduKey,
   value,
   onDecrement,
   onIncrement,
@@ -1678,6 +1710,7 @@ function DayInputField({
           type="button"
           onClick={onDecrement}
           data-preview-explain={previewKey}
+          data-atlas-edu={atlasEduKey ?? previewKey}
           className="h-12 border-r border-slate-800 text-lg font-black text-sky-300 transition hover:bg-sky-400/10"
           aria-label={`Decrease ${label} by 0.25`}
         >
@@ -1686,6 +1719,7 @@ function DayInputField({
         <input
           {...props}
           data-preview-explain={previewKey}
+          data-atlas-edu={atlasEduKey ?? previewKey}
           readOnly={preview.enabled || props.readOnly}
           aria-readonly={preview.enabled || props.readOnly}
           onFocus={(event) => {
@@ -1700,6 +1734,7 @@ function DayInputField({
           type="button"
           onClick={onIncrement}
           data-preview-explain={previewKey}
+          data-atlas-edu={atlasEduKey ?? previewKey}
           className="h-12 border-l border-slate-800 text-lg font-black text-sky-300 transition hover:bg-sky-400/10"
           aria-label={`Increase ${label} by 0.25`}
         >

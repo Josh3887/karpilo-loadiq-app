@@ -3,6 +3,7 @@
 import { ArrowRight, GitBranch } from "lucide-react";
 
 import {
+  AtlasInfoBlock,
   AtlasMetricTile,
   AtlasRuntimeFrame,
 } from "@/components/ai/atlas-runtime-frame";
@@ -60,6 +61,9 @@ export function AtlasRouteIntelligenceSurface({
     deadheadPercent,
     stopOffCount,
     deadheadDays,
+    loadedMiles,
+    deadheadMiles,
+    dispatchDays,
   });
 
   return (
@@ -114,52 +118,72 @@ export function AtlasRouteIntelligenceSurface({
       }
     >
       {!compact && (
-        <div className="grid gap-3 text-sm md:grid-cols-2">
-          <RouteContextRow
-            label="Deadhead Origin"
-            value={deadheadOrigin || "Not provided"}
-          />
-          <RouteContextRow
-            label="Loaded / Total Miles"
-            value={`${formatOptionalMiles(loadedMiles)} / ${formatOptionalMiles(totalMiles)}`}
-          />
-          <RouteContextRow
-            label="Pickup Window"
-            value={formatDateValue(pickupDate)}
-          />
-          <RouteContextRow
-            label="Delivery Window"
-            value={formatDateValue(deliveryDate)}
-          />
-          <RouteContextRow
-            label="Deadhead Dates"
-            value={formatDateRange(deadheadStartDate, deadheadEndDate)}
-          />
-          <RouteContextRow
-            label="Timing Load"
-            value={`${formatOptionalDays(dispatchDays)} dispatch · ${formatOptionalDays(deadheadDays)} deadhead`}
-          />
-          <RouteContextRow
-            label="Estimated Weight"
-            value={
-              Number(estimatedLoadWeightLbs) > 0
-                ? `${formatNumber(Number(estimatedLoadWeightLbs))} lbs est.`
-                : "Not provided"
-            }
-          />
-          <RouteContextRow
-            label="Route Model"
-            value={routeModelVersion || "Manual route context"}
-          />
-          {reserveMode && (
-            <RouteContextRow label="Reserve Mode" value={reserveMode} />
-          )}
-          {targetRpmSnapshot && (
-            <RouteContextRow
-              label="Target RPM Snapshot"
-              value={targetRpmSnapshot}
+        <div className="grid gap-4">
+          <div className="grid gap-3 lg:grid-cols-3">
+            <AtlasInfoBlock
+              title="Movement Signal Summary"
+              body={routeSignal.movementSummary}
+              layer={ATLAS_ROUTE_LAYER}
             />
-          )}
+            <AtlasInfoBlock
+              title="Corridor Pressure"
+              body={routeSignal.corridorPressure}
+              layer={ATLAS_ROUTE_LAYER}
+            />
+            <AtlasInfoBlock
+              title="Timing Interpretation"
+              body={routeSignal.timingInterpretation}
+              layer={ATLAS_ROUTE_LAYER}
+            />
+          </div>
+
+          <div className="grid gap-3 text-sm md:grid-cols-2">
+            <RouteContextRow
+              label="Deadhead Origin"
+              value={deadheadOrigin || "Not provided"}
+            />
+            <RouteContextRow
+              label="Loaded / Total Miles"
+              value={`${formatOptionalMiles(loadedMiles)} / ${formatOptionalMiles(totalMiles)}`}
+            />
+            <RouteContextRow
+              label="Pickup Window"
+              value={formatDateValue(pickupDate)}
+            />
+            <RouteContextRow
+              label="Delivery Window"
+              value={formatDateValue(deliveryDate)}
+            />
+            <RouteContextRow
+              label="Deadhead Dates"
+              value={formatDateRange(deadheadStartDate, deadheadEndDate)}
+            />
+            <RouteContextRow
+              label="Timing Load"
+              value={`${formatOptionalDays(dispatchDays)} dispatch · ${formatOptionalDays(deadheadDays)} deadhead`}
+            />
+            <RouteContextRow
+              label="Estimated Weight"
+              value={
+                Number(estimatedLoadWeightLbs) > 0
+                  ? `${formatNumber(Number(estimatedLoadWeightLbs))} lbs est.`
+                  : "Not provided"
+              }
+            />
+            <RouteContextRow
+              label="Route Model"
+              value={routeModelVersion || "Manual route context"}
+            />
+            {reserveMode && (
+              <RouteContextRow label="Reserve Mode" value={reserveMode} />
+            )}
+            {targetRpmSnapshot && (
+              <RouteContextRow
+                label="Target RPM Snapshot"
+                value={targetRpmSnapshot}
+              />
+            )}
+          </div>
         </div>
       )}
     </AtlasRuntimeFrame>
@@ -181,16 +205,45 @@ function getRouteSignal({
   deadheadPercent,
   stopOffCount,
   deadheadDays,
+  loadedMiles,
+  deadheadMiles,
+  dispatchDays,
 }: {
   deadheadPercent?: number | null;
   stopOffCount?: number | null;
   deadheadDays?: number | null;
+  loadedMiles?: number | null;
+  deadheadMiles?: number | null;
+  dispatchDays?: number | null;
 }) {
+  const loaded = Number(loadedMiles);
+  const deadhead = Number(deadheadMiles);
+  const dispatch = Number(dispatchDays);
+  const deadheadTiming = Number(deadheadDays);
+  const safeDeadhead = Number.isFinite(deadhead) ? Math.max(deadhead, 0) : 0;
+  const movementSummary =
+    Number.isFinite(loaded) && loaded > 0
+      ? `Loaded movement is modeled at ${formatNumber(loaded)} miles with ${formatNumber(safeDeadhead)} deadhead miles attached.`
+      : "Loaded movement is not fully modeled yet.";
+  const corridorPressure =
+    Number(deadheadPercent) >= 30
+      ? "Corridor efficiency is reduced by elevated repositioning distance before paid freight begins."
+      : Number(stopOffCount) >= 2
+        ? "Corridor pressure is shaped by multiple stop events and coordination points."
+        : "Corridor pressure is currently controlled by a simple pickup-to-delivery structure.";
+  const timingInterpretation =
+    Number(dispatch) + Number(deadheadTiming) > 0
+      ? `Timing context includes ${formatOptionalDays(dispatch)} dispatch and ${formatOptionalDays(deadheadTiming)} deadhead.`
+      : "Timing context is not fully modeled yet.";
+
   if (Number(deadheadPercent) >= 30) {
     return {
       title: "Elevated Repositioning Pressure",
       body:
         "Atlas Route Intelligence detected deadhead imbalance against loaded efficiency.",
+      movementSummary,
+      corridorPressure,
+      timingInterpretation,
     };
   }
 
@@ -199,6 +252,9 @@ function getRouteSignal({
       title: "Multi-Stop Complexity Pressure",
       body:
         "Route telemetry indicates added movement and timing coordination across stops.",
+      movementSummary,
+      corridorPressure,
+      timingInterpretation,
     };
   }
 
@@ -207,6 +263,9 @@ function getRouteSignal({
       title: "Deadhead Time Attached",
       body:
         "Movement timing includes repositioning days before pickup. Watch daily net dilution.",
+      movementSummary,
+      corridorPressure,
+      timingInterpretation,
     };
   }
 
@@ -214,6 +273,9 @@ function getRouteSignal({
     title: "Route Structure Stable",
     body:
       "Movement telemetry is currently simple pickup-to-delivery context with limited route complexity.",
+    movementSummary,
+    corridorPressure,
+    timingInterpretation,
   };
 }
 

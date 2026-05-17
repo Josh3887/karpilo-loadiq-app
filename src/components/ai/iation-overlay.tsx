@@ -15,6 +15,10 @@ import { IationCoreFreightPanel } from "@/components/ai/iation-core-freight-pane
 import { IationEducationPanel } from "@/components/ai/iation-education-panel";
 import { IationLauncher } from "@/components/ai/iation-launcher";
 import {
+  readAtlasEducationalEnabled,
+  subscribeAtlasEducationalEnabled,
+} from "@/lib/ai/atlas-educational-preferences";
+import {
   getIationHelpEntry,
   type IationHelpEntry,
 } from "@/lib/ai/iation-help-registry";
@@ -45,6 +49,11 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
     readIationVisibility,
     () => false
   );
+  const educationalEnabled = useSyncExternalStore(
+    subscribeAtlasEducationalEnabled,
+    readAtlasEducationalEnabled,
+    () => true
+  );
   const [panelOpen, setPanelOpen] = useState(false);
   const [mode, setMode] = useState<OverlayMode>("education");
   const [helpEntry, setHelpEntry] = useState<IationHelpEntry | null>(null);
@@ -72,7 +81,7 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || !visible) return;
+    if (!enabled || !visible || !educationalEnabled) return;
 
     function onDocumentClick(event: MouseEvent) {
       const target = event.target;
@@ -99,7 +108,7 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
     return () => {
       document.removeEventListener("click", onDocumentClick, true);
     };
-  }, [enabled, visible]);
+  }, [educationalEnabled, enabled, visible]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -125,6 +134,7 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
   }
 
   if (!visible) return null;
+  if (!educationalEnabled && mode === "education") return null;
 
   return (
     <div data-iation-root="true">
@@ -199,14 +209,16 @@ export function IationOverlay({ enabled }: { enabled: boolean }) {
         </section>
       )}
 
-      <IationLauncher
-        panelOpen={panelOpen}
-        onOpen={() => {
-          setMode(corePayload ? "core" : "education");
-          setPanelOpen(true);
-        }}
-        onHide={hideOverlay}
-      />
+      {educationalEnabled && (
+        <IationLauncher
+          panelOpen={panelOpen}
+          onOpen={() => {
+            setMode(corePayload ? "core" : "education");
+            setPanelOpen(true);
+          }}
+          onHide={hideOverlay}
+        />
+      )}
     </div>
   );
 }

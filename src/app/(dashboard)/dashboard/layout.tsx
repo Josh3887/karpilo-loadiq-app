@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AtlasEducationalContextRail } from "@/components/ai/atlas-educational-context-rail";
 import { IationOverlay } from "@/components/ai/iation-overlay";
 import { PaymentSetupModal } from "@/components/billing/payment-setup-modal";
 import { AppAccessGate } from "@/components/legal/app-access-gate";
@@ -62,6 +63,7 @@ export default async function DashboardLayout({
         paymentAccess={paymentAccess}
         billingEmail={BILLING_EMAIL}
       />
+      <AtlasEducationalContextRail enabled={isLoadIqAiDevEnabled()} />
       <IationOverlay enabled={isLoadIqAiDevEnabled()} />
       <div
         className={

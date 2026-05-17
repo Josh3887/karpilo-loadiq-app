@@ -37,6 +37,10 @@ export function AtlasFreightIntelligenceSurface({
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const payloadKey = useMemo(() => JSON.stringify(payload ?? null), [payload]);
+  const baselineReadout = useMemo(
+    () => buildFreightBaselineReadout(payload),
+    [payload]
+  );
   const visibleAnalysis = analysisPayloadKey === payloadKey ? analysis : null;
 
   async function requestIntelligence() {
@@ -104,20 +108,20 @@ export function AtlasFreightIntelligenceSurface({
           <div className="grid gap-3 md:grid-cols-3">
             <AtlasMetricTile
               label="Margin Signal"
-              value="Awaiting Readout"
-              detail="Interprets net pressure without replacing the calculator."
+              value={baselineReadout.marginSignal}
+              detail={baselineReadout.marginDetail}
               layer={ATLAS_FREIGHT_LAYER}
             />
             <AtlasMetricTile
-              label="Route Dilution"
-              value="Deadhead Context"
-              detail="Frames unpaid miles against total route efficiency."
+              label="Deadhead Exposure"
+              value={baselineReadout.deadheadSignal}
+              detail={baselineReadout.deadheadDetail}
               layer={ATLAS_FREIGHT_LAYER}
             />
             <AtlasMetricTile
               label="Dispatch Quality"
-              value="Operational Lens"
-              detail="Highlights questions to resolve before committing."
+              value={baselineReadout.dispatchSignal}
+              detail={baselineReadout.dispatchDetail}
               layer={ATLAS_FREIGHT_LAYER}
             />
           </div>
@@ -182,4 +186,66 @@ export function AtlasFreightIntelligenceSurface({
         )}
     </AtlasRuntimeFrame>
   );
+}
+
+function buildFreightBaselineReadout(
+  payload: LoadIqAiLoadAnalysisInput | null
+) {
+  if (!payload) {
+    return {
+      marginSignal: "Awaiting Output",
+      marginDetail: "Freight Intelligence activates after calculator output exists.",
+      deadheadSignal: "Route Pending",
+      deadheadDetail: "Deadhead exposure needs completed load values.",
+      dispatchSignal: "No Readout",
+      dispatchDetail: "Run Analyze Load before requesting freight interpretation.",
+    };
+  }
+
+  const grossRevenue = Number(payload.grossRevenue);
+  const netProfit = Number(payload.netProfit);
+  const loadedMiles = Number(payload.loadedMiles);
+  const deadheadMiles = Number(payload.deadheadMiles);
+  const fuelCost = Number(payload.fuelCost);
+  const trueRpm = Number(payload.trueRpm);
+  const daysCommitted = Number(payload.daysCommitted);
+  const totalMiles = Math.max(loadedMiles + deadheadMiles, 0);
+  const marginPercent =
+    grossRevenue > 0 && Number.isFinite(netProfit)
+      ? (netProfit / grossRevenue) * 100
+      : 0;
+  const deadheadPercent =
+    totalMiles > 0 && Number.isFinite(deadheadMiles)
+      ? (deadheadMiles / totalMiles) * 100
+      : 0;
+  const fuelPercent =
+    grossRevenue > 0 && Number.isFinite(fuelCost)
+      ? (fuelCost / grossRevenue) * 100
+      : 0;
+
+  return {
+    marginSignal:
+      marginPercent >= 25
+        ? "Strong Margin Pressure"
+        : marginPercent >= 12
+          ? "Moderate Margin"
+          : netProfit > 0
+            ? "Thin Margin"
+            : "Negative Signal",
+    marginDetail: `Baseline output shows ${marginPercent.toFixed(1)}% estimated margin before final settlement reality.`,
+    deadheadSignal:
+      deadheadPercent >= 30
+        ? "Elevated Deadhead"
+        : deadheadPercent >= 15
+          ? "Watch Repositioning"
+          : "Controlled Movement",
+    deadheadDetail: `${deadheadPercent.toFixed(1)}% of modeled movement is unpaid repositioning distance.`,
+    dispatchSignal:
+      daysCommitted >= 4
+        ? "Time Exposure"
+        : trueRpm > 0 && fuelPercent < 25
+          ? "Signal Stable"
+          : "Review Inputs",
+    dispatchDetail: `${daysCommitted.toFixed(2)} committed day(s), ${fuelPercent.toFixed(1)}% fuel share, and ${trueRpm.toFixed(2)} true RPM.`,
+  };
 }
