@@ -5,6 +5,7 @@ import { FieldErrors, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { AtlasEducationalSignal } from "@/components/ai/atlas-educational-signal";
 import { AccessorialManager } from "@/components/calculator/accessorial-manager";
 import {
   type PreviewExplanationKey,
@@ -674,7 +675,13 @@ export function LoadInputForm({
       </section>
 
       <section className="space-y-4">
-        <SectionTitle title="Route Intelligence" />
+        <SectionTitle title="Atlas Route Intelligence" />
+
+        <AtlasEducationalSignal
+          title="Route Field Meaning"
+          signal="Atlas Educational Intelligence reads route inputs as movement context. Loaded miles drive revenue efficiency, while deadhead miles dilute true RPM because unpaid movement still consumes time, fuel, tires, and maintenance."
+          consequence="Deadhead start, pickup, delivery, stop-off, and timing fields help preserve the operational structure behind the calculation without replacing manual mileage authority."
+        />
 
         <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-300">

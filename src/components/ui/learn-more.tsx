@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CircleHelp } from "lucide-react";
+import { Layers } from "lucide-react";
+
+import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 
 type LearnMoreProps = {
   title: string;
@@ -11,6 +13,7 @@ type LearnMoreProps = {
 
 export function LearnMore({ title, summary, detail }: LearnMoreProps) {
   const [open, setOpen] = useState(false);
+  const educationalLayer = ATLAS_INTELLIGENCE_LAYERS.educational;
 
   return (
     <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
@@ -19,8 +22,11 @@ export function LearnMore({ title, summary, detail }: LearnMoreProps) {
         onClick={() => setOpen((value) => !value)}
         className="flex w-full items-start gap-3 text-left"
       >
-        <CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+        <Layers className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
         <span>
+          <span className="mb-1 block text-[0.65rem] font-black uppercase tracking-[0.16em] text-sky-300">
+            {educationalLayer.runtimeId}
+          </span>
           <span className="block text-sm font-bold text-sky-100">{title}</span>
           <span className="mt-1 block text-xs leading-5 text-slate-400">
             {summary}

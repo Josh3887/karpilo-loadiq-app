@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { AtlasRouteIntelligenceSurface } from "@/components/ai/atlas-route-intelligence-surface";
 import { SavedLoadActions } from "@/components/dashboard/saved-load-actions";
 import { EntityNoteForm } from "@/components/dashboard/entity-note-form";
 import { createClient } from "@/lib/supabase-server";
@@ -57,6 +58,16 @@ export default async function LoadDetailPage({
     fuelPercentOfGross?: number;
     profitMarginPercent?: number;
     totalTripCost?: number;
+    deadheadPercent?: number;
+    dispatchDays?: number;
+    deadheadDays?: number;
+  } | null;
+  const inputSnapshot = load.input_snapshot as {
+    dispatchDate?: string;
+    pickupDate?: string;
+    deliveryDate?: string;
+    deadheadStartDate?: string;
+    deadheadEndDate?: string;
   } | null;
   const snapshotFuelPercent = Number(resultSnapshot?.fuelPercentOfGross);
   const snapshotMarginPercent = Number(resultSnapshot?.profitMarginPercent);
@@ -88,6 +99,10 @@ export default async function LoadDetailPage({
     estimatedTripCost,
     totalTripMiles: Number(load.total_miles),
   });
+  const savedDeadheadPercent =
+    Number(load.total_miles) > 0
+      ? (Number(load.deadhead_miles) / Number(load.total_miles)) * 100
+      : 0;
   const { data: stops } = await supabase
     .from("saved_load_stops")
     .select("*")
@@ -304,52 +319,29 @@ export default async function LoadDetailPage({
         )}
 
         <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Route Intelligence
-          </h2>
-
-          <div className="grid gap-3 text-sm md:grid-cols-2">
-            <BreakdownRow
-              label="Deadhead Origin"
-              value={formatDeadheadOrigin(load)}
-            />
-            <BreakdownRow
-              label="Estimated Weight"
-              value={formatWeight(load.estimated_load_weight_lbs)}
-            />
-            <BreakdownRow
-              label="Modeled Stops"
-              value={`${Number(load.route_stop_count ?? routeStops.length ?? 0)} total`}
-            />
-            <BreakdownRow
-              label="Reserve Mode"
-              value={formatReserveMode(load.reserve_allocation_mode)}
-            />
-            <BreakdownRow
-              label="Reserve CPM"
-              value={
-                load.reserve_allocation_cpm
-                  ? formatRpm(Number(load.reserve_allocation_cpm))
-                  : "Not used"
-              }
-            />
-            <BreakdownRow
-              label="Reserve %"
-              value={
-                load.reserve_allocation_percent
-                  ? formatPercent(Number(load.reserve_allocation_percent))
-                  : "Not used"
-              }
-            />
-            <BreakdownRow
-              label="Target RPM Snapshot"
-              value={formatRpm(Number(load.target_true_rpm_snapshot ?? load.true_rpm))}
-            />
-            <BreakdownRow
-              label="Route Model"
-              value={load.route_model_version ?? "Legacy load"}
-            />
-          </div>
+          <AtlasRouteIntelligenceSurface
+            deadheadOrigin={formatDeadheadOrigin(load)}
+            pickup={formatCityState(load.pickup_city, load.pickup_state)}
+            delivery={formatCityState(load.delivery_city, load.delivery_state)}
+            loadedMiles={Number(load.loaded_miles)}
+            deadheadMiles={Number(load.deadhead_miles)}
+            totalMiles={Number(load.total_miles)}
+            deadheadPercent={Number(
+              resultSnapshot?.deadheadPercent ?? savedDeadheadPercent
+            )}
+            routeStopCount={Number(load.route_stop_count ?? routeStops.length ?? 0)}
+            stopOffCount={routeStops.filter((stop) => stop.stop_type === "stop_off").length}
+            dispatchDays={Number(resultSnapshot?.dispatchDays ?? 0)}
+            deadheadDays={Number(resultSnapshot?.deadheadDays ?? 0)}
+            pickupDate={inputSnapshot?.pickupDate}
+            deliveryDate={inputSnapshot?.deliveryDate}
+            deadheadStartDate={inputSnapshot?.deadheadStartDate}
+            deadheadEndDate={inputSnapshot?.deadheadEndDate}
+            estimatedLoadWeightLbs={Number(load.estimated_load_weight_lbs ?? 0)}
+            routeModelVersion={load.route_model_version ?? "Legacy load"}
+            reserveMode={formatReserveMode(load.reserve_allocation_mode)}
+            targetRpmSnapshot={formatRpm(Number(load.target_true_rpm_snapshot ?? load.true_rpm))}
+          />
 
           {routeStops.length > 0 && (
             <div className="mt-5 space-y-3">
@@ -501,6 +493,14 @@ function formatLane(load: {
   return "Lane pending";
 }
 
+function formatCityState(
+  city?: string | null,
+  state?: string | null,
+  zip?: string | null
+) {
+  return [city, state, zip].filter(Boolean).join(", ");
+}
+
 function formatDeadheadOrigin(load: {
   deadhead_start_city?: string | null;
   deadhead_start_state?: string | null;
@@ -513,10 +513,6 @@ function formatDeadheadOrigin(load: {
       zip: load.deadhead_start_zip,
     }) || "Not provided"
   );
-}
-
-function formatWeight(weight?: number | null) {
-  return weight ? `${Number(weight).toLocaleString()} lbs est.` : "Not provided";
 }
 
 function formatReserveMode(mode?: string | null) {

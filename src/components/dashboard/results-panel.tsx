@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
+import { AtlasEducationalSignal } from "@/components/ai/atlas-educational-signal";
 import { AtlasFreightIntelligenceSurface } from "@/components/ai/atlas-freight-intelligence-surface";
+import { AtlasRouteIntelligenceSurface } from "@/components/ai/atlas-route-intelligence-surface";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
@@ -11,7 +13,6 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { LoadInput, LoadResult } from "@/types/load";
 import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 import { saveLoad } from "@/services/save-load";
-import { formatRoutePoint } from "@/services/route-intelligence";
 import { ThemedSelect } from "@/components/ui/themed-select";
 
 import {
@@ -200,7 +201,44 @@ export function ResultsPanel({
           </div>
         </div>
 
-        {input && <RouteIntelligenceContext input={input} result={result} />}
+        {input && (
+          <AtlasRouteIntelligenceSurface
+            deadheadOrigin={formatRegion(
+              input.deadheadStartCity,
+              input.deadheadStartState,
+              input.deadheadStartZip
+            )}
+            pickup={formatRegion(input.pickupCity, input.pickupState, input.pickupZip)}
+            delivery={formatRegion(
+              input.deliveryCity,
+              input.deliveryState,
+              input.deliveryZip
+            )}
+            loadedMiles={input.loadedMiles}
+            deadheadMiles={input.deadheadMiles}
+            totalMiles={result.totalMiles}
+            deadheadPercent={result.deadheadPercent}
+            routeStopCount={result.routeStopCount}
+            stopOffCount={result.stopOffCount}
+            dispatchDays={result.dispatchDays}
+            deadheadDays={result.deadheadDays}
+            pickupDate={input.pickupDate}
+            deliveryDate={input.deliveryDate}
+            deadheadStartDate={input.deadheadStartDate}
+            deadheadEndDate={input.deadheadEndDate}
+            estimatedLoadWeightLbs={result.estimatedLoadWeightLbs}
+            routeModelVersion="Karpilo LoadIQ manual route context"
+            reserveMode={formatReserveMode(result.reserveAllocationMode)}
+            targetRpmSnapshot={formatRpm(result.targetRpm)}
+          />
+        )}
+
+        <AtlasEducationalSignal
+          title="Operational Meaning Layer"
+          signal="Deadhead, cost per mile, break-even RPM, and daily net are connected signals. A strong gross rate can still weaken when unpaid movement or timing pressure expands."
+          consequence="Use the deterministic numbers above as the operating baseline, then read the context below to understand what each pressure point does to the load."
+          operatorReminder="Atlas Educational Intelligence explains the significance of app outputs. It does not make dispatch, financial, legal, tax, or compliance decisions."
+        />
 
         <OperationalValueNotes result={result} />
 
@@ -312,103 +350,10 @@ function formatPayPeriod(mode: LoadResult["payPeriodMode"]) {
   return "By load";
 }
 
-function RouteIntelligenceContext({
-  input,
-  result,
-}: {
-  input: LoadInput;
-  result: LoadResult;
-}) {
-  const deadheadOrigin = formatRoutePoint({
-    city: input.deadheadStartCity,
-    state: input.deadheadStartState,
-    zip: input.deadheadStartZip,
-  });
-
-  return (
-    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-5">
-      <div className="mb-4 text-sm uppercase tracking-[0.18em] text-slate-400">
-        Route Intelligence Context
-      </div>
-
-      <div className="grid gap-3 text-sm md:grid-cols-2">
-        <BreakdownRow
-          label="Deadhead Origin"
-          value={deadheadOrigin || "Not provided"}
-        />
-        <BreakdownRow
-          label="Dispatch Date"
-          value={formatDateValue(input.dispatchDate)}
-        />
-        <BreakdownRow
-          label="Pickup Date"
-          value={formatDateValue(input.pickupDate)}
-        />
-        <BreakdownRow
-          label="Delivery Date"
-          value={formatDateValue(input.deliveryDate)}
-        />
-        <BreakdownRow
-          label="Deadhead Dates"
-          value={formatDateRange(
-            input.deadheadStartDate,
-            input.deadheadEndDate
-          )}
-        />
-        <BreakdownRow
-          label="Modeled Stops"
-          value={`${result.routeStopCount} total · ${result.stopOffCount} stop-off`}
-        />
-        <BreakdownRow
-          label="Estimated Weight"
-          value={
-            result.estimatedLoadWeightLbs > 0
-              ? `${formatNumber(result.estimatedLoadWeightLbs)} lbs`
-              : "Not provided"
-          }
-        />
-        <BreakdownRow
-          label="Reserve Mode"
-          value={formatReserveMode(result.reserveAllocationMode)}
-        />
-        <BreakdownRow
-          label="Target RPM Snapshot"
-          value={formatRpm(result.targetRpm)}
-        />
-        <BreakdownRow
-          label="Route Model"
-          value="Karpilo LoadIQ manual route context"
-        />
-      </div>
-    </div>
-  );
-}
-
 function formatReserveMode(mode: LoadResult["reserveAllocationMode"]) {
   if (mode === "cpm") return "CPM allocation";
   if (mode === "percent") return "Percent allocation";
   return "Flat allocation";
-}
-
-function formatDateValue(value: string | undefined) {
-  if (!value) return "Not provided";
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-
-  if (!Number.isFinite(date.getTime())) return "Not provided";
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatDateRange(start: string | undefined, end: string | undefined) {
-  if (!start && !end) return "Not provided";
-
-  return `${formatDateValue(start)} -> ${formatDateValue(end)}`;
 }
 
 function OperationalValueNotes({ result }: { result: LoadResult }) {

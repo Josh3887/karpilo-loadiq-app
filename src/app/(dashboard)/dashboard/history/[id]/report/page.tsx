@@ -214,8 +214,13 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
 
           <div>
             <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
-              Route Intelligence
+              Atlas Route Intelligence
             </h2>
+            <p className="mb-3 text-xs leading-5 text-slate-500">
+              K-ATLS-RTE movement context for deadhead exposure, modeled stops,
+              and route structure. User-entered route values remain the source
+              of truth.
+            </p>
             <ReportRow
               label="Deadhead Origin"
               value={formatDeadheadOrigin(load)}

@@ -49,6 +49,10 @@ Atlas Freight Intelligence renders as an embedded operational readout on calcula
 
 No Supabase schema is used for the hide/show preference. It is stored locally and can be restored from settings.
 
+Atlas Route Intelligence renders as movement telemetry inside route/result and saved-load surfaces. It interprets deadhead exposure, pickup-to-delivery flow, stop complexity, timing pressure, and route structure without changing route math or acting as a routing API.
+
+Atlas Educational Intelligence appears as inline operational context near workflows and reusable guidance surfaces. It explains why fields and metrics matter without becoming a tutorial modal or chatbot.
+
 ## Atlas Educational Intelligence
 
 Atlas Educational Intelligence currently uses compatibility help hooks in `src/lib/ai/iation-help-registry.ts` to explain supported app surfaces. Educational output includes:
