@@ -10,7 +10,8 @@
 -- - Pilot and Launch protection does not include future Karpilo FleetOS Pro,
 --   per-truck fleet scaling, enterprise fleet operations, custom development,
 --   legal/tax/accounting services, or unrelated future products.
--- - Future Pro is a FleetOS-capable architecture tier, not a higher Platinum.
+-- - Future Pro is a reserved FleetOS-capable architecture tier after Platinum,
+--   but it is not active, sold, or exposed by this migration.
 
 alter table public.subscriptions
   add column if not exists subscription_tier text,
@@ -143,12 +144,14 @@ set
     when tier = 'pilot' then 'pilot'
     when tier in ('launch500', 'founder') then 'launch'
     when tier = 'platinum' then 'platinum'
-    when tier in ('gold', 'pro') then 'gold'
+    when tier = 'gold' then 'gold'
+    when tier = 'pro' then 'pro'
     else subscription_tier
   end,
   feature_access = case
     when tier in ('pilot', 'launch500', 'founder', 'platinum') then 'platinum'
-    when tier in ('gold', 'pro') then 'premium'
+    when tier = 'gold' then 'premium'
+    when tier = 'pro' then null
     else feature_access
   end,
   grandfathered_access = case
@@ -160,7 +163,8 @@ set
     else coalesce(lifetime_access, false)
   end,
   full_loadiq_access = case
-    when tier in ('pilot', 'launch500', 'founder', 'gold', 'pro', 'platinum') then true
+    when tier in ('pilot', 'launch500', 'founder', 'gold', 'platinum') then true
+    when tier = 'pro' then false
     else coalesce(full_loadiq_access, false)
   end,
   fleet_enabled = coalesce(fleet_enabled, false),
@@ -176,10 +180,11 @@ where subscription_tier is null
 update public.subscriptions
 set
   subscription_tier = 'pro',
-  feature_access = 'fleet',
-  fleet_enabled = true,
-  fleetos_pro_access = true,
-  full_loadiq_access = true
+  feature_access = null,
+  fleet_enabled = false,
+  fleetos_pro_access = false,
+  full_loadiq_access = false,
+  truck_capacity_limit = null
 where subscription_tier = 'pro';
 
 do $$
@@ -265,7 +270,7 @@ create index if not exists idx_subscriptions_fleet_enabled
   where fleet_enabled is true;
 
 comment on column public.subscriptions.subscription_tier is
-  'Canonical entitlement tier: pilot, launch, gold, platinum, or future pro. Legacy tier=pro remains treated as Gold unless this column explicitly says pro.';
+  'Canonical entitlement tier: pilot, launch, gold, platinum, or reserved future pro. Pro is recognized but inactive unless explicitly activated later.';
 
 comment on column public.subscriptions.feature_access is
   'Feature-access level: standard, premium, platinum, or fleet. Fleet is reserved for future Karpilo FleetOS-capable Pro.';

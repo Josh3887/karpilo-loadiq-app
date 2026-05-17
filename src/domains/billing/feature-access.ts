@@ -99,7 +99,8 @@ function asNullablePositiveInteger(value: unknown) {
 }
 
 export function normalizeLegacyPlanTier(value: unknown): EntitlementPlanTier {
-  if (value === "gold" || value === "pro") return "gold";
+  if (value === "gold") return "gold";
+  if (value === "pro") return "pro";
   if (value === "platinum") return "platinum";
   if (value === "pilot") return "pilot";
   if (value === "launch500" || value === "founder" || value === "launch") {
@@ -152,7 +153,7 @@ export function normalizeFeatureAccess(
   if (value === "platinum") return "platinum";
   if (value === "fleet") return "fleet";
 
-  if (tier === "pro") return "fleet";
+  if (tier === "pro") return "none";
   if (tier === "platinum" || tier === "pilot" || tier === "launch") {
     return "platinum";
   }
@@ -186,14 +187,14 @@ export function resolveFeatureAccessArchitecture(
     isProtectedCohort && (grandfatheredAccess || lifetimePriceLock);
   const lifetimeAccess =
     asBoolean(source?.lifetime_access) ?? derivedLifetimeAccess;
-  const fleetEnabled =
-    asBoolean(source?.fleet_enabled) ?? featureAccess === "fleet";
-  const fleetOsProAccess =
-    asBoolean(source?.fleetos_pro_access) ?? fleetEnabled;
+  const fleetEnabled = asBoolean(source?.fleet_enabled) ?? false;
+  const fleetOsProAccess = asBoolean(source?.fleetos_pro_access) ?? false;
+  const activeFleetAccess =
+    featureAccess === "fleet" && fleetEnabled && fleetOsProAccess;
   const derivedFullLoadIqAccess =
     featureAccess === "premium" ||
     featureAccess === "platinum" ||
-    featureAccess === "fleet" ||
+    activeFleetAccess ||
     (isProtectedCohort && (grandfatheredAccess || lifetimeAccess));
   const fullLoadIqAccess =
     asBoolean(source?.full_loadiq_access) ?? derivedFullLoadIqAccess;
@@ -234,7 +235,7 @@ export function hasGoldAccess(access: FeatureAccessArchitecture) {
   return (
     access.featureAccess === "premium" ||
     access.featureAccess === "platinum" ||
-    access.featureAccess === "fleet" ||
+    hasFleetAccess(access) ||
     hasGrandfatheredLoadIqAccess(access)
   );
 }
@@ -242,11 +243,15 @@ export function hasGoldAccess(access: FeatureAccessArchitecture) {
 export function hasPlatinumAccess(access: FeatureAccessArchitecture) {
   return (
     access.featureAccess === "platinum" ||
-    access.featureAccess === "fleet" ||
+    hasFleetAccess(access) ||
     hasGrandfatheredLoadIqAccess(access)
   );
 }
 
 export function hasFleetAccess(access: FeatureAccessArchitecture) {
-  return access.featureAccess === "fleet" && access.fleetEnabled;
+  return (
+    access.featureAccess === "fleet" &&
+    access.fleetEnabled &&
+    access.fleetOsProAccess
+  );
 }

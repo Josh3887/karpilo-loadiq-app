@@ -175,6 +175,7 @@ export function resolveEntitlements(
   const goldAccess = hasGoldAccess(access);
   const platinumAccess = hasPlatinumAccess(access);
   const fleetAccess = hasFleetAccess(access);
+  const activeLoadIqAccess = access.fullLoadIqAccess || goldAccess;
 
   return {
     tier: limits.tier,
@@ -186,11 +187,12 @@ export function resolveEntitlements(
     fleetEnabled: access.fleetEnabled,
     fleetOsProAccess: access.fleetOsProAccess,
     truckCapacityLimit: access.truckCapacityLimit,
-    canCalculate: withinLimit(
+    canCalculate: activeLoadIqAccess && withinLimit(
       usage.monthlyCalculations,
       limits.monthlyCalculations
     ),
-    canSaveLoad: withinLimit(usage.savedLoads, limits.savedLoads),
+    canSaveLoad:
+      activeLoadIqAccess && withinLimit(usage.savedLoads, limits.savedLoads),
     canExport: limits.exports && goldAccess,
     canUseAdvancedAnalytics: limits.advancedAnalytics && goldAccess,
     canUsePlatinumIntelligence: limits.advancedAnalytics && platinumAccess,
@@ -220,8 +222,14 @@ export function resolvePaymentAccess(
     hasGrandfatheredLoadIqAccess(featureArchitecture) &&
     (featureArchitecture.planTier === "pilot" ||
       featureArchitecture.planTier === "launch500");
+  const hasResolvedLoadIqAccess =
+    featureArchitecture.fullLoadIqAccess ||
+    hasGoldAccess(featureArchitecture) ||
+    hasPlatinumAccess(featureArchitecture) ||
+    hasFleetAccess(featureArchitecture);
   const hasActiveAccess =
-    isActiveEntitlementStatus(entitlementStatus) || hasProtectedLifetimeAccess;
+    (isActiveEntitlementStatus(entitlementStatus) && hasResolvedLoadIqAccess) ||
+    hasProtectedLifetimeAccess;
   const tier = hasActiveAccess ? featureArchitecture.planTier : "no_access";
   const trialDurationDays = asNullableNumber(subscription?.trial_duration_days);
   const trialStatus = asNullableString(subscription?.trial_status);
