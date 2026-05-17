@@ -10,6 +10,9 @@ import { formatCurrency, formatRpm } from "@/utils/format";
 type SavedLoad = {
   id: string;
   pickup_zip: string;
+  deadhead_start_city?: string | null;
+  deadhead_start_state?: string | null;
+  deadhead_start_zip?: string | null;
   pickup_city: string | null;
   pickup_state: string | null;
   delivery_zip: string;
@@ -27,6 +30,8 @@ type SavedLoad = {
   loadiq_load_number: string | null;
   driver_load_number: string | null;
   load_outcome: string | null;
+  route_stop_count?: number | null;
+  estimated_load_weight_lbs?: number | null;
   created_at: string;
 };
 
@@ -34,6 +39,9 @@ const previewLoads: SavedLoad[] = [
   {
     id: "preview-load-10482",
     pickup_zip: "",
+    deadhead_start_city: "Fort Worth",
+    deadhead_start_state: "TX",
+    deadhead_start_zip: "76102",
     pickup_city: "Dallas",
     pickup_state: "TX",
     delivery_zip: "",
@@ -51,11 +59,16 @@ const previewLoads: SavedLoad[] = [
     loadiq_load_number: null,
     driver_load_number: null,
     load_outcome: "planned",
+    route_stop_count: 3,
+    estimated_load_weight_lbs: 38000,
     created_at: new Date().toISOString(),
   },
   {
     id: "preview-load-10483",
     pickup_zip: "",
+    deadhead_start_city: null,
+    deadhead_start_state: null,
+    deadhead_start_zip: null,
     pickup_city: "Memphis",
     pickup_state: "TN",
     delivery_zip: "",
@@ -73,6 +86,8 @@ const previewLoads: SavedLoad[] = [
     loadiq_load_number: null,
     driver_load_number: null,
     load_outcome: "planned",
+    route_stop_count: 2,
+    estimated_load_weight_lbs: null,
     created_at: new Date(Date.now() - 86_400_000).toISOString(),
   },
 ];
@@ -222,6 +237,9 @@ function LoadHistoryContent({
                       </td>
                       <td className="py-4 font-semibold text-slate-100">
                         {formatLane(load)}
+                        <div className="mt-1 text-xs font-normal text-slate-500">
+                          {formatRouteContext(load)}
+                        </div>
                       </td>
                       <td className="py-4">
                         {formatCurrency(Number(load.gross_revenue))}
@@ -331,6 +349,24 @@ function formatLane(load: SavedLoad) {
 
   if (pickup && delivery) return `${pickup} -> ${delivery}`;
   return "Lane pending";
+}
+
+function formatRouteContext(load: SavedLoad) {
+  const deadheadOrigin = [
+    formatCityState(load.deadhead_start_city, load.deadhead_start_state),
+    load.deadhead_start_zip,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const parts = [
+    deadheadOrigin ? `DH from ${deadheadOrigin}` : null,
+    load.route_stop_count ? `${load.route_stop_count} modeled stops` : null,
+    load.estimated_load_weight_lbs
+      ? `${Number(load.estimated_load_weight_lbs).toLocaleString()} lbs est.`
+      : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : "Route context pending";
 }
 
 function formatCityState(city?: string | null, state?: string | null) {

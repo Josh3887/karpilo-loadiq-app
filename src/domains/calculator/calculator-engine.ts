@@ -155,6 +155,8 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
   const payableRevenue = calculatePayableRevenue(input, linehaulRevenue);
   const netRevenue = payableRevenue;
   const totalMiles = input.loadedMiles + input.deadheadMiles;
+  const stopOffCount = input.routeStops?.length ?? 0;
+  const routeStopCount = 2 + stopOffCount;
   const fuelPrice = roundFuelPrice(input.fuelPrice);
   const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * fuelPrice : 0;
   const variableCosts = totalMiles * input.variableCostPerMile;
@@ -312,6 +314,12 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     payableRevenue: round(payableRevenue),
     netRevenue: round(netRevenue),
     totalMiles: round(totalMiles),
+    routeStopCount,
+    stopOffCount,
+    estimatedLoadWeightLbs: Math.max(
+      Math.round(Number(input.estimatedLoadWeightLbs ?? 0)),
+      0
+    ),
     fuelCost: round(fuelCost),
     trueRpm: round(trueRpm),
     rpmAfterDeadhead: round(rpmAfterDeadhead),

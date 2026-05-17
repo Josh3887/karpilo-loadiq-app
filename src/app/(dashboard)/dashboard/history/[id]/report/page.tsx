@@ -3,6 +3,10 @@ import { notFound, redirect } from "next/navigation";
 
 import { getServerEntitlements } from "@/domains/billing/server-entitlements";
 import { createClient } from "@/lib/supabase-server";
+import {
+  formatRoutePoint,
+  SavedLoadStopRecord,
+} from "@/services/route-intelligence";
 import { SavedLoadActuals } from "@/types/saved-load";
 import {
   formatCurrency,
@@ -81,6 +85,13 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
   const variance =
     actualNet === null ? null : actualNet - Number(load.estimated_net);
   const snapshotFuelPercent = Number(result?.fuelPercentOfGross);
+  const { data: stops } = await supabase
+    .from("saved_load_stops")
+    .select("*")
+    .eq("saved_load_id", id)
+    .eq("user_id", user.id)
+    .order("stop_sequence", { ascending: true });
+  const routeStops = (stops ?? []) as SavedLoadStopRecord[];
   const fuelPercent = Number.isFinite(snapshotFuelPercent)
     ? snapshotFuelPercent
     : Number(load.gross_revenue) > 0
@@ -192,6 +203,51 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
 
           <div>
             <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+              Route Intelligence
+            </h2>
+            <ReportRow
+              label="Deadhead Origin"
+              value={formatDeadheadOrigin(load)}
+            />
+            <ReportRow
+              label="Modeled Stops"
+              value={`${Number(load.route_stop_count ?? routeStops.length ?? 0)} total`}
+            />
+            <ReportRow
+              label="Estimated Weight"
+              value={formatWeight(load.estimated_load_weight_lbs)}
+            />
+            <ReportRow
+              label="Reserve Mode"
+              value={formatReserveMode(load.reserve_allocation_mode)}
+            />
+            <ReportRow
+              label="Target RPM Snapshot"
+              value={formatRpm(Number(load.target_true_rpm_snapshot ?? load.true_rpm))}
+            />
+          </div>
+        </section>
+
+        {routeStops.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+              Modeled Route Stops
+            </h2>
+            <div className="space-y-2">
+              {routeStops.map((stop) => (
+                <ReportRow
+                  key={stop.id ?? `${stop.stop_type}-${stop.stop_sequence}`}
+                  label={`${stop.stop_sequence}. ${formatStopType(stop.stop_type)}`}
+                  value={formatRoutePoint(stop) || "Location pending"}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mt-8 grid gap-8 md:grid-cols-2">
+          <div>
+            <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
               Actuals
             </h2>
             <ReportRow
@@ -301,4 +357,36 @@ function formatLane(load: {
 
   if (pickup && delivery) return `${pickup} -> ${delivery}`;
   return "Lane pending";
+}
+
+function formatDeadheadOrigin(load: {
+  deadhead_start_city?: string | null;
+  deadhead_start_state?: string | null;
+  deadhead_start_zip?: string | null;
+}) {
+  return (
+    formatRoutePoint({
+      city: load.deadhead_start_city,
+      state: load.deadhead_start_state,
+      zip: load.deadhead_start_zip,
+    }) || "Not provided"
+  );
+}
+
+function formatWeight(weight?: number | null) {
+  return weight ? `${Number(weight).toLocaleString()} lbs est.` : "Not provided";
+}
+
+function formatReserveMode(mode?: string | null) {
+  if (mode === "cpm") return "CPM allocation";
+  if (mode === "percent") return "Percent allocation";
+  if (mode === "flat") return "Flat allocation";
+  return "Legacy/unknown";
+}
+
+function formatStopType(type: string) {
+  if (type === "stop_off") return "Stop-Off";
+  if (type === "pickup") return "Pickup";
+  if (type === "delivery") return "Delivery";
+  return type.replaceAll("_", " ");
 }

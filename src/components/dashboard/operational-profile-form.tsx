@@ -354,7 +354,60 @@ export function OperationalProfileForm() {
               setProfile((prev) => ({ ...prev, defaultMpg: Number(value) }))
             }
           />
+          <InputField
+            label="Trailer Division"
+            value={profile.trailerDivisionType}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                trailerDivisionType: value,
+              }))
+            }
+          />
+          <InputField
+            label="Trailer Type"
+            value={profile.trailerType}
+            onChange={(value) =>
+              setProfile((prev) => ({ ...prev, trailerType: value }))
+            }
+          />
+          <InputField
+            label="Tare Weight (lbs)"
+            type="number"
+            value={String(profile.vehicleTareWeightLbs)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                vehicleTareWeightLbs: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Est. Max Gross (lbs)"
+            type="number"
+            value={String(profile.estimatedMaxGrossLbs)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                estimatedMaxGrossLbs: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Operational Class"
+            value={profile.operationalClassification}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                operationalClassification: value,
+              }))
+            }
+          />
         </div>
+        <p className="text-xs leading-5 text-slate-500">
+          Weight and classification fields support operational modeling only.
+          They are not treated as certified scale, permit, or compliance data.
+        </p>
       </section>
 
       <section className="space-y-5">

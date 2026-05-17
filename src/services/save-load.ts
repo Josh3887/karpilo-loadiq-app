@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-client";
 
 import { getClientEntitlementState } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
+import { buildSavedLoadStopRows } from "@/services/route-intelligence";
 import { LoadInput, LoadResult } from "@/types/load";
 import { roundFuelPrice } from "@/utils/format";
 
@@ -80,58 +81,95 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
 
   const loadiqLoadNumber = `LIQ-${String((count ?? 0) + 1).padStart(5, "0")}`;
 
-  const { error: saveError } = await supabase.from("saved_loads").insert({
-    user_id: user.id,
-    status: "saved",
-    loadiq_load_number: loadiqLoadNumber,
-    driver_load_number: input.loadNumber || null,
-    load_outcome:
-      input.loadRunStatus === "ran"
-        ? "ran"
-        : input.loadRunStatus === "test"
-          ? "test_calculation"
-          : "planned",
-    load_run_status: input.loadRunStatus,
-    was_run_status: input.loadRunStatus,
-    pickup_zip: input.pickupZip,
-    pickup_city: input.pickupCity,
-    pickup_state: input.pickupState,
-    delivery_zip: input.deliveryZip,
-    delivery_city: input.deliveryCity,
-    delivery_state: input.deliveryState,
-    loaded_miles: input.loadedMiles,
-    deadhead_miles: input.deadheadMiles,
-    rate_per_mile: input.ratePerMile,
-    gross_revenue: result.grossRevenue,
-    total_miles: result.totalMiles,
-    fuel_cost: result.fuelCost,
-    fuel_estimate_source: input.fuelPriceSource,
-    estimated_fuel_price: roundFuelPrice(input.fuelPrice),
-    actual_fuel_price: null,
-    fuel_override: input.fuelPriceSource === "USER_OVERRIDE",
-    eia_period: input.fuelPricePeriod || null,
-    fuel_fetched_at: input.fuelPriceFetchedAt || null,
-    operational_cost: result.operationalCost,
-    dispatch_days: input.dispatchDays,
-    daily_overhead: result.dailyFixedOverhead,
-    overhead_applied: result.loadOverheadApplied,
-    used_profile_values: input.profileDerivedValues,
-    used_temporary_overrides: input.temporaryOverrides,
-    calculated_at: new Date().toISOString(),
-    estimated_net: result.estimatedNet,
-    true_rpm: result.trueRpm,
-    profitability_score: result.profitabilityScore,
-    profitability_band: result.profitabilityBand,
-    warnings: result.warnings,
-    input_snapshot: input,
-    result_snapshot: result,
-    actuals_snapshot: {},
-    pay_structure_snapshot: input.payStructure ?? {},
-    calculation_version: result.calculationVersion,
-  });
+  const stopRows = buildSavedLoadStopRows(input, user.id);
+  const reserveAllocationMode = result.reserveAllocationMode;
 
-  if (saveError) {
+  const { data: savedLoad, error: saveError } = await supabase
+    .from("saved_loads")
+    .insert({
+      user_id: user.id,
+      status: "saved",
+      loadiq_load_number: loadiqLoadNumber,
+      driver_load_number: input.loadNumber || null,
+      load_outcome:
+        input.loadRunStatus === "ran"
+          ? "ran"
+          : input.loadRunStatus === "test"
+            ? "test_calculation"
+            : "planned",
+      load_run_status: input.loadRunStatus,
+      was_run_status: input.loadRunStatus,
+      pickup_zip: input.pickupZip,
+      pickup_city: input.pickupCity,
+      pickup_state: input.pickupState,
+      deadhead_start_city: input.deadheadStartCity || null,
+      deadhead_start_state: input.deadheadStartState || null,
+      deadhead_start_zip: input.deadheadStartZip || null,
+      delivery_zip: input.deliveryZip,
+      delivery_city: input.deliveryCity,
+      delivery_state: input.deliveryState,
+      estimated_load_weight_lbs:
+        input.estimatedLoadWeightLbs > 0
+          ? Math.round(input.estimatedLoadWeightLbs)
+          : null,
+      route_stop_count: stopRows.length,
+      route_model_version: "loadiq-route-v1",
+      reserve_allocation_mode: reserveAllocationMode,
+      reserve_allocation_cpm:
+        reserveAllocationMode === "cpm" ? result.reserveAllocationValue : null,
+      reserve_allocation_percent:
+        reserveAllocationMode === "percent"
+          ? result.reserveAllocationValue
+          : null,
+      target_true_rpm_snapshot: result.targetRpm,
+      loaded_miles: input.loadedMiles,
+      deadhead_miles: input.deadheadMiles,
+      rate_per_mile: input.ratePerMile,
+      gross_revenue: result.grossRevenue,
+      total_miles: result.totalMiles,
+      fuel_cost: result.fuelCost,
+      fuel_estimate_source: input.fuelPriceSource,
+      estimated_fuel_price: roundFuelPrice(input.fuelPrice),
+      actual_fuel_price: null,
+      fuel_override: input.fuelPriceSource === "USER_OVERRIDE",
+      eia_period: input.fuelPricePeriod || null,
+      fuel_fetched_at: input.fuelPriceFetchedAt || null,
+      operational_cost: result.operationalCost,
+      dispatch_days: input.dispatchDays,
+      daily_overhead: result.dailyFixedOverhead,
+      overhead_applied: result.loadOverheadApplied,
+      used_profile_values: input.profileDerivedValues,
+      used_temporary_overrides: input.temporaryOverrides,
+      calculated_at: new Date().toISOString(),
+      estimated_net: result.estimatedNet,
+      true_rpm: result.trueRpm,
+      profitability_score: result.profitabilityScore,
+      profitability_band: result.profitabilityBand,
+      warnings: result.warnings,
+      input_snapshot: input,
+      result_snapshot: result,
+      actuals_snapshot: {},
+      pay_structure_snapshot: input.payStructure ?? {},
+      calculation_version: result.calculationVersion,
+    })
+    .select("id")
+    .single();
+
+  if (saveError || !savedLoad) {
     throw new Error(formatSupabaseError(saveError));
+  }
+
+  const { error: stopsError } = await supabase
+    .from("saved_load_stops")
+    .insert(
+      stopRows.map((row) => ({
+        ...row,
+        saved_load_id: savedLoad.id,
+      }))
+    );
+
+  if (stopsError) {
+    throw new Error(formatSupabaseError(stopsError));
   }
 
   await recordUsageEvent("load_saved", {

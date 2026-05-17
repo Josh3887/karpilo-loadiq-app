@@ -1,4 +1,9 @@
 import { createClient } from "@/lib/supabase-client";
+import {
+  buildSavedLoadStopRows,
+  SavedLoadStopRecord,
+} from "@/services/route-intelligence";
+import { loadInputSchema } from "@/lib/load-schema";
 import { LoadInput, LoadResult } from "@/types/load";
 import { SavedLoadActuals, SavedLoadRecord } from "@/types/saved-load";
 
@@ -59,6 +64,18 @@ export async function duplicateSavedLoad(loadId: string) {
   }
 
   const savedLoad = load as SavedLoadRecord;
+  const { data: existingStops, error: stopsError } = await supabase
+    .from("saved_load_stops")
+    .select("*")
+    .eq("saved_load_id", loadId)
+    .eq("user_id", userId)
+    .order("stop_sequence", { ascending: true });
+
+  if (stopsError) {
+    throw new Error(formatSupabaseError(stopsError));
+  }
+
+  const parsedInput = loadInputSchema.safeParse(savedLoad.input_snapshot);
 
   const { data: duplicate, error: duplicateError } = await supabase
     .from("saved_loads")
@@ -71,9 +88,19 @@ export async function duplicateSavedLoad(loadId: string) {
       pickup_zip: savedLoad.pickup_zip,
       pickup_city: savedLoad.input_snapshot?.pickupCity ?? null,
       pickup_state: savedLoad.input_snapshot?.pickupState ?? null,
+      deadhead_start_city: savedLoad.deadhead_start_city ?? null,
+      deadhead_start_state: savedLoad.deadhead_start_state ?? null,
+      deadhead_start_zip: savedLoad.deadhead_start_zip ?? null,
       delivery_zip: savedLoad.delivery_zip,
       delivery_city: savedLoad.input_snapshot?.deliveryCity ?? null,
       delivery_state: savedLoad.input_snapshot?.deliveryState ?? null,
+      estimated_load_weight_lbs: savedLoad.estimated_load_weight_lbs ?? null,
+      route_stop_count: savedLoad.route_stop_count ?? null,
+      route_model_version: savedLoad.route_model_version ?? null,
+      reserve_allocation_mode: savedLoad.reserve_allocation_mode ?? null,
+      reserve_allocation_cpm: savedLoad.reserve_allocation_cpm ?? null,
+      reserve_allocation_percent: savedLoad.reserve_allocation_percent ?? null,
+      target_true_rpm_snapshot: savedLoad.target_true_rpm_snapshot ?? null,
       loaded_miles: savedLoad.loaded_miles,
       deadhead_miles: savedLoad.deadhead_miles,
       rate_per_mile: savedLoad.rate_per_mile,
@@ -108,6 +135,38 @@ export async function duplicateSavedLoad(loadId: string) {
 
   if (duplicateError || !duplicate) {
     throw new Error(formatSupabaseError(duplicateError));
+  }
+
+  const duplicateStops =
+    existingStops && existingStops.length > 0
+      ? (existingStops as SavedLoadStopRecord[]).map((stop) => ({
+          user_id: userId,
+          saved_load_id: duplicate.id as string,
+          stop_sequence: stop.stop_sequence,
+          stop_type: stop.stop_type,
+          city: stop.city,
+          state: stop.state,
+          zip: stop.zip,
+          miles_from_previous: stop.miles_from_previous,
+          stop_revenue: stop.stop_revenue,
+          stop_expense: stop.stop_expense,
+          notes: stop.notes,
+        }))
+      : parsedInput.success
+        ? buildSavedLoadStopRows(parsedInput.data, userId).map((stop) => ({
+            ...stop,
+            saved_load_id: duplicate.id as string,
+          }))
+        : [];
+
+  if (duplicateStops.length > 0) {
+    const { error: duplicateStopsError } = await supabase
+      .from("saved_load_stops")
+      .insert(duplicateStops);
+
+    if (duplicateStopsError) {
+      throw new Error(formatSupabaseError(duplicateStopsError));
+    }
   }
 
   return duplicate.id as string;

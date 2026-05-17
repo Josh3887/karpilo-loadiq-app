@@ -21,6 +21,11 @@ export type OperationalProfile = {
   truckYear: number;
   truckEngine: string;
   truckOdometer: number;
+  trailerDivisionType: string;
+  trailerType: string;
+  vehicleTareWeightLbs: number;
+  estimatedMaxGrossLbs: number;
+  operationalClassification: string;
   defaultReserveAllocation: number;
   defaultMaintenanceReserve: number;
   defaultTireReserve: number;
@@ -56,6 +61,11 @@ export const defaultOperationalProfile: OperationalProfile = {
   truckYear: 0,
   truckEngine: "",
   truckOdometer: 0,
+  trailerDivisionType: "",
+  trailerType: "",
+  vehicleTareWeightLbs: 0,
+  estimatedMaxGrossLbs: 0,
+  operationalClassification: "",
   defaultReserveAllocation: 0,
   defaultMaintenanceReserve: 0,
   defaultTireReserve: 0,
@@ -179,6 +189,16 @@ export async function getOperationalProfile() {
     truckYear: Number(truckResult.data?.year ?? 0),
     truckEngine: truckResult.data?.engine ?? "",
     truckOdometer: Number(truckResult.data?.odometer ?? 0),
+    trailerDivisionType: truckResult.data?.trailer_division_type ?? "",
+    trailerType: truckResult.data?.trailer_type ?? "",
+    vehicleTareWeightLbs: Number(
+      truckResult.data?.vehicle_tare_weight_lbs ?? 0
+    ),
+    estimatedMaxGrossLbs: Number(
+      truckResult.data?.estimated_max_gross_lbs ?? 0
+    ),
+    operationalClassification:
+      truckResult.data?.operational_classification ?? "",
     defaultReserveAllocation: Number(
       settingsResult.data?.default_reserve_allocation ?? 0
     ),
@@ -256,6 +276,11 @@ export async function saveOperationalProfile(profile: OperationalProfile) {
     engine: profile.truckEngine,
     odometer: profile.truckOdometer || null,
     default_mpg: profile.defaultMpg,
+    trailer_division_type: profile.trailerDivisionType || null,
+    trailer_type: profile.trailerType || null,
+    vehicle_tare_weight_lbs: profile.vehicleTareWeightLbs || null,
+    estimated_max_gross_lbs: profile.estimatedMaxGrossLbs || null,
+    operational_classification: profile.operationalClassification || null,
   });
 
   if (truckError) throw new Error(formatSupabaseError(truckError));

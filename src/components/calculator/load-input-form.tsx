@@ -18,8 +18,16 @@ import {
 } from "@/lib/load-schema";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
+import {
+  createRouteStopInput,
+  normalizeRouteStops,
+} from "@/services/route-intelligence";
 import { AccessorialInputItem } from "@/types/accessorial";
-import { ProfileDerivedValues, ReserveAllocationMode } from "@/types/load";
+import {
+  ProfileDerivedValues,
+  ReserveAllocationMode,
+  RouteStopInput,
+} from "@/types/load";
 import { formatCurrency, formatRpm, roundFuelPrice } from "@/utils/format";
 
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
@@ -63,6 +71,7 @@ export function LoadInputForm({
   const [accessorialItems, setAccessorialItems] = useState<
     AccessorialInputItem[]
   >([]);
+  const [routeStops, setRouteStops] = useState<RouteStopInput[]>([]);
   const [fuelStatus, setFuelStatus] = useState(
     previewActive ? PREVIEW_FUEL_STATUS : ""
   );
@@ -242,6 +251,7 @@ export function LoadInputForm({
 
     queueMicrotask(() => {
       setAccessorialItems(initialValues.accessorialItems);
+      setRouteStops(normalizeRouteStops(initialValues.routeStops));
     });
   }, [initialValues, reset]);
 
@@ -254,6 +264,7 @@ export function LoadInputForm({
     const parsedValues = loadInputSchema.parse({
       ...values,
       accessorialItems,
+      routeStops: normalizeRouteStops(routeStops),
       profileDerivedValues: profileValues ?? values.profileDerivedValues,
     });
     const reserveAllocationValue =
@@ -282,6 +293,11 @@ export function LoadInputForm({
       fuelPrice: roundFuelPrice(parsedValues.fuelPrice),
       reserveAllocation: reserveAllocationValue,
       reserveAllocationValue,
+      estimatedLoadWeightLbs: Math.max(
+        Math.round(Number(parsedValues.estimatedLoadWeightLbs ?? 0)),
+        0
+      ),
+      routeStops: normalizeRouteStops(routeStops),
       grossRevenue:
         parsedValues.revenueInputMode === "gross"
           ? parsedValues.grossRevenue
@@ -382,6 +398,37 @@ export function LoadInputForm({
     });
   }
 
+  function addRouteStop() {
+    if (preview.enabled) {
+      preview.explain("calculator-field");
+      return;
+    }
+
+    setRouteStops((current) => [...current, createRouteStopInput()]);
+  }
+
+  function removeRouteStop(stopIndex: number) {
+    setRouteStops((current) =>
+      current.filter((_, index) => index !== stopIndex)
+    );
+  }
+
+  function updateRouteStop(
+    stopIndex: number,
+    updates: Partial<RouteStopInput>
+  ) {
+    setRouteStops((current) =>
+      current.map((stop, index) =>
+        index === stopIndex
+          ? {
+              ...stop,
+              ...updates,
+            }
+          : stop
+      )
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-8">
       <input type="hidden" {...register("fuelPriceSource")} />
@@ -425,6 +472,36 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Route Intelligence" />
+
+        <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
+            Deadhead Origin
+          </div>
+          <p className="mb-4 text-xs leading-5 text-slate-500">
+            Optional starting point before pickup. Manual deadhead miles still
+            control the math; this gives saved loads better route context.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <InputField
+              label="Start City"
+              error={errors.deadheadStartCity?.message}
+              previewKey="calculator-field"
+              {...register("deadheadStartCity")}
+            />
+            <InputField
+              label="Start State"
+              error={errors.deadheadStartState?.message}
+              previewKey="calculator-field"
+              {...register("deadheadStartState")}
+            />
+            <InputField
+              label="Start ZIP"
+              error={errors.deadheadStartZip?.message}
+              previewKey="calculator-field"
+              {...register("deadheadStartZip")}
+            />
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <InputField
@@ -482,6 +559,61 @@ export function LoadInputForm({
             error={errors.deadheadMiles?.message}
             {...register("deadheadMiles")}
           />
+        </div>
+
+        <InputField
+          label="Estimated Load Weight (lbs)"
+          type="number"
+          error={errors.estimatedLoadWeightLbs?.message}
+          previewKey="calculator-field"
+          {...register("estimatedLoadWeightLbs")}
+        />
+        <p className="text-xs leading-5 text-slate-500">
+          Estimated/speculative only unless verified by shipper paperwork or
+          scale records. Karpilo LoadIQ does not treat this as certified scale
+          weight.
+        </p>
+
+        <div className="space-y-3 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Stop-Off Modeling
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Add optional intermediate stops. User-entered loaded miles
+                still control the calculator; stop miles are operational
+                context, not routing API truth.
+              </p>
+            </div>
+            <button
+              type="button"
+              data-preview-explain="calculator-field"
+              onClick={addRouteStop}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
+            >
+              Add Stop
+            </button>
+          </div>
+
+          {routeStops.length === 0 ? (
+            <p className="rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-xs leading-5 text-slate-500">
+              No stop-offs added. This remains a simple pickup-to-delivery
+              model.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {routeStops.map((stop, index) => (
+                <RouteStopEditor
+                  key={stop.id ?? index}
+                  stop={stop}
+                  index={index}
+                  onChange={(updates) => updateRouteStop(index, updates)}
+                  onRemove={() => removeRouteStop(index)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -702,8 +834,8 @@ export function LoadInputForm({
             />
             <span>
               Fuel surcharge is already included in gross revenue. Karpilo
-              Karpilo LoadIQ will subtract the FSC before deriving linehaul RPM
-              so it is not counted twice.
+              LoadIQ will subtract the FSC before deriving linehaul RPM so it is
+              not counted twice.
             </span>
           </label>
         )}
@@ -832,6 +964,122 @@ function LinkToSettings() {
     >
       Edit profile values in Settings
     </a>
+  );
+}
+
+type RouteStopEditorProps = {
+  stop: RouteStopInput;
+  index: number;
+  onChange: (updates: Partial<RouteStopInput>) => void;
+  onRemove: () => void;
+};
+
+function RouteStopEditor({
+  stop,
+  index,
+  onChange,
+  onRemove,
+}: RouteStopEditorProps) {
+  return (
+    <div
+      data-preview-explain="calculator-field"
+      className="rounded-xl border border-slate-800 bg-[#0B1220] p-4"
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+            Stop-Off {index + 1}
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Optional revenue, expense, and miles from previous stop.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-red-200 transition hover:bg-red-500/20"
+        >
+          Remove
+        </button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StopInputField
+          label="City"
+          value={stop.city}
+          onChange={(value) => onChange({ city: value })}
+        />
+        <StopInputField
+          label="State"
+          value={stop.state}
+          onChange={(value) => onChange({ state: value.toUpperCase() })}
+        />
+        <StopInputField
+          label="ZIP"
+          value={stop.zip}
+          onChange={(value) => onChange({ zip: value })}
+        />
+        <StopInputField
+          label="Miles From Previous"
+          type="number"
+          value={String(stop.milesFromPrevious)}
+          onChange={(value) => onChange({ milesFromPrevious: Number(value) })}
+        />
+        <StopInputField
+          label="Stop Revenue"
+          type="number"
+          value={String(stop.stopRevenue)}
+          onChange={(value) => onChange({ stopRevenue: Number(value) })}
+        />
+        <StopInputField
+          label="Stop Expense"
+          type="number"
+          value={String(stop.stopExpense)}
+          onChange={(value) => onChange({ stopExpense: Number(value) })}
+        />
+      </div>
+
+      <label className="mt-4 block">
+        <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+          Notes
+        </span>
+        <input
+          data-preview-explain="calculator-field"
+          value={stop.notes}
+          onChange={(event) => onChange({ notes: event.target.value })}
+          className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+        />
+      </label>
+    </div>
+  );
+}
+
+function StopInputField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        {label}
+      </span>
+      <input
+        data-preview-explain="calculator-field"
+        type={type}
+        min={type === "number" ? "0" : undefined}
+        step={type === "number" ? "0.01" : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+      />
+    </label>
   );
 }
 

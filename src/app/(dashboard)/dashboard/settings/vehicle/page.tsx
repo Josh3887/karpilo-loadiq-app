@@ -44,7 +44,9 @@ export default async function VehicleSettingsPage() {
       .maybeSingle(),
     supabase
       .from("truck_profiles")
-      .select("make, model, year, engine, odometer, default_mpg")
+      .select(
+        "make, model, year, engine, odometer, default_mpg, trailer_division_type, trailer_type, vehicle_tare_weight_lbs, estimated_max_gross_lbs, operational_classification"
+      )
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -65,6 +67,22 @@ export default async function VehicleSettingsPage() {
       operatorDetail={
         profile?.company_name || profile?.profile_name || "Profile pending"
       }
+      equipmentDetail={
+        [truckProfile?.trailer_division_type, truckProfile?.trailer_type]
+          .filter(Boolean)
+          .join(" / ") || "Trailer profile pending"
+      }
+      weightDetail={
+        truckProfile?.vehicle_tare_weight_lbs ||
+        truckProfile?.estimated_max_gross_lbs
+          ? `${truckProfile?.vehicle_tare_weight_lbs ?? "Tare pending"} tare · ${
+              truckProfile?.estimated_max_gross_lbs ?? "Gross pending"
+            } max gross`
+          : "Weight model pending"
+      }
+      classificationDetail={
+        truckProfile?.operational_classification ?? "Classification pending"
+      }
     />
   );
 }
@@ -75,12 +93,18 @@ function VehicleSettingsContent({
   mpgLabel,
   operatorType,
   operatorDetail,
+  equipmentDetail,
+  weightDetail,
+  classificationDetail,
 }: {
   vehicleLabel: string;
   engineLabel: string;
   mpgLabel: string;
   operatorType: string;
   operatorDetail: string;
+  equipmentDetail?: string;
+  weightDetail?: string;
+  classificationDetail?: string;
 }) {
   return (
     <SettingsPageShell
@@ -103,6 +127,16 @@ function VehicleSettingsContent({
           label="Operator Type"
           value={operatorType}
           detail={operatorDetail}
+        />
+        <SettingsMetric
+          label="Equipment"
+          value={equipmentDetail ?? "Trailer profile pending"}
+          detail={classificationDetail ?? "Classification pending"}
+        />
+        <SettingsMetric
+          label="Weight Model"
+          value={weightDetail ?? "Weight model pending"}
+          detail="Operational estimate only"
         />
       </section>
 

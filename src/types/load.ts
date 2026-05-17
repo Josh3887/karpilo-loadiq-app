@@ -18,6 +18,17 @@ export type LoadRunStatus = "ran" | "test" | "planned";
 
 export type ReserveAllocationMode = "flat" | "cpm" | "percent";
 
+export type RouteStopInput = {
+  id?: string;
+  city: string;
+  state: string;
+  zip: string;
+  milesFromPrevious: number;
+  stopRevenue: number;
+  stopExpense: number;
+  notes: string;
+};
+
 export type CalculationValueSource =
   | "profile"
   | "load_input"
@@ -57,6 +68,12 @@ export type LoadInput = {
   deliveryZip: string;
   deliveryCity: string;
   deliveryState: string;
+
+  deadheadStartCity: string;
+  deadheadStartState: string;
+  deadheadStartZip: string;
+  routeStops: RouteStopInput[];
+  estimatedLoadWeightLbs: number;
 
   loadedMiles: number;
   deadheadMiles: number;
@@ -156,6 +173,9 @@ export type LoadResult = {
   payableRevenue: number;
   netRevenue: number;
   totalMiles: number;
+  routeStopCount: number;
+  stopOffCount: number;
+  estimatedLoadWeightLbs: number;
   fuelCost: number;
   trueRpm: number;
   rpmAfterDeadhead: number;

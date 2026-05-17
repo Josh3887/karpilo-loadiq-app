@@ -1,0 +1,164 @@
+import { LoadInput, RouteStopInput } from "@/types/load";
+
+export type SavedLoadStopType = "pickup" | "stop_off" | "delivery";
+
+export type SavedLoadStopInsert = {
+  saved_load_id?: string;
+  user_id: string;
+  stop_sequence: number;
+  stop_type: SavedLoadStopType;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  miles_from_previous: number | null;
+  stop_revenue: number | null;
+  stop_expense: number | null;
+  notes: string | null;
+};
+
+export type SavedLoadStopRecord = SavedLoadStopInsert & {
+  id?: string;
+  saved_load_id: string;
+  created_at?: string | null;
+};
+
+export function createRouteStopInput(): RouteStopInput {
+  return {
+    id: createRouteStopId(),
+    city: "",
+    state: "",
+    zip: "",
+    milesFromPrevious: 0,
+    stopRevenue: 0,
+    stopExpense: 0,
+    notes: "",
+  };
+}
+
+export function normalizeRouteStops(stops: RouteStopInput[] | undefined) {
+  return (stops ?? [])
+    .map((stop) => ({
+      id: stop.id || createRouteStopId(),
+      city: stop.city?.trim() ?? "",
+      state: stop.state?.trim().toUpperCase() ?? "",
+      zip: stop.zip?.trim() ?? "",
+      milesFromPrevious: positiveNumber(stop.milesFromPrevious),
+      stopRevenue: positiveNumber(stop.stopRevenue),
+      stopExpense: positiveNumber(stop.stopExpense),
+      notes: stop.notes?.trim() ?? "",
+    }))
+    .filter((stop) => {
+      return Boolean(
+        stop.city ||
+          stop.state ||
+          stop.zip ||
+          stop.milesFromPrevious ||
+          stop.stopRevenue ||
+          stop.stopExpense ||
+          stop.notes
+      );
+    });
+}
+
+export function buildSavedLoadStopRows(
+  input: LoadInput,
+  userId: string
+): SavedLoadStopInsert[] {
+  const stopOffs = normalizeRouteStops(input.routeStops);
+  const rows: SavedLoadStopInsert[] = [
+    {
+      user_id: userId,
+      stop_sequence: 1,
+      stop_type: "pickup",
+      city: emptyToNull(input.pickupCity),
+      state: emptyToNull(input.pickupState),
+      zip: emptyToNull(input.pickupZip),
+      miles_from_previous:
+        hasDeadheadOrigin(input) && input.deadheadMiles > 0
+          ? positiveNumber(input.deadheadMiles)
+          : null,
+      stop_revenue: null,
+      stop_expense: null,
+      notes: hasDeadheadOrigin(input)
+        ? `Deadhead origin: ${formatRoutePoint({
+            city: input.deadheadStartCity,
+            state: input.deadheadStartState,
+            zip: input.deadheadStartZip,
+          })}`
+        : null,
+    },
+  ];
+
+  stopOffs.forEach((stop, index) => {
+    rows.push({
+      user_id: userId,
+      stop_sequence: index + 2,
+      stop_type: "stop_off",
+      city: emptyToNull(stop.city),
+      state: emptyToNull(stop.state),
+      zip: emptyToNull(stop.zip),
+      miles_from_previous:
+        stop.milesFromPrevious > 0 ? stop.milesFromPrevious : null,
+      stop_revenue: stop.stopRevenue > 0 ? stop.stopRevenue : null,
+      stop_expense: stop.stopExpense > 0 ? stop.stopExpense : null,
+      notes: emptyToNull(stop.notes),
+    });
+  });
+
+  rows.push({
+    user_id: userId,
+    stop_sequence: rows.length + 1,
+    stop_type: "delivery",
+    city: emptyToNull(input.deliveryCity),
+    state: emptyToNull(input.deliveryState),
+    zip: emptyToNull(input.deliveryZip),
+    miles_from_previous:
+      stopOffs.length === 0 && input.loadedMiles > 0
+        ? positiveNumber(input.loadedMiles)
+        : null,
+    stop_revenue: null,
+    stop_expense: null,
+    notes: null,
+  });
+
+  return rows;
+}
+
+export function routeStopCountForInput(input: LoadInput) {
+  return buildSavedLoadStopRows(input, "00000000-0000-0000-0000-000000000000")
+    .length;
+}
+
+export function formatRoutePoint(point: {
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}) {
+  const cityState = [point.city, point.state].filter(Boolean).join(", ");
+  return [cityState, point.zip].filter(Boolean).join(" ");
+}
+
+function hasDeadheadOrigin(input: LoadInput) {
+  return Boolean(
+    input.deadheadStartCity || input.deadheadStartState || input.deadheadStartZip
+  );
+}
+
+function emptyToNull(value: string | undefined | null) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function positiveNumber(value: unknown) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
+  return numericValue;
+}
+
+function createRouteStopId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AccessorialInputItem } from "@/types/accessorial";
+import { RouteStopInput } from "@/types/load";
 
 const numberField = z.preprocess(
   (value) => {
@@ -12,6 +13,17 @@ const numberField = z.preprocess(
   z.number()
 );
 
+const routeStopSchema = z.object({
+  id: z.string().optional(),
+  city: z.string().optional().default(""),
+  state: z.string().optional().default(""),
+  zip: z.string().optional().default(""),
+  milesFromPrevious: numberField.refine((value) => value >= 0),
+  stopRevenue: numberField.refine((value) => value >= 0),
+  stopExpense: numberField.refine((value) => value >= 0),
+  notes: z.string().optional().default(""),
+}) satisfies z.ZodType<RouteStopInput>;
+
 export const loadInputSchema = z.object({
   loadNumber: z.string().optional().default(""),
   carrierLoadId: z.string().optional().default(""),
@@ -23,6 +35,12 @@ export const loadInputSchema = z.object({
   deliveryZip: z.string().min(5),
   deliveryCity: z.string().optional().default(""),
   deliveryState: z.string().optional().default(""),
+
+  deadheadStartCity: z.string().optional().default(""),
+  deadheadStartState: z.string().optional().default(""),
+  deadheadStartZip: z.string().optional().default(""),
+  routeStops: z.array(routeStopSchema).default([]),
+  estimatedLoadWeightLbs: numberField.refine((value) => value >= 0),
 
   loadedMiles: numberField.refine((value) => value >= 1),
   deadheadMiles: numberField.refine((value) => value >= 0),
@@ -167,6 +185,12 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   deliveryZip: "",
   deliveryCity: "",
   deliveryState: "",
+
+  deadheadStartCity: "",
+  deadheadStartState: "",
+  deadheadStartZip: "",
+  routeStops: [],
+  estimatedLoadWeightLbs: 0,
 
   loadedMiles: 0,
   deadheadMiles: 0,

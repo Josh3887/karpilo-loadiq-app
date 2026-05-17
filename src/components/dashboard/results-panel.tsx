@@ -9,6 +9,7 @@ import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-compari
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { LoadInput, LoadResult } from "@/types/load";
 import { saveLoad } from "@/services/save-load";
+import { formatRoutePoint } from "@/services/route-intelligence";
 import { ThemedSelect } from "@/components/ui/themed-select";
 
 import {
@@ -178,6 +179,8 @@ export function ResultsPanel({
           </div>
         </div>
 
+        {input && <RouteIntelligenceContext input={input} result={result} />}
+
         <OperationalValueNotes result={result} />
 
         {result.explanations.length > 0 && (
@@ -235,6 +238,65 @@ export function ResultsPanel({
       </div>
     </DashboardCard>
   );
+}
+
+function RouteIntelligenceContext({
+  input,
+  result,
+}: {
+  input: LoadInput;
+  result: LoadResult;
+}) {
+  const deadheadOrigin = formatRoutePoint({
+    city: input.deadheadStartCity,
+    state: input.deadheadStartState,
+    zip: input.deadheadStartZip,
+  });
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-5">
+      <div className="mb-4 text-sm uppercase tracking-[0.18em] text-slate-400">
+        Route Intelligence Context
+      </div>
+
+      <div className="grid gap-3 text-sm md:grid-cols-2">
+        <BreakdownRow
+          label="Deadhead Origin"
+          value={deadheadOrigin || "Not provided"}
+        />
+        <BreakdownRow
+          label="Modeled Stops"
+          value={`${result.routeStopCount} total · ${result.stopOffCount} stop-off`}
+        />
+        <BreakdownRow
+          label="Estimated Weight"
+          value={
+            result.estimatedLoadWeightLbs > 0
+              ? `${formatNumber(result.estimatedLoadWeightLbs)} lbs`
+              : "Not provided"
+          }
+        />
+        <BreakdownRow
+          label="Reserve Mode"
+          value={formatReserveMode(result.reserveAllocationMode)}
+        />
+        <BreakdownRow
+          label="Target RPM Snapshot"
+          value={formatRpm(result.targetRpm)}
+        />
+        <BreakdownRow
+          label="Route Model"
+          value="Karpilo LoadIQ manual route context"
+        />
+      </div>
+    </div>
+  );
+}
+
+function formatReserveMode(mode: LoadResult["reserveAllocationMode"]) {
+  if (mode === "cpm") return "CPM allocation";
+  if (mode === "percent") return "Percent allocation";
+  return "Flat allocation";
 }
 
 function OperationalValueNotes({ result }: { result: LoadResult }) {

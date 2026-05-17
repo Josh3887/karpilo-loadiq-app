@@ -4,6 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { SavedLoadActions } from "@/components/dashboard/saved-load-actions";
 import { EntityNoteForm } from "@/components/dashboard/entity-note-form";
 import { createClient } from "@/lib/supabase-server";
+import {
+  formatRoutePoint,
+  SavedLoadStopRecord,
+} from "@/services/route-intelligence";
 import { SavedLoadActuals } from "@/types/saved-load";
 
 import {
@@ -71,6 +75,13 @@ export default async function LoadDetailPage({
       ? null
       : actualNet - Number(load.estimated_net);
   const actuals = load.actuals_snapshot as Partial<SavedLoadActuals> | null;
+  const { data: stops } = await supabase
+    .from("saved_load_stops")
+    .select("*")
+    .eq("saved_load_id", id)
+    .eq("user_id", user.id)
+    .order("stop_sequence", { ascending: true });
+  const routeStops = (stops ?? []) as SavedLoadStopRecord[];
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -241,6 +252,93 @@ export default async function LoadDetailPage({
           </section>
         )}
 
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Route Intelligence
+          </h2>
+
+          <div className="grid gap-3 text-sm md:grid-cols-2">
+            <BreakdownRow
+              label="Deadhead Origin"
+              value={formatDeadheadOrigin(load)}
+            />
+            <BreakdownRow
+              label="Estimated Weight"
+              value={formatWeight(load.estimated_load_weight_lbs)}
+            />
+            <BreakdownRow
+              label="Modeled Stops"
+              value={`${Number(load.route_stop_count ?? routeStops.length ?? 0)} total`}
+            />
+            <BreakdownRow
+              label="Reserve Mode"
+              value={formatReserveMode(load.reserve_allocation_mode)}
+            />
+            <BreakdownRow
+              label="Reserve CPM"
+              value={
+                load.reserve_allocation_cpm
+                  ? formatRpm(Number(load.reserve_allocation_cpm))
+                  : "Not used"
+              }
+            />
+            <BreakdownRow
+              label="Reserve %"
+              value={
+                load.reserve_allocation_percent
+                  ? formatPercent(Number(load.reserve_allocation_percent))
+                  : "Not used"
+              }
+            />
+            <BreakdownRow
+              label="Target RPM Snapshot"
+              value={formatRpm(Number(load.target_true_rpm_snapshot ?? load.true_rpm))}
+            />
+            <BreakdownRow
+              label="Route Model"
+              value={load.route_model_version ?? "Legacy load"}
+            />
+          </div>
+
+          {routeStops.length > 0 && (
+            <div className="mt-5 space-y-3">
+              {routeStops.map((stop) => (
+                <div
+                  key={stop.id ?? `${stop.stop_type}-${stop.stop_sequence}`}
+                  className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+                        {stop.stop_sequence}. {formatStopType(stop.stop_type)}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-100">
+                        {formatRoutePoint(stop) || "Location pending"}
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {stop.miles_from_previous
+                        ? `${Number(stop.miles_from_previous).toFixed(0)} mi from previous`
+                        : "Miles not modeled"}
+                    </p>
+                  </div>
+                  {(stop.stop_revenue || stop.stop_expense || stop.notes) && (
+                    <p className="mt-3 text-xs leading-5 text-slate-500">
+                      {stop.stop_revenue
+                        ? `Revenue ${formatCurrency(Number(stop.stop_revenue))}. `
+                        : ""}
+                      {stop.stop_expense
+                        ? `Expense ${formatCurrency(Number(stop.stop_expense))}. `
+                        : ""}
+                      {stop.notes ?? ""}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {Array.isArray(load.warnings) &&
           load.warnings.length > 0 && (
             <section className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
@@ -344,4 +442,36 @@ function formatLane(load: {
 
   if (pickup && delivery) return `${pickup} -> ${delivery}`;
   return "Lane pending";
+}
+
+function formatDeadheadOrigin(load: {
+  deadhead_start_city?: string | null;
+  deadhead_start_state?: string | null;
+  deadhead_start_zip?: string | null;
+}) {
+  return (
+    formatRoutePoint({
+      city: load.deadhead_start_city,
+      state: load.deadhead_start_state,
+      zip: load.deadhead_start_zip,
+    }) || "Not provided"
+  );
+}
+
+function formatWeight(weight?: number | null) {
+  return weight ? `${Number(weight).toLocaleString()} lbs est.` : "Not provided";
+}
+
+function formatReserveMode(mode?: string | null) {
+  if (mode === "cpm") return "CPM allocation";
+  if (mode === "percent") return "Percent allocation";
+  if (mode === "flat") return "Flat allocation";
+  return "Legacy/unknown";
+}
+
+function formatStopType(type: string) {
+  if (type === "stop_off") return "Stop-Off";
+  if (type === "pickup") return "Pickup";
+  if (type === "delivery") return "Delivery";
+  return type.replaceAll("_", " ");
 }
