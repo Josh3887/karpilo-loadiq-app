@@ -8,6 +8,7 @@ import {
   subscribeIationVisibility,
   writeIationVisibility,
 } from "@/lib/ai/iation-events";
+import { AtlasRuntimeFrame } from "@/components/ai/atlas-runtime-frame";
 import {
   ATLAS_INTELLIGENCE_LAYERS,
   ATLAS_LAYER_ORDER,
@@ -21,6 +22,7 @@ export function AtlasIntelligenceSettingsCard({
 }: {
   enabled: boolean;
 }) {
+  const coreLayer = ATLAS_INTELLIGENCE_LAYERS.core;
   const showCompatibilityOverlay = useSyncExternalStore(
     subscribeIationVisibility,
     readIationVisibility,
@@ -32,14 +34,37 @@ export function AtlasIntelligenceSettingsCard({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-[#050B14] p-5">
+    <AtlasRuntimeFrame
+      layer={coreLayer}
+      description="Atlas Core coordinates embedded freight, route, and educational intelligence as one operational runtime inside Karpilo LoadIQ."
+      action={
+        <label className="flex min-w-0 cursor-pointer items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:min-w-64">
+          <span>
+            <span className="block text-sm font-black text-slate-100">
+              Compatibility overlay
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              Optional legacy overlay while embedded Atlas surfaces continue
+              rolling out.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={enabled && showCompatibilityOverlay}
+            disabled={!enabled}
+            onChange={(event) => updateVisibility(event.target.checked)}
+            className="h-5 w-5 shrink-0 accent-purple-400"
+          />
+        </label>
+      }
+    >
       <div className="grid gap-4 md:grid-cols-2">
         {ATLAS_LAYER_ORDER.map((layerKey) => (
           <AtlasLayerDisclosure key={layerKey} layerKey={layerKey} />
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+      <div className="mt-4 grid gap-4">
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
             Embedded Runtime
@@ -51,25 +76,6 @@ export function AtlasIntelligenceSettingsCard({
             {ATLAS_PROPRIETARY_STATEMENT}
           </p>
         </div>
-
-        <label className="flex min-w-60 cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-[#060B14] p-4">
-          <span>
-            <span className="block text-sm font-black text-slate-100">
-              Compatibility overlay
-            </span>
-            <span className="mt-1 block text-xs leading-5 text-slate-500">
-              Optional legacy overlay for contextual Atlas Educational signals
-              while embedded surfaces continue rolling out.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            checked={enabled && showCompatibilityOverlay}
-            disabled={!enabled}
-            onChange={(event) => updateVisibility(event.target.checked)}
-            className="h-5 w-5 accent-lime-400"
-          />
-        </label>
       </div>
 
       {!enabled && (
@@ -77,7 +83,7 @@ export function AtlasIntelligenceSettingsCard({
           Atlas processing is disabled in this environment.
         </p>
       )}
-    </div>
+    </AtlasRuntimeFrame>
   );
 }
 

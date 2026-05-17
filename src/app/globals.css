@@ -25,6 +25,36 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.atlas-runtime-surface {
+  isolation: isolate;
+  position: relative;
+}
+
+.atlas-runtime-surface::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--atlas-primary) 9%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--atlas-accent) 14%, transparent),
+      transparent 36%
+    );
+  content: "";
+  opacity: 0.68;
+}
+
+.atlas-runtime-node {
+  border-color: color-mix(in srgb, var(--atlas-accent) 34%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--atlas-primary) 18%, transparent);
+}
+
 .iation-signal-shell {
   isolation: isolate;
 }
