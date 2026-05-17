@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { IationSettingsCard } from "@/components/ai/iation-settings-card";
 import {
   LOADIQ_SETTINGS_LINKS,
   SettingsMetric,
@@ -11,6 +12,7 @@ import {
 import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
+import { isLoadIqAiDevEnabled } from "@/lib/ai/openai-client";
 import {
   getPreviewPaymentAccess,
   PREVIEW_OPERATOR_STATUS,
@@ -41,6 +43,7 @@ export default async function SettingsPage() {
         overheadCount={2}
         templateCount={1}
         operatorStatus={PREVIEW_OPERATOR_STATUS}
+        aiDevEnabled={false}
       />
     );
   }
@@ -110,6 +113,7 @@ export default async function SettingsPage() {
       overheadCount={overheadCount.count ?? 0}
       templateCount={templateCount.count ?? 0}
       operatorStatus={operatorStatus}
+      aiDevEnabled={isLoadIqAiDevEnabled()}
     />
   );
 }
@@ -123,6 +127,7 @@ function SettingsContent({
   overheadCount,
   templateCount,
   operatorStatus,
+  aiDevEnabled,
 }: {
   paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
   operatorLabel: string;
@@ -132,6 +137,7 @@ function SettingsContent({
   overheadCount: number;
   templateCount: number;
   operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
+  aiDevEnabled: boolean;
 }) {
   return (
     <SettingsPageShell
@@ -185,6 +191,16 @@ function SettingsContent({
           ))}
         </div>
       </SettingsPanel>
+
+      {aiDevEnabled && (
+        <SettingsPanel
+          title="iAtion Intelligence Systems"
+          description="Control the Karpilo LoadIQ educational and freight-intelligence overlay inside authenticated app surfaces."
+          kicker="Signal Control"
+        >
+          <IationSettingsCard enabled={aiDevEnabled} />
+        </SettingsPanel>
+      )}
 
       {operatorStatus.badges.length > 0 && (
         <SettingsPanel

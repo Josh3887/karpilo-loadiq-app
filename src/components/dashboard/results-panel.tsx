@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RadioTower } from "lucide-react";
 
-import { LoadIqEducationalInsightCard } from "@/components/ai/loadiq-educational-insight-card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
+import { IATION_CORE_EVENT } from "@/lib/ai/iation-events";
 import { LoadInput, LoadResult } from "@/types/load";
+import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 import { saveLoad } from "@/services/save-load";
 import { formatRoutePoint } from "@/services/route-intelligence";
 import { ThemedSelect } from "@/components/ui/themed-select";
@@ -204,7 +205,7 @@ export function ResultsPanel({
         <OperationalValueNotes result={result} />
 
         {aiDevEnabled && input && !previewMode && (
-          <LoadIqEducationalInsightCard input={input} result={result} />
+          <IationCoreAction input={input} result={result} />
         )}
 
         {result.explanations.length > 0 && (
@@ -262,6 +263,89 @@ export function ResultsPanel({
       </div>
     </DashboardCard>
   );
+}
+
+function IationCoreAction({
+  input,
+  result,
+}: {
+  input: LoadInput;
+  result: LoadResult;
+}) {
+  function openIationCore() {
+    window.dispatchEvent(
+      new CustomEvent<{ payload: LoadIqAiLoadAnalysisInput }>(
+        IATION_CORE_EVENT,
+        {
+          detail: {
+            payload: buildIationCorePayload(input, result),
+          },
+        }
+      )
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-sky-400/25 bg-[#06101F] p-5 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+            iAtion Core
+          </p>
+          <h3 className="mt-2 text-xl font-black text-slate-50">
+            Freight Intelligence
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Freight intelligence based on this load&apos;s calculated numbers.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={openIationCore}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-sky-200 transition hover:bg-sky-400/20"
+          data-iation-help="analyze-load"
+        >
+          <RadioTower className="h-4 w-4" aria-hidden="true" />
+          Open iAtion Core
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function buildIationCorePayload(
+  input: LoadInput,
+  result: LoadResult
+): LoadIqAiLoadAnalysisInput {
+  return {
+    grossRevenue: result.grossRevenue,
+    loadedMiles: input.loadedMiles,
+    deadheadMiles: input.deadheadMiles,
+    fuelCost: result.fuelCost,
+    trueRpm: result.trueRpm,
+    netProfit: result.estimatedNet,
+    daysCommitted: Math.max(result.dispatchDays + result.deadheadDays, 0),
+    dispatchFee: result.dispatchCost,
+    factoringFee: result.factoringCost,
+    tolls: result.costBreakdown.tolls,
+    accessorials: result.accessorialRevenue,
+    estimatedMaintenanceReserve: result.costBreakdown.maintenanceReserve,
+    pickupRegion: formatRegion(
+      input.pickupCity,
+      input.pickupState,
+      input.pickupZip
+    ),
+    deliveryRegion: formatRegion(
+      input.deliveryCity,
+      input.deliveryState,
+      input.deliveryZip
+    ),
+    notes: result.warnings.map((warning) => warning.message).join(" "),
+  };
+}
+
+function formatRegion(city: string, state: string, zip: string) {
+  return [city, state, zip].filter(Boolean).join(", ");
 }
 
 function formatPayBasis(basis: LoadResult["payCalculationBasis"]) {

@@ -1253,6 +1253,7 @@ export function LoadInputForm({
         <button
           type="submit"
           onClick={() => preview.enabled && preview.explain("analyze-load")}
+          data-iation-help="analyze-load"
           className="w-full rounded-xl bg-sky-400 px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-[#060B14] shadow-[0_0_25px_rgba(56,189,248,0.35)] transition hover:bg-sky-300"
         >
           Analyze Load

@@ -19,11 +19,11 @@ export type LoadIqAiLoadAnalysisInput = {
 };
 
 export type LoadIqAiLoadAnalysisOutput = {
-  loadiqReadout: string;
-  marginLesson: string;
-  negotiationLens: string;
-  riskSignals: string[];
+  signalReadout: string;
+  marginPressure: string;
+  brokerTraffic: string;
+  roadSignals: string[];
   driverQuestions: string[];
   confidence: LoadIqAiConfidence;
-  educationalDisclaimer: string;
+  intelligenceDisclaimer: string;
 };

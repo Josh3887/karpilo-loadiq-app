@@ -11,35 +11,35 @@ import type { LoadIqAiLoadAnalysisOutput } from "@/types/ai-load-analysis";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const EDUCATIONAL_DISCLAIMER =
-  "Educational interpretation only. The calculator values remain authoritative; verify assumptions with your own records and qualified professionals.";
+const INTELLIGENCE_DISCLAIMER =
+  "iAtion Core provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.";
 
 const OUTPUT_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
-    "loadiqReadout",
-    "marginLesson",
-    "negotiationLens",
-    "riskSignals",
+    "signalReadout",
+    "marginPressure",
+    "brokerTraffic",
+    "roadSignals",
     "driverQuestions",
     "confidence",
-    "educationalDisclaimer",
+    "intelligenceDisclaimer",
   ],
   properties: {
-    loadiqReadout: {
+    signalReadout: {
       type: "string",
-      description: "Concise educational interpretation of the load strength.",
+      description: "Concise operational interpretation of the load signal.",
     },
-    marginLesson: {
+    marginPressure: {
       type: "string",
-      description: "One short lesson about margin, deadhead, fuel, days, or true RPM.",
+      description: "Explain what the margin pressure means operationally.",
     },
-    negotiationLens: {
+    brokerTraffic: {
       type: "string",
-      description: "Educational negotiating perspective without telling the driver what to do.",
+      description: "Explain broker, rate, traffic, or negotiation context without giving a decision.",
     },
-    riskSignals: {
+    roadSignals: {
       type: "array",
       minItems: 2,
       maxItems: 5,
@@ -59,9 +59,9 @@ const OUTPUT_SCHEMA = {
       type: "string",
       enum: ["low", "medium", "high"],
     },
-    educationalDisclaimer: {
+    intelligenceDisclaimer: {
       type: "string",
-      description: "Short educational disclaimer.",
+      description: "Short iAtion Core intelligence disclaimer.",
     },
   },
 } as const;
@@ -99,16 +99,16 @@ function sanitizeAiOutput(value: unknown): LoadIqAiLoadAnalysisOutput {
   const confidence = record.confidence;
 
   return {
-    loadiqReadout: sanitizeModelText(record.loadiqReadout),
-    marginLesson: sanitizeModelText(record.marginLesson),
-    negotiationLens: sanitizeModelText(record.negotiationLens),
-    riskSignals: sanitizeStringArray(record.riskSignals),
+    signalReadout: sanitizeModelText(record.signalReadout),
+    marginPressure: sanitizeModelText(record.marginPressure),
+    brokerTraffic: sanitizeModelText(record.brokerTraffic),
+    roadSignals: sanitizeStringArray(record.roadSignals),
     driverQuestions: sanitizeStringArray(record.driverQuestions),
     confidence:
       confidence === "low" || confidence === "high" ? confidence : "medium",
-    educationalDisclaimer: sanitizeModelText(
-      record.educationalDisclaimer || EDUCATIONAL_DISCLAIMER,
-      260
+    intelligenceDisclaimer: sanitizeModelText(
+      record.intelligenceDisclaimer || INTELLIGENCE_DISCLAIMER,
+      520
     ),
   };
 }
@@ -165,7 +165,8 @@ export async function POST(request: Request) {
         {
           role: "system",
           content: [
-            "You are the Karpilo LoadIQ Educational Assistant.",
+            "You are iAtion Core, the Karpilo LoadIQ freight intelligence interpreter.",
+            "iAtion teaches the app; iAtion Core interprets calculated freight and load data. Stay in the iAtion Core freight-intelligence role.",
             "You are trucking-aware, owner-operator focused, direct, calm, operationally realistic, concise, and educational.",
             "The calculator values are authoritative. Do not recalculate, replace, or contradict them. Interpret only.",
             "Do not calculate final financial values. Do not make final business decisions for the user.",
@@ -179,12 +180,12 @@ export async function POST(request: Request) {
           content: JSON.stringify({
             calculatorValues: validation.value,
             outputSections: [
-              "LoadIQ Readout",
-              "Margin Lesson",
-              "Negotiation Lens",
-              "Risk Signals",
+              "Signal Readout",
+              "Margin Pressure",
+              "Broker Traffic",
+              "Road Signals",
               "Driver Questions",
-              "Educational Disclaimer",
+              "Intelligence Disclaimer",
             ],
           }),
         },

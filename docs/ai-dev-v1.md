@@ -2,13 +2,28 @@
 
 ## Purpose
 
-AI Dev V1 is an educational intelligence layer for the Karpilo LoadIQ app. It interprets already-calculated load results so owner-operators can better understand profitability pressure, deadhead exposure, fuel pressure, days committed, true RPM, margin erosion, negotiation context, and operational risk signals.
+AI Dev V1 adds two branded intelligence surfaces inside the authenticated Karpilo LoadIQ app:
 
-The deterministic Karpilo LoadIQ calculator remains authoritative. AI Dev V1 does not replace, recalculate, or override calculator output.
+- **iAtion**: educational guidance for navigating app pages, features, buttons, forms, tiles, dialogs, workflows, and settings.
+- **iAtion Core**: freight intelligence that interprets calculated load outputs, margin pressure, deadhead impact, fuel exposure, broker traffic, road signals, and operational significance.
+
+iAtion teaches the app. iAtion Core interprets the freight. The deterministic Karpilo LoadIQ calculator remains authoritative.
 
 ## App-Only Scope
 
-This module lives only in the APP project. It is not part of the marketing website and does not change public pricing, Stripe billing, account deletion, Supabase schema, or subscription entitlement logic.
+Functional iAtion and iAtion Core behavior lives only in the APP project. The website may describe the concepts for marketing/disclosure purposes, but it must not call OpenAI, expose API keys, or provide functional AI.
+
+AI Dev V1 does not change public pricing, Stripe billing, account deletion, Supabase schema, or subscription entitlement logic.
+
+## Assets
+
+Expected app assets:
+
+- `public/brand/iation-signal-active-icon.webp`
+- `public/brand/iation-core-freight-intelligence-icon.webp`
+- `public/brand/iation-core-hero.jpg`
+- `public/brand/iation-core-mark.png`
+- `public/brand/iation-philosophy-hero.jpg`
 
 ## Environment Variables
 
@@ -24,9 +39,32 @@ Feature flag:
 ENABLE_LOADIQ_AI_DEV=false
 ```
 
-Set `ENABLE_LOADIQ_AI_DEV=true` only in an environment where AI Dev V1 should be visible and callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`; OpenAI keys must never be exposed to the browser.
+Set `ENABLE_LOADIQ_AI_DEV=true` only where the overlay and API route should be visible/callable. Do not use `NEXT_PUBLIC_OPENAI_API_KEY`.
 
-## API Route
+## Overlay Behavior
+
+The authenticated app shell mounts the iAtion overlay when AI Dev V1 is enabled. The launcher uses a restrained industrial signal style and can be hidden locally with the **Show iAtion** settings control.
+
+No Supabase schema is used for the hide/show preference. It is stored locally and can be restored from settings.
+
+## Educational Mode
+
+iAtion uses `src/lib/ai/iation-help-registry.ts` to explain supported app surfaces. Educational output includes:
+
+1. Feature Signal
+2. What This Does
+3. Why It Matters
+4. How To Use It
+5. Operator Reminder
+6. Educational Disclaimer
+
+Educational disclaimer:
+
+> iAtion provides educational guidance for navigating Karpilo LoadIQ features, workflows, and app tools. It is intended to explain functionality and improve user understanding. It does not make business, financial, legal, tax, compliance, or dispatch decisions.
+
+## Freight Intelligence Mode
+
+iAtion Core activates from calculated load context. The calculator values are authoritative; iAtion Core interprets only.
 
 Route:
 
@@ -34,7 +72,7 @@ Route:
 POST /api/ai/load-analysis
 ```
 
-The route is disabled unless `ENABLE_LOADIQ_AI_DEV=true`.
+The route is server-side only, authenticated, non-streaming, structured JSON, and disabled unless `ENABLE_LOADIQ_AI_DEV=true`.
 
 Sample request:
 
@@ -55,34 +93,25 @@ Expected response shape:
 ```json
 {
   "analysis": {
-    "loadiqReadout": "...",
-    "marginLesson": "...",
-    "negotiationLens": "...",
-    "riskSignals": ["..."],
+    "signalReadout": "...",
+    "marginPressure": "...",
+    "brokerTraffic": "...",
+    "roadSignals": ["..."],
     "driverQuestions": ["..."],
     "confidence": "medium",
-    "educationalDisclaimer": "..."
+    "intelligenceDisclaimer": "..."
   },
   "model": "gpt-4o-mini"
 }
 ```
 
-## Allowed Behavior
+Intelligence disclaimer:
 
-- Interpret deterministic calculator values.
-- Explain operational pressure in trucking-aware language.
-- Surface risk signals and driver questions.
-- Keep output concise and educational.
-- Return structured JSON for reliable rendering.
+> iAtion Core provides operational freight intelligence based on entered load data, calculated app outputs, platform metrics, user operational patterns, and available market or spot-market context. It does not guarantee profitability, freight availability, rate outcomes, compliance status, or financial performance. Final decisions remain the responsibility of the operator.
 
-## Prohibited Behavior
+## Proprietary Statement
 
-- Recalculate final financial values.
-- Override calculator output.
-- Make final dispatch, business, compliance, settlement, tax, or legal decisions.
-- Claim guaranteed profit or guaranteed savings.
-- Operate as an agent or autonomous workflow.
-- Use GPS context, rate con extraction, receipt parsing, or background jobs in V1.
+> iAtion and iAtion Core are proprietary intelligence systems developed for Karpilo LoadIQ by Karpilo Endeavor Technologies. These systems are designed to support educational app guidance and operational freight intelligence through structured application data, calculated load outputs, platform metrics, user-provided inputs, and evolving freight-market context.
 
 ## Security Rules
 
@@ -92,10 +121,11 @@ Expected response shape:
 - User-provided prompt/system instructions are not accepted.
 - Provider failures return generic errors without stack traces or secrets.
 - AI failure must never block the calculator or Analyze Load flow.
+- No schema persistence, saved AI summaries, streaming, agents, autonomous actions, GPS intelligence, or document extraction exist in V1.
 
 ## Manual Testing
 
-With `ENABLE_LOADIQ_AI_DEV=true` and `OPENAI_API_KEY` set, run:
+With `ENABLE_LOADIQ_AI_DEV=true`, `OPENAI_API_KEY` set, and an authenticated app session:
 
 ```bash
 curl -X POST http://localhost:3000/api/ai/load-analysis \
@@ -114,14 +144,16 @@ curl -X POST http://localhost:3000/api/ai/load-analysis \
 Then test through the dashboard:
 
 1. Analyze a load normally.
-2. Confirm the AI Dev V1 card appears only when the feature flag is enabled.
-3. Generate the educational readout.
-4. Confirm calculator results remain unchanged if the AI call fails.
+2. Confirm the floating iAtion launcher appears only when enabled.
+3. Confirm **Open iAtion Core** appears after a result exists.
+4. Generate the iAtion Core readout.
+5. Hide/show the overlay from settings.
+6. Confirm calculator results remain unchanged if the AI call fails.
 
 ## Future Phases
 
 - Rate confirmation extraction after file-handling and validation architecture is ready.
 - Receipt parsing after storage, privacy, and retention rules are ready.
 - Trip pattern coaching after enough historical data and consent boundaries exist.
-- Karpilo FleetOS intelligence after fleet-specific entitlement and data boundaries exist.
+- FleetOS intelligence after fleet-specific entitlement and data boundaries exist.
 - GPS/context intelligence only after privacy, permission, retention, and mobile safety architecture is ready.

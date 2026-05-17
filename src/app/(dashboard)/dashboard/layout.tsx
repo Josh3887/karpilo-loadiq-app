@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 
+import { IationOverlay } from "@/components/ai/iation-overlay";
 import { PaymentSetupModal } from "@/components/billing/payment-setup-modal";
 import { AppAccessGate } from "@/components/legal/app-access-gate";
 import { PreviewModeProvider } from "@/components/preview/preview-mode-provider";
 import { SystemHealthBanner } from "@/components/system/system-health-banner";
 import { BILLING_EMAIL } from "@/config/billing";
 import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
+import { isLoadIqAiDevEnabled } from "@/lib/ai/openai-client";
 import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { getAppPolicyGateState } from "@/services/app-policy-server";
 import { ensureAppUserProfile } from "@/services/app-user-profile";
@@ -60,6 +62,7 @@ export default async function DashboardLayout({
         paymentAccess={paymentAccess}
         billingEmail={BILLING_EMAIL}
       />
+      <IationOverlay enabled={isLoadIqAiDevEnabled()} />
       <div
         className={
           gateState.requiresPolicyAcceptance || gateState.requiresSafetyReminder
