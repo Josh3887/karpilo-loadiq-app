@@ -61,6 +61,39 @@ const PREVIEW_PROFILE_VALUES: ProfileDerivedValues = {
 const PREVIEW_FUEL_STATUS =
   "Preview estimate · live EIA lookup is not called in preview mode.";
 
+const FIELD_VALIDATION_MESSAGES: Record<string, string> = {
+  pickupZip: "Enter a pickup ZIP with at least 5 characters.",
+  deliveryZip: "Enter a delivery ZIP with at least 5 characters.",
+  loadedMiles: "Enter loaded miles greater than 0.",
+  deadheadMiles: "Deadhead miles cannot be negative.",
+  routeLoadedMiles: "Route loaded miles cannot be negative.",
+  actualLoadedMiles: "Actual loaded miles cannot be negative.",
+  routeDeadheadMiles: "Route deadhead miles cannot be negative.",
+  actualDeadheadMiles: "Actual deadhead miles cannot be negative.",
+  dispatchDays: "Dispatch days must be at least 1.",
+  deadheadDays: "Deadhead days cannot be negative.",
+  grossRevenue: "Gross revenue cannot be negative.",
+  ratePerMile: "Rate per mile cannot be negative.",
+  fuelSurcharge: "Fuel surcharge cannot be negative.",
+  fuelPrice: "Enter a fuel price greater than 0.",
+  mpg: "Enter MPG greater than 0.",
+  overhead: "Daily overhead cannot be negative.",
+  reserveAllocationValue: "Reserve allocation cannot be negative.",
+  reserveAllocation: "Reserve allocation cannot be negative.",
+  maintenanceReserve: "Maintenance reserve cannot be negative.",
+  tireReserve: "Tire reserve cannot be negative.",
+  tolls: "Tolls cannot be negative.",
+  lumpers: "Lumpers cannot be negative.",
+  trailerFee: "Trailer fee cannot be negative.",
+  insuranceAllocation: "Insurance allocation cannot be negative.",
+  variableCostPerMile: "Variable cost per mile cannot be negative.",
+  fixedCostAllocation: "Fixed cost allocation cannot be negative.",
+  factoringPercent: "Factoring percent must be between 0 and 100.",
+  dispatchPercent: "Dispatch percent must be between 0 and 100.",
+  targetTrueRpm: "Target true RPM must be greater than 0.",
+  estimatedLoadWeightLbs: "Estimated load weight cannot be negative.",
+};
+
 export function LoadInputForm({
   onCalculate,
   initialValues,
@@ -278,8 +311,12 @@ export function LoadInputForm({
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const issue = error.issues[0];
         setSubmitError(
-          error.issues[0]?.message ??
+          getValidationMessage(
+            issue?.message,
+            issue?.path.map(String).join(".")
+          ) ??
             "Review the highlighted fields before analyzing this load."
         );
         return;
@@ -1147,17 +1184,68 @@ function getRouteStopValidationError(stops: RouteStopInput[]) {
 }
 
 function findFirstFormError(errors: FieldErrors<LoadInputRawValues>) {
-  const queue: unknown[] = Object.values(errors);
+  const queue: Array<{ value: unknown; path: string }> = Object.entries(
+    errors
+  ).map(([key, value]) => ({ value, path: key }));
 
   while (queue.length > 0) {
-    const current = queue.shift();
+    const currentEntry = queue.shift();
+    if (!currentEntry) continue;
+    const { value: current, path } = currentEntry;
     if (!current || typeof current !== "object") continue;
 
     if ("message" in current && typeof current.message === "string") {
-      return current.message;
+      return getValidationMessage(current.message, path);
     }
 
-    queue.push(...Object.values(current));
+    for (const [key, value] of Object.entries(current)) {
+      queue.push({
+        value,
+        path: path ? `${path}.${key}` : key,
+      });
+    }
+  }
+
+  return null;
+}
+
+function getValidationMessage(message?: string, path?: string) {
+  const mappedMessage = getValidationMessageForPath(path);
+  if (!message || message.toLowerCase().startsWith("invalid input")) {
+    return mappedMessage;
+  }
+
+  return message;
+}
+
+function getValidationMessageForPath(path?: string) {
+  if (!path) return null;
+
+  const pathParts = path.split(".");
+  const fieldName = pathParts.at(-1);
+  if (!fieldName) return null;
+
+  if (fieldName in FIELD_VALIDATION_MESSAGES) {
+    return FIELD_VALIDATION_MESSAGES[fieldName];
+  }
+
+  if (path.startsWith("routeStops.")) {
+    const stopIndex = Number(pathParts[1]);
+    const stopLabel = Number.isFinite(stopIndex)
+      ? `Stop-Off ${stopIndex + 1}`
+      : "Stop-Off";
+
+    if (fieldName === "milesFromPrevious") {
+      return `${stopLabel}: miles from previous stop cannot be negative.`;
+    }
+
+    if (fieldName === "stopRevenue") {
+      return `${stopLabel}: stop revenue cannot be negative.`;
+    }
+
+    if (fieldName === "stopExpense") {
+      return `${stopLabel}: stop expense cannot be negative.`;
+    }
   }
 
   return null;
