@@ -5,7 +5,6 @@ import Stripe from "stripe";
 import {
   STRIPE_CHECKOUT_PLANS,
   StripeCheckoutPlan,
-  StripePlanTier,
 } from "@/config/stripe";
 import {
   FOUNDER_ACCESS,
@@ -83,6 +82,24 @@ function lifetimeLockForPlan(plan: StripeCheckoutPlan | null) {
   return plan?.tier === "pilot" || plan?.tier === "launch500";
 }
 
+type ExistingSubscriptionEntitlement = {
+  id: string;
+  tier?: string | null;
+  subscription_tier?: string | null;
+  feature_access?: string | null;
+  grandfathered_access?: boolean | null;
+  lifetime_access?: boolean | null;
+  lifetime_price_lock?: boolean | null;
+  full_loadiq_access?: boolean | null;
+  fleet_enabled?: boolean | null;
+  fleetos_pro_access?: boolean | null;
+  truck_capacity_limit?: number | null;
+  future_feature_access_scope?: string | null;
+  cohort_phase?: string | null;
+  cohort_cap?: number | null;
+  price_subject_to_change?: boolean | null;
+};
+
 const ENTITLEMENT_ARCHITECTURE_COLUMNS = [
   "subscription_tier",
   "feature_access",
@@ -97,14 +114,37 @@ const ENTITLEMENT_ARCHITECTURE_COLUMNS = [
 function subscriptionTierForPlan(plan: StripeCheckoutPlan | null) {
   if (plan?.tier === "pilot") return "pilot";
   if (plan?.tier === "launch500") return "launch";
+  if (!plan) return null;
   return "gold";
 }
 
 function entitlementArchitectureFieldsForPlan(
-  plan: StripeCheckoutPlan | null
+  plan: StripeCheckoutPlan | null,
+  existing?: ExistingSubscriptionEntitlement | null
 ) {
   const hasLifetimeLock = lifetimeLockForPlan(plan);
   const subscriptionTier = subscriptionTierForPlan(plan);
+
+  if (!subscriptionTier) {
+    const access = resolveFeatureAccessArchitecture(existing);
+    const preservedSubscriptionTier =
+      existing?.subscription_tier ??
+      (access.subscriptionTier === "none" ? null : access.subscriptionTier);
+
+    return {
+      subscription_tier: preservedSubscriptionTier,
+      feature_access:
+        existing?.feature_access ??
+        (access.featureAccess === "none" ? null : access.featureAccess),
+      grandfathered_access: access.grandfatheredAccess,
+      lifetime_access: access.lifetimeAccess,
+      full_loadiq_access: access.fullLoadIqAccess,
+      fleet_enabled: access.fleetEnabled,
+      fleetos_pro_access: access.fleetOsProAccess,
+      truck_capacity_limit: access.truckCapacityLimit,
+    };
+  }
+
   const access = resolveFeatureAccessArchitecture({
     tier: plan?.tier ?? "gold",
     subscription_tier: subscriptionTier,
@@ -429,7 +469,6 @@ export async function upsertStripeSubscription(params: {
   const supabase = createSupabaseAdminClient();
   const subscription = params.subscription;
   const plan = planFromStripeSubscription(subscription);
-  const tier: StripePlanTier = plan?.tier ?? "gold";
   const userId =
     params.userId ?? (await findUserIdForStripeSubscription(subscription));
 
@@ -439,15 +478,50 @@ export async function upsertStripeSubscription(params: {
     );
   }
 
+  const { data: existingData, error: existingError } = await supabase
+    .from("subscriptions")
+    .select(
+      [
+        "id",
+        "tier",
+        "subscription_tier",
+        "feature_access",
+        "grandfathered_access",
+        "lifetime_access",
+        "lifetime_price_lock",
+        "full_loadiq_access",
+        "fleet_enabled",
+        "fleetos_pro_access",
+        "truck_capacity_limit",
+        "future_feature_access_scope",
+        "cohort_phase",
+        "cohort_cap",
+        "price_subject_to_change",
+      ].join(",")
+    )
+    .eq("provider", "stripe")
+    .eq("provider_subscription_id", subscription.id)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  const existing = existingData as ExistingSubscriptionEntitlement | null;
+
   const subscriptionAny = subscription as Stripe.Subscription & {
     current_period_start?: number;
     current_period_end?: number;
   };
-  const hasLifetimeLock = lifetimeLockForPlan(plan);
+  const tier = plan?.tier ?? existing?.tier ?? "unknown";
+  const hasKnownPlan = Boolean(plan);
+  const hasLifetimeLock = hasKnownPlan
+    ? lifetimeLockForPlan(plan)
+    : Boolean(existing?.lifetime_price_lock);
   const trialEnd = fromUnixTime(subscription.trial_end);
   const currentPeriodStart = fromUnixTime(subscriptionAny.current_period_start);
   const currentPeriodEnd = fromUnixTime(subscriptionAny.current_period_end);
-  const entitlementArchitecture = entitlementArchitectureFieldsForPlan(plan);
+  const entitlementArchitecture = entitlementArchitectureFieldsForPlan(
+    plan,
+    existing
+  );
 
   const record = {
     user_id: userId,
@@ -470,12 +544,18 @@ export async function upsertStripeSubscription(params: {
     canceled_at: fromUnixTime(subscription.canceled_at),
     pilot_pricing_locked: hasLifetimeLock,
     lifetime_price_lock: hasLifetimeLock,
-    future_feature_access_scope: hasLifetimeLock
-      ? FUTURE_PLATFORM_FEATURE_SCOPE
-      : null,
-    cohort_phase: plan?.requiresProgram ?? null,
-    cohort_cap: cohortCapForPlan(plan),
-    price_subject_to_change: !hasLifetimeLock,
+    future_feature_access_scope: hasKnownPlan
+      ? hasLifetimeLock
+        ? FUTURE_PLATFORM_FEATURE_SCOPE
+        : null
+      : existing?.future_feature_access_scope ?? null,
+    cohort_phase: hasKnownPlan
+      ? plan?.requiresProgram ?? null
+      : existing?.cohort_phase ?? null,
+    cohort_cap: hasKnownPlan ? cohortCapForPlan(plan) : existing?.cohort_cap ?? null,
+    price_subject_to_change: hasKnownPlan
+      ? !hasLifetimeLock
+      : existing?.price_subject_to_change ?? true,
     ...entitlementArchitecture,
     metadata: {
       stripe_price_id: subscription.items.data[0]?.price.id ?? null,
@@ -488,15 +568,6 @@ export async function upsertStripeSubscription(params: {
     },
     updated_at: new Date().toISOString(),
   };
-
-  const { data: existing, error: existingError } = await supabase
-    .from("subscriptions")
-    .select("id")
-    .eq("provider", "stripe")
-    .eq("provider_subscription_id", subscription.id)
-    .maybeSingle();
-
-  if (existingError) throw existingError;
 
   if (existing?.id) {
     await updateSubscriptionRecord(supabase, existing.id, record);
