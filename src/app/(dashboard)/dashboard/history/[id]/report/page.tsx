@@ -7,6 +7,10 @@ import {
   formatRoutePoint,
   SavedLoadStopRecord,
 } from "@/services/route-intelligence";
+import {
+  getExpenseCategoryLabel,
+  normalizeSavedLoadActuals,
+} from "@/services/post-trip-actuals";
 import { SavedLoadActuals } from "@/types/saved-load";
 import {
   formatCurrency,
@@ -75,9 +79,16 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
     breakEvenRpm?: number;
     dailyProfitability?: number;
     fuelPercentOfGross?: number;
+    totalTripCost?: number;
     explanations?: string[];
   } | null;
   const actuals = load.actuals_snapshot as Partial<SavedLoadActuals> | null;
+  const estimatedTripCost = Number(result?.totalTripCost ?? load.operational_cost ?? 0);
+  const actualSummary = normalizeSavedLoadActuals(actuals, {
+    grossRevenue: Number(load.gross_revenue),
+    estimatedTripCost,
+    totalTripMiles: Number(load.total_miles),
+  });
   const actualNet =
     load.actual_net === null || load.actual_net === undefined
       ? null
@@ -248,36 +259,52 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
         <section className="mt-8 grid gap-8 md:grid-cols-2">
           <div>
             <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
-              Actuals
+              Actual Trip Result
             </h2>
             <ReportRow
-              label="Fuel"
-              value={formatCurrency(Number(actuals?.fuelCost ?? 0))}
+              label="Estimated Trip Cost"
+              value={formatCurrency(estimatedTripCost)}
+            />
+            <ReportRow
+              label="Actual Expense Total"
+              value={formatCurrency(actualSummary.actualExpenseTotal ?? 0)}
+            />
+            <ReportRow
+              label="Estimated vs Actual Delta"
+              value={formatCurrency(actualSummary.estimatedVsActualDelta ?? 0)}
+            />
+            <ReportRow
+              label="Actual Net Profit"
+              value={formatCurrency(actualSummary.actualNetProfit ?? 0)}
+            />
+            <ReportRow
+              label="Actual Profit / Mile"
+              value={formatRpm(actualSummary.actualProfitPerMile ?? 0)}
             />
             <ReportRow
               label="Actual Fuel $/Gal"
-              value={formatFuelPrice(Number(actuals?.actualFuelPrice ?? 0))}
-            />
-            <ReportRow
-              label="Tolls"
-              value={formatCurrency(Number(actuals?.tolls ?? 0))}
-            />
-            <ReportRow
-              label="Lumpers"
-              value={formatCurrency(Number(actuals?.lumpers ?? 0))}
-            />
-            <ReportRow
-              label="Maintenance"
-              value={formatCurrency(Number(actuals?.maintenance ?? 0))}
-            />
-            <ReportRow
-              label="Other"
-              value={formatCurrency(
-                Number(actuals?.parking ?? 0) + Number(actuals?.other ?? 0)
-              )}
+              value={formatFuelPrice(actualSummary.actualFuelPrice)}
             />
           </div>
         </section>
+
+        {actualSummary.postTripActualExpenses &&
+          actualSummary.postTripActualExpenses.length > 0 && (
+            <section className="mt-8">
+              <h2 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                Post-Trip Expenses
+              </h2>
+              <div className="space-y-2">
+                {actualSummary.postTripActualExpenses.map((expense) => (
+                  <ReportRow
+                    key={expense.id}
+                    label={`${getExpenseCategoryLabel(expense.expenseCategory)} · ${expense.expenseSubcategory}`}
+                    value={formatCurrency(expense.amount)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
         {Array.isArray(result?.explanations) &&
           result.explanations.length > 0 && (

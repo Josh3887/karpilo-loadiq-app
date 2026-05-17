@@ -4,6 +4,7 @@ import {
   SavedLoadStopRecord,
 } from "@/services/route-intelligence";
 import { loadInputSchema } from "@/lib/load-schema";
+import { normalizeSavedLoadActuals } from "@/services/post-trip-actuals";
 import { LoadInput, LoadResult } from "@/types/load";
 import { SavedLoadActuals, SavedLoadRecord } from "@/types/saved-load";
 
@@ -181,7 +182,9 @@ export async function updateSavedLoadActuals(
 
   const { data: load, error: loadError } = await supabase
     .from("saved_loads")
-    .select("gross_revenue, total_miles, input_snapshot, result_snapshot")
+    .select(
+      "gross_revenue, total_miles, operational_cost, input_snapshot, result_snapshot"
+    )
     .eq("id", loadId)
     .eq("user_id", userId)
     .single();
@@ -195,32 +198,40 @@ export async function updateSavedLoadActuals(
   const mpg = Number(inputSnapshot?.mpg ?? 0);
   const totalMiles = Number(load.total_miles);
   const estimatedFuelCost = Number(resultSnapshot?.fuelCost ?? 0);
+  const estimatedTripCost = Number(
+    resultSnapshot?.totalTripCost ?? load.operational_cost ?? estimatedFuelCost
+  );
   const actualFuelPrice = Number(actuals.actualFuelPrice ?? 0);
-  const calculatedActualFuelCost =
-    actualFuelPrice > 0 && mpg > 0 && totalMiles > 0
+  const legacyFuelCost =
+    actualFuelPrice > 0 &&
+    mpg > 0 &&
+    totalMiles > 0 &&
+    !actuals.postTripActualExpenses?.length
       ? (totalMiles / mpg) * actualFuelPrice
       : Number(actuals.fuelCost || estimatedFuelCost);
-  const normalizedActuals: SavedLoadActuals = {
-    ...actuals,
-    fuelCost: Number(calculatedActualFuelCost.toFixed(2)),
-    actualFuelPrice,
-  };
-
-  const totalActualCost =
-    normalizedActuals.fuelCost +
-    actuals.tolls +
-    actuals.lumpers +
-    actuals.maintenance +
-    actuals.parking +
-    actuals.other;
-  const actualNet = Number(load.gross_revenue) - totalActualCost;
+  const normalizedActuals = normalizeSavedLoadActuals(
+    {
+      ...actuals,
+      fuelCost: Number(legacyFuelCost.toFixed(2)),
+      actualFuelPrice,
+    },
+    {
+      grossRevenue: Number(load.gross_revenue),
+      estimatedTripCost,
+      totalTripMiles: totalMiles,
+    }
+  );
+  const actualNet = Number(normalizedActuals.actualNetProfit ?? 0);
 
   const { error } = await supabase
     .from("saved_loads")
     .update({
       status: "completed",
       actual_net: actualNet,
-      actual_fuel_price: actualFuelPrice > 0 ? actualFuelPrice : null,
+      actual_fuel_price:
+        normalizedActuals.actualFuelPrice > 0
+          ? normalizedActuals.actualFuelPrice
+          : null,
       actuals_snapshot: normalizedActuals,
     })
     .eq("id", loadId)
@@ -235,7 +246,10 @@ export async function updateSavedLoadActuals(
     saved_load_id: loadId,
     actuals_snapshot: normalizedActuals,
     actual_net: actualNet,
-    actual_fuel_price: actualFuelPrice > 0 ? actualFuelPrice : null,
+    actual_fuel_price:
+      normalizedActuals.actualFuelPrice > 0
+        ? normalizedActuals.actualFuelPrice
+        : null,
     notes: actuals.notes,
   });
 }

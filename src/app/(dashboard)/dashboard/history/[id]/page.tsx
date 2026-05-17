@@ -8,6 +8,10 @@ import {
   formatRoutePoint,
   SavedLoadStopRecord,
 } from "@/services/route-intelligence";
+import {
+  getExpenseCategoryLabel,
+  normalizeSavedLoadActuals,
+} from "@/services/post-trip-actuals";
 import { SavedLoadActuals } from "@/types/saved-load";
 
 import {
@@ -52,6 +56,7 @@ export default async function LoadDetailPage({
   const resultSnapshot = load.result_snapshot as {
     fuelPercentOfGross?: number;
     profitMarginPercent?: number;
+    totalTripCost?: number;
   } | null;
   const snapshotFuelPercent = Number(resultSnapshot?.fuelPercentOfGross);
   const snapshotMarginPercent = Number(resultSnapshot?.profitMarginPercent);
@@ -75,6 +80,14 @@ export default async function LoadDetailPage({
       ? null
       : actualNet - Number(load.estimated_net);
   const actuals = load.actuals_snapshot as Partial<SavedLoadActuals> | null;
+  const estimatedTripCost = Number(
+    resultSnapshot?.totalTripCost ?? load.operational_cost ?? 0
+  );
+  const actualSummary = normalizeSavedLoadActuals(actuals, {
+    grossRevenue: Number(load.gross_revenue),
+    estimatedTripCost,
+    totalTripMiles: Number(load.total_miles),
+  });
   const { data: stops } = await supabase
     .from("saved_load_stops")
     .select("*")
@@ -210,39 +223,77 @@ export default async function LoadDetailPage({
         {actualNet !== null && (
           <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Actual Cost Breakdown
+              Actual Trip Result
             </h2>
 
             <div className="grid gap-3 text-sm md:grid-cols-2">
               <BreakdownRow
-                label="Fuel"
-                value={formatCurrency(Number(actuals?.fuelCost ?? 0))}
+                label="Estimated Trip Cost"
+                value={formatCurrency(estimatedTripCost)}
+              />
+              <BreakdownRow
+                label="Actual Expense Total"
+                value={formatCurrency(actualSummary.actualExpenseTotal ?? 0)}
+              />
+              <BreakdownRow
+                label="Estimated vs Actual Delta"
+                value={formatCurrency(actualSummary.estimatedVsActualDelta ?? 0)}
+              />
+              <BreakdownRow
+                label="Actual Net Profit"
+                value={formatCurrency(actualSummary.actualNetProfit ?? 0)}
+              />
+              <BreakdownRow
+                label="Actual Profit / Mile"
+                value={formatRpm(actualSummary.actualProfitPerMile ?? 0)}
               />
               <BreakdownRow
                 label="Actual Fuel $/Gal"
-                value={formatFuelPrice(Number(actuals?.actualFuelPrice ?? 0))}
-              />
-              <BreakdownRow
-                label="Tolls"
-                value={formatCurrency(Number(actuals?.tolls ?? 0))}
-              />
-              <BreakdownRow
-                label="Lumpers"
-                value={formatCurrency(Number(actuals?.lumpers ?? 0))}
-              />
-              <BreakdownRow
-                label="Maintenance"
-                value={formatCurrency(Number(actuals?.maintenance ?? 0))}
-              />
-              <BreakdownRow
-                label="Parking"
-                value={formatCurrency(Number(actuals?.parking ?? 0))}
-              />
-              <BreakdownRow
-                label="Other"
-                value={formatCurrency(Number(actuals?.other ?? 0))}
+                value={formatFuelPrice(actualSummary.actualFuelPrice)}
               />
             </div>
+
+            {actualSummary.postTripActualExpenses &&
+              actualSummary.postTripActualExpenses.length > 0 && (
+                <div className="mt-5 space-y-3">
+                  {actualSummary.postTripActualExpenses.map((expense) => (
+                    <div
+                      key={expense.id}
+                      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+                            {getExpenseCategoryLabel(expense.expenseCategory)}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-100">
+                            {expense.expenseSubcategory}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {[expense.vendorName, expense.location, expense.date]
+                              .filter(Boolean)
+                              .join(" · ") || "No vendor/location/date provided"}
+                          </p>
+                        </div>
+                        <p className="text-sm font-black text-slate-100">
+                          {formatCurrency(expense.amount)}
+                        </p>
+                      </div>
+                      {(expense.pricePerGallon || expense.quantityGallons) && (
+                        <p className="mt-3 text-xs leading-5 text-slate-500">
+                          {formatFuelPrice(Number(expense.pricePerGallon ?? 0))} ×{" "}
+                          {Number(expense.quantityGallons ?? 0).toFixed(2)} gal
+                        </p>
+                      )}
+                      {expense.notes && (
+                        <p className="mt-3 text-xs leading-5 text-slate-500">
+                          {expense.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {actuals?.notes && (
               <p className="mt-4 rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-300">
@@ -366,7 +417,13 @@ export default async function LoadDetailPage({
             </section>
           )}
 
-        <SavedLoadActions loadId={id} />
+        <SavedLoadActions
+          loadId={id}
+          initialActuals={actuals}
+          grossRevenue={Number(load.gross_revenue)}
+          estimatedTripCost={estimatedTripCost}
+          totalTripMiles={Number(load.total_miles)}
+        />
         <EntityNoteForm savedLoadId={id} />
       </div>
     </main>

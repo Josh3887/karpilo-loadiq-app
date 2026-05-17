@@ -7,6 +7,43 @@ export type SavedLoadStatus =
   | "completed"
   | "archived";
 
+export type PostTripExpenseCategory =
+  | "fuel_fluids"
+  | "maintenance_repair"
+  | "road_fees"
+  | "driver_supplies"
+  | "office_admin"
+  | "lodging_travel"
+  | "tickets_fines_legal"
+  | "food_personal"
+  | "miscellaneous";
+
+export type PostTripExpenseUnitType = "gallon" | "flat";
+export type PostTripExpenseFeatureAccess = "standard" | "platinum";
+
+export type PostTripActualExpense = {
+  id: string;
+  expenseCategory: PostTripExpenseCategory;
+  expenseSubcategory: string;
+  amount: number;
+  date: string;
+  vendorName?: string;
+  location?: string;
+  notes?: string;
+  receiptAttached?: boolean;
+  receiptUrl?: string;
+  receiptFileName?: string;
+  pricePerGallon?: number;
+  quantityGallons?: number;
+  calculatedTotal?: number;
+  unitType?: PostTripExpenseUnitType;
+  featureAccess?: PostTripExpenseFeatureAccess;
+  bookkeepingCategory?: string;
+  expensePeriodMonth?: number;
+  expensePeriodQuarter?: number;
+  expensePeriodYear?: number;
+};
+
 export type SavedLoadActuals = {
   fuelCost: number;
   actualFuelPrice: number;
@@ -15,6 +52,15 @@ export type SavedLoadActuals = {
   maintenance: number;
   parking: number;
   other: number;
+  postTripActualExpenses?: PostTripActualExpense[];
+  actualGrossRevenue?: number;
+  estimatedTripCost?: number;
+  actualTripCost?: number;
+  actualExpenseTotal?: number;
+  estimatedVsActualDelta?: number;
+  actualNetProfit?: number;
+  actualProfitPerMile?: number;
+  totalTripMiles?: number;
   notes: string;
 };
 
