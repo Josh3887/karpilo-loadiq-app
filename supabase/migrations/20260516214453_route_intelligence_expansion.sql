@@ -191,6 +191,15 @@ grant all on public.saved_load_stops to service_role;
 create index if not exists idx_saved_load_stops_user_load_sequence
 on public.saved_load_stops (user_id, saved_load_id, stop_sequence);
 
+-- Recreate mutation policies so future runs cannot preserve an older policy
+-- that only checked saved_load_stops.user_id without validating parent load
+-- ownership.
+drop policy if exists "Users can insert own saved load stops"
+on public.saved_load_stops;
+
+drop policy if exists "Users can update own saved load stops"
+on public.saved_load_stops;
+
 do $$
 begin
   if not exists (
@@ -459,6 +468,23 @@ $$;
 -- where schemaname = 'public'
 --   and tablename = 'saved_load_stops'
 -- order by policyname;
+--
+-- select policyname, cmd, with_check
+-- from pg_policies
+-- where schemaname = 'public'
+--   and tablename = 'saved_load_stops'
+--   and policyname in (
+--     'Users can insert own saved load stops',
+--     'Users can update own saved load stops'
+--   );
+-- Confirm both insert/update with_check expressions include parent
+-- public.saved_loads ownership:
+--   exists (
+--     select 1
+--     from public.saved_loads sl
+--     where sl.id = saved_load_id
+--       and sl.user_id = auth.uid()
+--   )
 --
 -- select grantee, privilege_type
 -- from information_schema.role_table_grants
