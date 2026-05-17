@@ -1,4 +1,15 @@
 import { PlanTier, getPlanLimits } from "@/domains/billing/plan-limits";
+import {
+  FeatureAccessLevel,
+  SubscriptionTier,
+  hasFleetAccess,
+  hasGoldAccess,
+  hasGrandfatheredLoadIqAccess,
+  hasPlatinumAccess,
+  normalizeLegacyPlanTier,
+  resolveFeatureAccessArchitecture,
+  type FeatureAccessArchitecture,
+} from "@/domains/billing/feature-access";
 
 export type BillingProvider = "stripe" | "apple" | "google" | "manual" | "unknown";
 
@@ -18,16 +29,27 @@ export type EntitlementUsage = {
 
 export type Entitlements = {
   tier: PlanTier;
+  subscriptionTier: SubscriptionTier;
+  featureAccess: FeatureAccessLevel;
+  grandfatheredAccess: boolean;
+  lifetimeAccess: boolean;
+  fullLoadIqAccess: boolean;
+  fleetEnabled: boolean;
+  fleetOsProAccess: boolean;
+  truckCapacityLimit: number | null;
   canCalculate: boolean;
   canSaveLoad: boolean;
   canExport: boolean;
   canUseAdvancedAnalytics: boolean;
+  canUsePlatinumIntelligence: boolean;
+  canUseFleetFeatures: boolean;
   canCompareScenarios: boolean;
   canCreateLaneTemplates: boolean;
 };
 
 export type SubscriptionAccessRecord = {
   tier?: unknown;
+  subscription_tier?: unknown;
   status?: unknown;
   provider?: unknown;
   provider_customer_id?: unknown;
@@ -43,15 +65,30 @@ export type SubscriptionAccessRecord = {
   cohort_cap?: unknown;
   price_subject_to_change?: unknown;
   entitlement_status?: unknown;
+  feature_access?: unknown;
+  grandfathered_access?: unknown;
+  lifetime_access?: unknown;
+  full_loadiq_access?: unknown;
+  fleet_enabled?: unknown;
+  fleetos_pro_access?: unknown;
+  truck_capacity_limit?: unknown;
   cancel_at_period_end?: unknown;
   canceled_at?: unknown;
 };
 
 export type PaymentAccess = {
   tier: PlanTier;
+  subscriptionTier: SubscriptionTier;
+  featureAccess: FeatureAccessLevel;
   billingProvider: BillingProvider;
   entitlementStatus: EntitlementStatus;
   hasActiveAccess: boolean;
+  grandfatheredAccess: boolean;
+  lifetimeAccess: boolean;
+  fullLoadIqAccess: boolean;
+  fleetEnabled: boolean;
+  fleetOsProAccess: boolean;
+  truckCapacityLimit: number | null;
   hasStripeCustomer: boolean;
   canContinueTrial: boolean;
   shouldPromptForBillingSetup: boolean;
@@ -75,12 +112,7 @@ function withinLimit(used: number, limit: number | "unlimited") {
 }
 
 export function normalizePlanTier(tier: unknown): PlanTier {
-  if (tier === "gold" || tier === "pro") return "gold";
-  if (tier === "platinum") return "platinum";
-  if (tier === "pilot") return "pilot";
-  if (tier === "launch500" || tier === "founder") return "launch500";
-
-  return "no_access";
+  return normalizeLegacyPlanTier(tier);
 }
 
 export function normalizeBillingProvider(provider: unknown): BillingProvider {
@@ -131,21 +163,40 @@ function isFutureIso(value: string | null) {
 
 export function resolveEntitlements(
   tier: PlanTier | null | undefined,
-  usage: EntitlementUsage
+  usage: EntitlementUsage,
+  featureArchitecture?: FeatureAccessArchitecture
 ): Entitlements {
-  const limits = getPlanLimits(tier);
+  const access =
+    featureArchitecture ??
+    resolveFeatureAccessArchitecture({
+      tier,
+    });
+  const limits = getPlanLimits(access.planTier);
+  const goldAccess = hasGoldAccess(access);
+  const platinumAccess = hasPlatinumAccess(access);
+  const fleetAccess = hasFleetAccess(access);
 
   return {
     tier: limits.tier,
+    subscriptionTier: access.subscriptionTier,
+    featureAccess: access.featureAccess,
+    grandfatheredAccess: hasGrandfatheredLoadIqAccess(access),
+    lifetimeAccess: access.lifetimeAccess,
+    fullLoadIqAccess: access.fullLoadIqAccess,
+    fleetEnabled: access.fleetEnabled,
+    fleetOsProAccess: access.fleetOsProAccess,
+    truckCapacityLimit: access.truckCapacityLimit,
     canCalculate: withinLimit(
       usage.monthlyCalculations,
       limits.monthlyCalculations
     ),
     canSaveLoad: withinLimit(usage.savedLoads, limits.savedLoads),
-    canExport: limits.exports,
-    canUseAdvancedAnalytics: limits.advancedAnalytics,
-    canCompareScenarios: limits.comparisons,
-    canCreateLaneTemplates: limits.laneTemplates,
+    canExport: limits.exports && goldAccess,
+    canUseAdvancedAnalytics: limits.advancedAnalytics && goldAccess,
+    canUsePlatinumIntelligence: limits.advancedAnalytics && platinumAccess,
+    canUseFleetFeatures: limits.advancedAnalytics && fleetAccess,
+    canCompareScenarios: limits.comparisons && goldAccess,
+    canCreateLaneTemplates: limits.laneTemplates && goldAccess,
   };
 }
 
@@ -153,6 +204,7 @@ export function resolvePaymentAccess(
   subscription: SubscriptionAccessRecord | null | undefined,
   usage: EntitlementUsage
 ): PaymentAccess {
+  const featureArchitecture = resolveFeatureAccessArchitecture(subscription);
   const billingProvider = normalizeBillingProvider(subscription?.provider);
   const rawEntitlementStatus = normalizeEntitlementStatus(
     subscription?.entitlement_status ?? subscription?.status
@@ -164,30 +216,54 @@ export function resolvePaymentAccess(
     Boolean(trialEnd) &&
     !isFutureIso(trialEnd);
   const entitlementStatus = hasStaleTrial ? "expired" : rawEntitlementStatus;
-  const hasActiveAccess = isActiveEntitlementStatus(entitlementStatus);
-  const tier = hasActiveAccess
-    ? normalizePlanTier(subscription?.tier)
-    : "no_access";
+  const hasProtectedLifetimeAccess =
+    hasGrandfatheredLoadIqAccess(featureArchitecture) &&
+    (featureArchitecture.planTier === "pilot" ||
+      featureArchitecture.planTier === "launch500");
+  const hasActiveAccess =
+    isActiveEntitlementStatus(entitlementStatus) || hasProtectedLifetimeAccess;
+  const tier = hasActiveAccess ? featureArchitecture.planTier : "no_access";
   const trialDurationDays = asNullableNumber(subscription?.trial_duration_days);
   const trialStatus = asNullableString(subscription?.trial_status);
   const billingStartsAt = asNullableString(subscription?.billing_starts_at);
-  const lifetimePriceLock = Boolean(subscription?.lifetime_price_lock);
-  const futureFeatureAccessScope = asNullableString(
-    subscription?.future_feature_access_scope
-  );
+  const lifetimePriceLock =
+    Boolean(subscription?.lifetime_price_lock) ||
+    featureArchitecture.lifetimeAccess;
+  const futureFeatureAccessScope =
+    featureArchitecture.futureFeatureAccessScope;
   const cohortPhase = asNullableString(subscription?.cohort_phase);
   const cohortCap = asNullableNumber(subscription?.cohort_cap);
   const priceSubjectToChange = asNullableBoolean(
     subscription?.price_subject_to_change
   );
   const canceledAt = asNullableString(subscription?.canceled_at);
-  const entitlements = resolveEntitlements(tier, usage);
+  const entitlements = resolveEntitlements(tier, usage, {
+    ...featureArchitecture,
+    planTier: tier,
+    subscriptionTier: hasActiveAccess
+      ? featureArchitecture.subscriptionTier
+      : "none",
+    featureAccess: hasActiveAccess ? featureArchitecture.featureAccess : "none",
+    fullLoadIqAccess:
+      hasActiveAccess && featureArchitecture.fullLoadIqAccess,
+    fleetEnabled: hasActiveAccess && featureArchitecture.fleetEnabled,
+    fleetOsProAccess:
+      hasActiveAccess && featureArchitecture.fleetOsProAccess,
+  });
 
   return {
     tier,
+    subscriptionTier: entitlements.subscriptionTier,
+    featureAccess: entitlements.featureAccess,
     billingProvider,
     entitlementStatus,
     hasActiveAccess,
+    grandfatheredAccess: entitlements.grandfatheredAccess,
+    lifetimeAccess: entitlements.lifetimeAccess,
+    fullLoadIqAccess: entitlements.fullLoadIqAccess,
+    fleetEnabled: entitlements.fleetEnabled,
+    fleetOsProAccess: entitlements.fleetOsProAccess,
+    truckCapacityLimit: entitlements.truckCapacityLimit,
     hasStripeCustomer:
       billingProvider === "stripe" &&
       typeof subscription?.provider_customer_id === "string" &&

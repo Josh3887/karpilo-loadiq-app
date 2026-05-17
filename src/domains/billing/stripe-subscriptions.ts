@@ -12,6 +12,7 @@ import {
   FUTURE_PLATFORM_FEATURE_SCOPE,
   PILOT_ACCESS,
 } from "@/config/pricing";
+import { resolveFeatureAccessArchitecture } from "@/domains/billing/feature-access";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 function fromUnixTime(timestamp?: number | null) {
@@ -80,6 +81,115 @@ function cohortCapForPlan(plan: StripeCheckoutPlan | null) {
 
 function lifetimeLockForPlan(plan: StripeCheckoutPlan | null) {
   return plan?.tier === "pilot" || plan?.tier === "launch500";
+}
+
+const ENTITLEMENT_ARCHITECTURE_COLUMNS = [
+  "subscription_tier",
+  "feature_access",
+  "grandfathered_access",
+  "lifetime_access",
+  "full_loadiq_access",
+  "fleet_enabled",
+  "fleetos_pro_access",
+  "truck_capacity_limit",
+] as const;
+
+function subscriptionTierForPlan(plan: StripeCheckoutPlan | null) {
+  if (plan?.tier === "pilot") return "pilot";
+  if (plan?.tier === "launch500") return "launch";
+  return "gold";
+}
+
+function entitlementArchitectureFieldsForPlan(
+  plan: StripeCheckoutPlan | null
+) {
+  const hasLifetimeLock = lifetimeLockForPlan(plan);
+  const subscriptionTier = subscriptionTierForPlan(plan);
+  const access = resolveFeatureAccessArchitecture({
+    tier: plan?.tier ?? "gold",
+    subscription_tier: subscriptionTier,
+    lifetime_price_lock: hasLifetimeLock,
+    grandfathered_access: hasLifetimeLock,
+    lifetime_access: hasLifetimeLock,
+    full_loadiq_access: true,
+    fleet_enabled: false,
+    fleetos_pro_access: false,
+  });
+
+  return {
+    subscription_tier: subscriptionTier,
+    feature_access: access.featureAccess === "none" ? null : access.featureAccess,
+    grandfathered_access: access.grandfatheredAccess,
+    lifetime_access: access.lifetimeAccess,
+    full_loadiq_access: access.fullLoadIqAccess,
+    fleet_enabled: access.fleetEnabled,
+    fleetos_pro_access: access.fleetOsProAccess,
+    truck_capacity_limit: access.truckCapacityLimit,
+  };
+}
+
+function withoutEntitlementArchitectureColumns<
+  T extends Record<string, unknown>,
+>(record: T) {
+  const legacyRecord = { ...record };
+  for (const column of ENTITLEMENT_ARCHITECTURE_COLUMNS) {
+    delete legacyRecord[column];
+  }
+  return legacyRecord;
+}
+
+function isMissingEntitlementArchitectureColumn(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as { code?: string; message?: string };
+  const message = maybeError.message?.toLowerCase() ?? "";
+
+  return (
+    maybeError.code === "PGRST204" ||
+    ENTITLEMENT_ARCHITECTURE_COLUMNS.some((column) =>
+      message.includes(column)
+    )
+  );
+}
+
+async function insertSubscriptionRecord(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  record: Record<string, unknown>
+) {
+  const { error } = await supabase.from("subscriptions").insert(record);
+  if (!error) return;
+
+  if (isMissingEntitlementArchitectureColumn(error)) {
+    const { error: fallbackError } = await supabase
+      .from("subscriptions")
+      .insert(withoutEntitlementArchitectureColumns(record));
+    if (!fallbackError) return;
+    throw fallbackError;
+  }
+
+  throw error;
+}
+
+async function updateSubscriptionRecord(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  id: string,
+  record: Record<string, unknown>
+) {
+  const { error } = await supabase
+    .from("subscriptions")
+    .update(record)
+    .eq("id", id);
+  if (!error) return;
+
+  if (isMissingEntitlementArchitectureColumn(error)) {
+    const { error: fallbackError } = await supabase
+      .from("subscriptions")
+      .update(withoutEntitlementArchitectureColumns(record))
+      .eq("id", id);
+    if (!fallbackError) return;
+    throw fallbackError;
+  }
+
+  throw error;
 }
 
 export function planFromStripeSubscription(
@@ -266,6 +376,14 @@ export async function rememberStripeCustomer(params: {
     cohort_phase: null,
     cohort_cap: null,
     price_subject_to_change: null,
+    subscription_tier: null,
+    feature_access: null,
+    grandfathered_access: false,
+    lifetime_access: false,
+    full_loadiq_access: false,
+    fleet_enabled: false,
+    fleetos_pro_access: false,
+    truck_capacity_limit: null,
     metadata: {
       email: params.email ?? null,
       customer_created_by: "checkout_session_route",
@@ -274,16 +392,11 @@ export async function rememberStripeCustomer(params: {
   };
 
   if (existing?.id) {
-    const { error } = await supabase
-      .from("subscriptions")
-      .update(baseRecord)
-      .eq("id", existing.id);
-    if (error) throw error;
+    await updateSubscriptionRecord(supabase, existing.id, baseRecord);
     return;
   }
 
-  const { error } = await supabase.from("subscriptions").insert(baseRecord);
-  if (error) throw error;
+  await insertSubscriptionRecord(supabase, baseRecord);
 }
 
 async function findUserIdForStripeSubscription(subscription: Stripe.Subscription) {
@@ -334,6 +447,7 @@ export async function upsertStripeSubscription(params: {
   const trialEnd = fromUnixTime(subscription.trial_end);
   const currentPeriodStart = fromUnixTime(subscriptionAny.current_period_start);
   const currentPeriodEnd = fromUnixTime(subscriptionAny.current_period_end);
+  const entitlementArchitecture = entitlementArchitectureFieldsForPlan(plan);
 
   const record = {
     user_id: userId,
@@ -362,6 +476,7 @@ export async function upsertStripeSubscription(params: {
     cohort_phase: plan?.requiresProgram ?? null,
     cohort_cap: cohortCapForPlan(plan),
     price_subject_to_change: !hasLifetimeLock,
+    ...entitlementArchitecture,
     metadata: {
       stripe_price_id: subscription.items.data[0]?.price.id ?? null,
       stripe_product_id: asId(subscription.items.data[0]?.price.product),
@@ -369,6 +484,7 @@ export async function upsertStripeSubscription(params: {
       stripe_metadata: subscription.metadata,
       trial_duration_days: trialDurationDays(subscription),
       trial_status: trialStatusFromStripe(subscription),
+      entitlement_architecture: entitlementArchitecture,
     },
     updated_at: new Date().toISOString(),
   };
@@ -383,18 +499,13 @@ export async function upsertStripeSubscription(params: {
   if (existingError) throw existingError;
 
   if (existing?.id) {
-    const { error } = await supabase
-      .from("subscriptions")
-      .update(record)
-      .eq("id", existing.id);
-    if (error) throw error;
+    await updateSubscriptionRecord(supabase, existing.id, record);
     await insertPricingLock({ userId, plan, subscription });
     await upsertPricingLockStatus({ userId, plan, subscription });
     return;
   }
 
-  const { error } = await supabase.from("subscriptions").insert(record);
-  if (error) throw error;
+  await insertSubscriptionRecord(supabase, record);
   await insertPricingLock({ userId, plan, subscription });
   await upsertPricingLockStatus({ userId, plan, subscription });
 }

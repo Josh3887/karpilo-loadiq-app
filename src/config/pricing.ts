@@ -1,7 +1,14 @@
 import { LOADIQ_LAUNCH } from "@/config/loadiq";
 
+// Legacy Stripe checkout IDs still use the "pro" slug, but they map to Gold.
 export type PublicPlanId = "pro-monthly" | "pro-annual";
-export type InternalPlanTier = "no_access" | "gold" | "platinum" | "pilot" | "launch500";
+export type InternalPlanTier =
+  | "no_access"
+  | "gold"
+  | "platinum"
+  | "pilot"
+  | "launch500"
+  | "pro";
 export type BillingInterval = "month" | "year";
 
 export const SUBSCRIPTION_TRIAL_DAYS = 7;
@@ -38,6 +45,21 @@ export const PLATINUM_ACCESS = {
     "Fuel and deviation analytics",
     "IFTA estimation support, not filing",
   ],
+} as const;
+
+export const FUTURE_PRO_ACCESS = {
+  name: "Future Pro / Karpilo FleetOS",
+  status: "planned",
+  pricingModel: "Future fleet-capable architecture",
+  monthlyPrice: 79.99,
+  annualPrice: 799.99,
+  perTruckPrice: 50,
+  checkoutEnabled: false,
+  priceSubjectToChange: true,
+  featureAccess: "fleet",
+  fleetEnabled: true,
+  note:
+    "Future Pro is a structural transition toward Karpilo FleetOS fleet capability, not a higher Platinum plan.",
 } as const;
 
 export const FOUNDER_ACCESS = {
