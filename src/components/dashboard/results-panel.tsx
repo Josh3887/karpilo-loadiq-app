@@ -162,6 +162,7 @@ export function ResultsPanel({
             <BreakdownRow label="Operational Cost" value={formatCurrency(result.operationalCost)} />
             <BreakdownRow label="Daily Fixed Overhead" value={formatCurrency(result.dailyFixedOverhead)} />
             <BreakdownRow label="Dispatch Days" value={formatNumber(result.dispatchDays)} />
+            <BreakdownRow label="Deadhead Days" value={formatNumber(result.deadheadDays)} />
             <BreakdownRow label="Overhead Applied" value={formatCurrency(result.loadOverheadApplied)} />
             <BreakdownRow label="Cost Per Mile" value={formatRpm(result.costPerMile)} />
             <BreakdownRow label="Profit Per Day" value={formatCurrency(result.profitPerDay)} />
@@ -291,6 +292,25 @@ function RouteIntelligenceContext({
           value={deadheadOrigin || "Not provided"}
         />
         <BreakdownRow
+          label="Dispatch Date"
+          value={formatDateValue(input.dispatchDate)}
+        />
+        <BreakdownRow
+          label="Pickup Date"
+          value={formatDateValue(input.pickupDate)}
+        />
+        <BreakdownRow
+          label="Delivery Date"
+          value={formatDateValue(input.deliveryDate)}
+        />
+        <BreakdownRow
+          label="Deadhead Dates"
+          value={formatDateRange(
+            input.deadheadStartDate,
+            input.deadheadEndDate
+          )}
+        />
+        <BreakdownRow
           label="Modeled Stops"
           value={`${result.routeStopCount} total · ${result.stopOffCount} stop-off`}
         />
@@ -323,6 +343,27 @@ function formatReserveMode(mode: LoadResult["reserveAllocationMode"]) {
   if (mode === "cpm") return "CPM allocation";
   if (mode === "percent") return "Percent allocation";
   return "Flat allocation";
+}
+
+function formatDateValue(value: string | undefined) {
+  if (!value) return "Not provided";
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  if (!Number.isFinite(date.getTime())) return "Not provided";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatDateRange(start: string | undefined, end: string | undefined) {
+  if (!start && !end) return "Not provided";
+
+  return `${formatDateValue(start)} -> ${formatDateValue(end)}`;
 }
 
 function OperationalValueNotes({ result }: { result: LoadResult }) {

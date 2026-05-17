@@ -90,6 +90,8 @@ export type LoadInput = {
   dispatchDays: number;
   deadheadDays: number;
   dispatchDate: string;
+  pickupDate: string;
+  deliveryDate: string;
   deadheadStartDate: string;
   deadheadEndDate: string;
   payPeriodStartDate: string;
@@ -198,6 +200,7 @@ export type LoadResult = {
   loadOverheadApplied: number;
   dailyFixedOverhead: number;
   dispatchDays: number;
+  deadheadDays: number;
   profitPerDay: number;
   profitPerHour: number;
   profitPerLoadedMile: number;

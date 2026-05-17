@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { AccessorialInputItem } from "@/types/accessorial";
 import { RouteStopInput } from "@/types/load";
+import {
+  isEndDateBeforeStartDate,
+  snapToQuarterDay,
+} from "@/services/trip-dates";
 
 const numberField = z.preprocess(
   (value) => {
@@ -11,6 +15,10 @@ const numberField = z.preprocess(
     return Number(value);
   },
   z.number()
+);
+
+const quarterDayField = numberField.transform((value) =>
+  snapToQuarterDay(value)
 );
 
 const routeStopSchema = z.object({
@@ -51,11 +59,13 @@ export const loadInputSchema = z.object({
   routeDeadheadMiles: numberField.refine((value) => value >= 0),
   actualDeadheadMiles: numberField.refine((value) => value >= 0),
 
-  dispatchDays: numberField.refine((value) => value >= 1, {
+  dispatchDays: quarterDayField.refine((value) => value >= 1, {
     message: "Dispatch days must be at least 1.",
   }),
-  deadheadDays: numberField.refine((value) => value >= 0),
+  deadheadDays: quarterDayField.refine((value) => value >= 0),
   dispatchDate: z.string().optional().default(""),
+  pickupDate: z.string().optional().default(""),
+  deliveryDate: z.string().optional().default(""),
   deadheadStartDate: z.string().optional().default(""),
   deadheadEndDate: z.string().optional().default(""),
   payPeriodStartDate: z.string().optional().default(""),
@@ -164,6 +174,27 @@ export const loadInputSchema = z.object({
     })
     .optional(),
 }).superRefine((value, context) => {
+  if (isEndDateBeforeStartDate(value.pickupDate, value.deliveryDate)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Delivery date cannot be before pickup date.",
+      path: ["deliveryDate"],
+    });
+  }
+
+  if (
+    isEndDateBeforeStartDate(
+      value.deadheadStartDate,
+      value.deadheadEndDate
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Deadhead stop date cannot be before deadhead start date.",
+      path: ["deadheadEndDate"],
+    });
+  }
+
   if (value.revenueInputMode === "rpm" && value.ratePerMile < 0.01) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
@@ -213,6 +244,8 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   dispatchDays: 1,
   deadheadDays: 0,
   dispatchDate: "",
+  pickupDate: "",
+  deliveryDate: "",
   deadheadStartDate: "",
   deadheadEndDate: "",
   payPeriodStartDate: "",

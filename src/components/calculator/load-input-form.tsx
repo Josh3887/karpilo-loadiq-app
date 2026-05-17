@@ -22,6 +22,11 @@ import {
   createRouteStopInput,
   normalizeRouteStops,
 } from "@/services/route-intelligence";
+import {
+  calculateInclusiveTripDays,
+  formatLocalDate,
+  snapToQuarterDay,
+} from "@/services/trip-dates";
 import { AccessorialInputItem } from "@/types/accessorial";
 import {
   ProfileDerivedValues,
@@ -72,6 +77,11 @@ const FIELD_VALIDATION_MESSAGES: Record<string, string> = {
   actualDeadheadMiles: "Actual deadhead miles cannot be negative.",
   dispatchDays: "Dispatch days must be at least 1.",
   deadheadDays: "Deadhead days cannot be negative.",
+  pickupDate: "Pickup date is optional, but it must be before delivery date.",
+  deliveryDate: "Delivery date cannot be before pickup date.",
+  deadheadStartDate:
+    "Deadhead start date is optional, but it must be before the stop date.",
+  deadheadEndDate: "Deadhead stop date cannot be before the start date.",
   grossRevenue: "Gross revenue cannot be negative.",
   ratePerMile: "Rate per mile cannot be negative.",
   fuelSurcharge: "Fuel surcharge cannot be negative.",
@@ -109,6 +119,10 @@ export function LoadInputForm({
     previewActive ? PREVIEW_FUEL_STATUS : ""
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [dateErrors, setDateErrors] = useState<{
+    deliveryDate?: string;
+    deadheadEndDate?: string;
+  }>({});
   const [profileValues, setProfileValues] =
     useState<ProfileDerivedValues | null>(
       previewActive ? PREVIEW_PROFILE_VALUES : null
@@ -117,6 +131,8 @@ export function LoadInputForm({
     {}
   );
   const userOverrodeFuelPrice = useRef(false);
+  const userOverrodeDispatchDays = useRef(false);
+  const userOverrodeDeadheadDays = useRef(false);
 
   const {
     register,
@@ -259,7 +275,10 @@ export function LoadInputForm({
     if (!initialValues) return;
 
     reset(initialValues);
+    userOverrodeDispatchDays.current = false;
+    userOverrodeDeadheadDays.current = false;
     queueMicrotask(() => {
+      setDateErrors({});
       setProfileValues(initialValues.profileDerivedValues);
       setOverrideFields(
         Object.keys(initialValues.temporaryOverrides ?? {}).reduce<
@@ -325,6 +344,15 @@ export function LoadInputForm({
       throw error;
     }
 
+    if (dateErrors.deliveryDate || dateErrors.deadheadEndDate) {
+      setSubmitError(
+        dateErrors.deliveryDate ??
+          dateErrors.deadheadEndDate ??
+          "Review the timing dates before analyzing this load."
+      );
+      return;
+    }
+
     setSubmitError(null);
     const reserveAllocationValue =
       parsedValues.reserveAllocationValue > 0
@@ -348,6 +376,9 @@ export function LoadInputForm({
 
     onCalculate({
       ...parsedValues,
+      dispatchDate: parsedValues.dispatchDate || formatLocalDate(),
+      dispatchDays: Math.max(snapToQuarterDay(parsedValues.dispatchDays), 1),
+      deadheadDays: Math.max(snapToQuarterDay(parsedValues.deadheadDays), 0),
       ratePerMile: derivedRatePerMile,
       fuelPrice: roundFuelPrice(parsedValues.fuelPrice),
       reserveAllocation: reserveAllocationValue,
@@ -495,6 +526,101 @@ export function LoadInputForm({
       )
     );
   }
+
+  function setQuarterDayValue(
+    field: "dispatchDays" | "deadheadDays",
+    value: number
+  ) {
+    if (preview.enabled) {
+      preview.explain("calculator-field");
+      return;
+    }
+
+    const minimum = field === "dispatchDays" ? 1 : 0;
+    const nextValue = Math.max(snapToQuarterDay(value), minimum);
+
+    if (field === "dispatchDays") {
+      userOverrodeDispatchDays.current = true;
+    } else {
+      userOverrodeDeadheadDays.current = true;
+    }
+
+    setValue(field, nextValue, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
+  function presetQuarterDayValue(
+    field: "dispatchDays" | "deadheadDays",
+    value: number
+  ) {
+    const minimum = field === "dispatchDays" ? 1 : 0;
+
+    setValue(field, Math.max(snapToQuarterDay(value), minimum), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
+  function handleTimingDateChange(
+    field:
+      | "pickupDate"
+      | "deliveryDate"
+      | "deadheadStartDate"
+      | "deadheadEndDate",
+    value: string
+  ) {
+    const pickupDate =
+      field === "pickupDate" ? value : String(getValues("pickupDate") ?? "");
+    const deliveryDate =
+      field === "deliveryDate"
+        ? value
+        : String(getValues("deliveryDate") ?? "");
+    const deadheadStartDate =
+      field === "deadheadStartDate"
+        ? value
+        : String(getValues("deadheadStartDate") ?? "");
+    const deadheadEndDate =
+      field === "deadheadEndDate"
+        ? value
+        : String(getValues("deadheadEndDate") ?? "");
+
+    const loadDaysPreset = calculateInclusiveTripDays(
+      pickupDate,
+      deliveryDate,
+      "Delivery date cannot be before pickup date."
+    );
+    const deadheadDaysPreset = calculateInclusiveTripDays(
+      deadheadStartDate,
+      deadheadEndDate,
+      "Deadhead stop date cannot be before deadhead start date."
+    );
+
+    setDateErrors({
+      deliveryDate: loadDaysPreset.error ?? undefined,
+      deadheadEndDate: deadheadDaysPreset.error ?? undefined,
+    });
+
+    if (loadDaysPreset.days !== null && !userOverrodeDispatchDays.current) {
+      presetQuarterDayValue("dispatchDays", loadDaysPreset.days);
+    }
+
+    if (
+      deadheadDaysPreset.days !== null &&
+      !userOverrodeDeadheadDays.current
+    ) {
+      presetQuarterDayValue("deadheadDays", deadheadDaysPreset.days);
+    }
+  }
+
+  const dispatchDaysField = register("dispatchDays");
+  const deadheadDaysField = register("deadheadDays");
+  const dispatchDateField = register("dispatchDate");
+  const pickupDateField = register("pickupDate");
+  const deliveryDateField = register("deliveryDate");
+  const deadheadStartDateField = register("deadheadStartDate");
+  const deadheadEndDateField = register("deadheadEndDate");
 
   return (
     <form
@@ -698,20 +824,56 @@ export function LoadInputForm({
         <SectionTitle title="Operational Timing" />
 
         <div className="grid grid-cols-2 gap-4">
-          <InputField
-            label="Dispatch Days"
+          <DayInputField
+            label="Dispatch / Load Days"
             type="number"
             step="0.25"
+            value={watchedNumber("dispatchDays", 1)}
             error={errors.dispatchDays?.message}
-            {...register("dispatchDays")}
+            helper="Used anywhere the calculator already assigns daily overhead or daily profitability to the loaded/dispatch portion."
+            {...dispatchDaysField}
+            onChange={(event) => {
+              userOverrodeDispatchDays.current = true;
+              void dispatchDaysField.onChange(event);
+            }}
+            onDecrement={() =>
+              setQuarterDayValue(
+                "dispatchDays",
+                watchedNumber("dispatchDays", 1) - 0.25
+              )
+            }
+            onIncrement={() =>
+              setQuarterDayValue(
+                "dispatchDays",
+                watchedNumber("dispatchDays", 1) + 0.25
+              )
+            }
           />
 
-          <InputField
+          <DayInputField
             label="Deadhead Days"
             type="number"
             step="0.25"
+            value={watchedNumber("deadheadDays", 0)}
             error={errors.deadheadDays?.message}
-            {...register("deadheadDays")}
+            helper="Used for daily profitability timing when the load carries deadhead movement before pickup."
+            {...deadheadDaysField}
+            onChange={(event) => {
+              userOverrodeDeadheadDays.current = true;
+              void deadheadDaysField.onChange(event);
+            }}
+            onDecrement={() =>
+              setQuarterDayValue(
+                "deadheadDays",
+                watchedNumber("deadheadDays", 0) - 0.25
+              )
+            }
+            onIncrement={() =>
+              setQuarterDayValue(
+                "deadheadDays",
+                watchedNumber("deadheadDays", 0) + 0.25
+              )
+            }
           />
         </div>
 
@@ -720,22 +882,57 @@ export function LoadInputForm({
             label="Dispatch Date"
             type="date"
             error={errors.dispatchDate?.message}
+            helper="Date the load was assigned or placed in Karpilo LoadIQ. This is not the pickup date."
             previewKey="calculator-field"
-            {...register("dispatchDate")}
+            {...dispatchDateField}
+          />
+          <InputField
+            label="Pickup Date"
+            type="date"
+            error={errors.pickupDate?.message}
+            helper="Date freight is picked up."
+            previewKey="calculator-field"
+            {...pickupDateField}
+            onChange={(event) => {
+              void pickupDateField.onChange(event);
+              handleTimingDateChange("pickupDate", event.target.value);
+            }}
+          />
+          <InputField
+            label="Delivery Date"
+            type="date"
+            error={errors.deliveryDate?.message ?? dateErrors.deliveryDate}
+            helper="Date freight is delivered or dropped."
+            previewKey="calculator-field"
+            {...deliveryDateField}
+            onChange={(event) => {
+              void deliveryDateField.onChange(event);
+              handleTimingDateChange("deliveryDate", event.target.value);
+            }}
           />
           <InputField
             label="Deadhead Start Date"
             type="date"
             error={errors.deadheadStartDate?.message}
+            helper="Date deadhead movement toward this load begins."
             previewKey="calculator-field"
-            {...register("deadheadStartDate")}
+            {...deadheadStartDateField}
+            onChange={(event) => {
+              void deadheadStartDateField.onChange(event);
+              handleTimingDateChange("deadheadStartDate", event.target.value);
+            }}
           />
           <InputField
-            label="Deadhead End Date"
+            label="Deadhead Stop Date"
             type="date"
-            error={errors.deadheadEndDate?.message}
+            error={errors.deadheadEndDate?.message ?? dateErrors.deadheadEndDate}
+            helper="Date deadhead movement ends, usually at pickup or staging."
             previewKey="calculator-field"
-            {...register("deadheadEndDate")}
+            {...deadheadEndDateField}
+            onChange={(event) => {
+              void deadheadEndDateField.onChange(event);
+              handleTimingDateChange("deadheadEndDate", event.target.value);
+            }}
           />
           <InputField
             label="Pay Period Start"
@@ -754,9 +951,9 @@ export function LoadInputForm({
         </div>
 
         <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
-          Dates are optional planning hooks for weekly pay grouping. They do not
-          change trip math unless your pay template uses weekly settlement
-          logic later.
+          Pickup-to-delivery dates can preset dispatch/load days. Deadhead
+          start-to-stop dates can preset deadhead days. Manual day adjustments
+          stay in control after you edit them.
         </p>
       </section>
 
@@ -1398,10 +1595,17 @@ function SectionTitle({ title }: { title: string }) {
 type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   error?: string;
+  helper?: string;
   previewKey?: PreviewExplanationKey;
 };
 
-function InputField({ label, error, previewKey, ...props }: InputFieldProps) {
+function InputField({
+  label,
+  error,
+  helper,
+  previewKey,
+  ...props
+}: InputFieldProps) {
   const preview = usePreviewMode();
 
   return (
@@ -1426,6 +1630,87 @@ function InputField({ label, error, previewKey, ...props }: InputFieldProps) {
 
       {error && (
         <span className="mt-1 block text-xs text-red-400">{error}</span>
+      )}
+
+      {helper && !error && (
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {helper}
+        </span>
+      )}
+    </label>
+  );
+}
+
+type DayInputFieldProps = InputFieldProps & {
+  value: number;
+  onDecrement: () => void;
+  onIncrement: () => void;
+};
+
+function DayInputField({
+  label,
+  error,
+  helper,
+  previewKey,
+  value,
+  onDecrement,
+  onIncrement,
+  ...props
+}: DayInputFieldProps) {
+  const preview = usePreviewMode();
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        {label}
+      </span>
+
+      <div className="grid grid-cols-[44px_1fr_44px] overflow-hidden rounded-xl border border-slate-800 bg-[#060B14] focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-400/20">
+        <button
+          type="button"
+          onClick={onDecrement}
+          data-preview-explain={previewKey}
+          className="h-12 border-r border-slate-800 text-lg font-black text-sky-300 transition hover:bg-sky-400/10"
+          aria-label={`Decrease ${label} by 0.25`}
+        >
+          -
+        </button>
+        <input
+          {...props}
+          data-preview-explain={previewKey}
+          readOnly={preview.enabled || props.readOnly}
+          aria-readonly={preview.enabled || props.readOnly}
+          onFocus={(event) => {
+            props.onFocus?.(event);
+            if (preview.enabled && previewKey) {
+              preview.explain(previewKey);
+            }
+          }}
+          className="h-12 w-full bg-transparent px-4 text-center text-base text-slate-100 outline-none placeholder:text-slate-700"
+        />
+        <button
+          type="button"
+          onClick={onIncrement}
+          data-preview-explain={previewKey}
+          className="h-12 border-l border-slate-800 text-lg font-black text-sky-300 transition hover:bg-sky-400/10"
+          aria-label={`Increase ${label} by 0.25`}
+        >
+          +
+        </button>
+      </div>
+
+      <span className="mt-1 block text-xs leading-5 text-slate-500">
+        Current value snaps to {snapToQuarterDay(value)} day(s).
+      </span>
+
+      {error && (
+        <span className="mt-1 block text-xs text-red-400">{error}</span>
+      )}
+
+      {helper && !error && (
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {helper}
+        </span>
       )}
     </label>
   );

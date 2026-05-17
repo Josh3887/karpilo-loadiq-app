@@ -398,6 +398,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     loadOverheadApplied: round(loadOverheadApplied),
     dailyFixedOverhead: round(dailyFixedOverhead),
     dispatchDays: round(dispatchDays),
+    deadheadDays: round(input.deadheadDays),
     profitPerDay: round(dailyProfitability),
     profitPerHour: round(hourlyProfitability),
     profitPerLoadedMile: round(profitPerLoadedMile),
