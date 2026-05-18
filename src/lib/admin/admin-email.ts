@@ -1,5 +1,7 @@
 import "server-only";
 
+import { EMAIL_IDENTITIES } from "@/config/email";
+import { buildLoadiqEmailContent } from "@/lib/email-template";
 import { ELEVATED_ADMIN_EMAIL } from "@/lib/admin/elevated-auth";
 
 type AdminEmailInput = {
@@ -8,7 +10,7 @@ type AdminEmailInput = {
 };
 
 function getNoReplyEmail() {
-  return process.env.NO_REPLY_EMAIL ?? "noreply@karpiloloadiq.com";
+  return process.env.NO_REPLY_EMAIL ?? EMAIL_IDENTITIES.authSystem.address;
 }
 
 function getResendApiKey() {
@@ -25,6 +27,12 @@ export async function sendAdminEmail({ subject, text }: AdminEmailInput) {
   }
 
   try {
+    const emailContent = buildLoadiqEmailContent({
+      channelKey: "auth_system",
+      subject,
+      text,
+    });
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -34,8 +42,10 @@ export async function sendAdminEmail({ subject, text }: AdminEmailInput) {
       body: JSON.stringify({
         from: `Karpilo LoadIQ <${fromEmail}>`,
         to: [ELEVATED_ADMIN_EMAIL],
+        reply_to: EMAIL_IDENTITIES.authSystem.replyTo,
         subject,
-        text,
+        text: emailContent.text,
+        html: emailContent.html,
       }),
     });
 

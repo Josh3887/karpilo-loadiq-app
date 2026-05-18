@@ -1,3 +1,5 @@
+import { EMAIL_ADDRESSES } from "@/config/email";
+
 export const LOADIQ_BRAND = {
   name: "Karpilo LoadIQ",
   shortName: "K-LIQ",
@@ -12,15 +14,16 @@ export const LOADIQ_URLS = {
 } as const;
 
 export const LOADIQ_EMAILS = {
-  noReply: "noreply@karpiloloadiq.com",
-  support: "support@karpiloloadiq.com",
-  newsletter: "newsletter@karpiloloadiq.com",
-  updates: "updates@karpiloloadiq.com",
-  billing: "billing@karpiloloadiq.com",
-  founderFeedback: "j.karpilo@karpiloloadiq.com",
-  corporate: "Josh.karpilo@karpiloendeavortechnologies.com",
-  feedback: "j.karpilo@karpiloloadiq.com",
-  legal: "Josh.karpilo@karpiloendeavortechnologies.com",
+  noReply: EMAIL_ADDRESSES.noReply,
+  support: EMAIL_ADDRESSES.support,
+  newsletter: EMAIL_ADDRESSES.newsletter,
+  updates: EMAIL_ADDRESSES.newsletter,
+  billing: EMAIL_ADDRESSES.billing,
+  founderFeedback: EMAIL_ADDRESSES.executive,
+  executive: EMAIL_ADDRESSES.executive,
+  corporate: EMAIL_ADDRESSES.executive,
+  feedback: EMAIL_ADDRESSES.support,
+  legal: EMAIL_ADDRESSES.support,
 } as const;
 
 export const LOADIQ_LAUNCH = {
