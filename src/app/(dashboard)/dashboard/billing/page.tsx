@@ -10,8 +10,8 @@ import {
   FUTURE_PLATFORM_FEATURE_SCOPE,
   INTERNAL_FOUNDER_PLANS,
   INTERNAL_PILOT_PLANS,
+  LOADIQ_LAUNCH_PRICING_PHASES,
   PILOT_ACCESS,
-  PLATINUM_ACCESS,
   PUBLIC_PRICING_PLANS,
   formatPriceLabel,
 } from "@/config/pricing";
@@ -41,6 +41,8 @@ import {
 import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 import { getUserReservationAndLockState } from "@/services/reservations";
+
+type LaunchPricingPhase = (typeof LOADIQ_LAUNCH_PRICING_PHASES)[number];
 
 export default async function BillingPage() {
   const previewMode = await isPreviewModeEnabled();
@@ -207,9 +209,10 @@ function BillingContent({
             <OperatorBadges badges={operatorStatus.badges} />
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
-              Treat subscription cost as operational overhead: Karpilo LoadIQ is
-              built to expose deadhead, fuel variance, break-even pressure, and
-              margin leakage before they quietly absorb trip value.
+              Pricing follows the public launch architecture: Founding 50 Pilot,
+              Launch 500, then Standard Public Access. Checkout remains
+              provider-controlled and must be backed by server-authoritative
+              eligibility before any discounted access is granted.
             </p>
           </div>
 
@@ -261,7 +264,7 @@ function BillingContent({
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-400">
             {futureFeatureScope ??
-              "Gold access is designed as complete operational visibility. Pilot and Legacy Launch records can preserve lifetime pricing and future released platform feature access when assigned."}
+              "Commercial tiers describe decision-support depth. Pilot and Legacy Launch records preserve rollout pricing or lifetime pricing rules where assigned; entitlement enforcement remains unchanged."}
           </p>
         </section>
 
@@ -326,157 +329,134 @@ function BillingContent({
           </section>
         )}
 
-        <section className="grid gap-5 lg:grid-cols-3">
-          {PUBLIC_PRICING_PLANS.map((publicPlan) => {
-            const plan = PLAN_LIMITS[publicPlan.tier];
-            const isActive = activeTier === publicPlan.tier;
-
-            const isFeatured =
-              "featured" in publicPlan && Boolean(publicPlan.featured);
-
-            return (
-            <div
-              key={publicPlan.id}
-              data-preview-explain="subscription-tile"
-              className={
-                isFeatured
-                  ? "rounded-2xl border border-sky-400/35 bg-[#0B1220]/95 p-5 shadow-[0_0_35px_rgba(56,189,248,0.14)]"
-                  : "rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
-              }
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-100">
-                    {publicPlan.name}
-                  </h2>
-                  <p className="mt-2 text-sm text-slate-400">
-                    {publicPlan.description}
-                  </p>
-                </div>
-
-                {isActive && (
-                  <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
-                    Active
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-6 text-3xl font-black text-slate-100">
-                {formatPriceLabel(publicPlan.price, publicPlan.interval)}
-              </div>
-
-              {"savingsLabel" in publicPlan && publicPlan.savingsLabel && (
-                <p className="mt-2 text-sm text-sky-300">
-                  {publicPlan.savingsLabel}
-                </p>
-              )}
-
-              <div className="mt-6 space-y-2 text-sm text-slate-300">
-                {publicPlan.bullets.map((bullet) => (
-                  <div key={bullet} className="border-b border-slate-800 pb-2">
-                    {bullet}
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 space-y-3 text-sm text-slate-300">
-                <PlanLine
-                  label="Calculations"
-                  value={String(plan.monthlyCalculations)}
-                />
-                <PlanLine label="Saved loads" value={String(plan.savedLoads)} />
-                <PlanLine label="Exports" value={plan.exports ? "Yes" : "No"} />
-                <PlanLine
-                  label="Advanced analytics"
-                  value={plan.advancedAnalytics ? "Yes" : "No"}
-                />
-                <PlanLine
-                  label="Comparisons"
-                  value={plan.comparisons ? "Yes" : "No"}
-                />
-              </div>
-
-              {activeTier === "no_access" && (
-                <>
-                  <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-                    Eligible paid tiers include a 7-day trial where supported
-                    by the payment provider. Gold is the complete operational
-                    tier; Pilot and Legacy Launch pricing stay protected by
-                    assigned entitlement records.
-                  </div>
-
-                  {billingTestHarness?.enabled ? (
-                    <div className="mt-6 rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-                      Stripe checkout is disabled while developer billing
-                      simulation is active. Disable the harness to test live
-                      checkout behavior.
-                    </div>
-                  ) : (
-                    <CheckoutAcknowledgement
-                      label="Agree & Open Checkout"
-                      planId={publicPlan.id as StripeCheckoutPlanId}
-                    />
-                  )}
-                </>
-              )}
+        <section
+          data-preview-explain="subscription-tile"
+          className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+                Launch Pricing Authority
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-100">
+                Current pricing follows the website launch plan.
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                Pilot and Legacy Launch are rollout programs, not commercial
+                tier names. If launch-state validation, slot validation, or
+                payment sync cannot be proven, checkout must stay waitlist-only.
+              </p>
             </div>
-          );
-          })}
+            <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
+              Standard Public Access is{" "}
+              {formatPriceLabel(PUBLIC_PRICING_PLANS[0].price, "month")} or{" "}
+              {formatPriceLabel(PUBLIC_PRICING_PLANS[1].price, "year")}; no
+              lifetime lock applies.
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {LOADIQ_LAUNCH_PRICING_PHASES.map((phase) => (
+              <LaunchPricingCard key={phase.id} phase={phase} />
+            ))}
+          </div>
         </section>
 
         <section
-          data-preview-explain="ifta-estimate"
-          className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.06)]"
+          data-preview-explain="stripe-checkout"
+          className="mt-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5"
         >
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <p className="break-words text-xs font-bold uppercase leading-5 tracking-[0.22em] text-sky-300">
-                Planned Tier
-              </p>
-              <h2 className="mt-2 break-words text-2xl font-black text-slate-100">
-                {PLATINUM_ACCESS.name}
-              </h2>
-              <p className="mt-2 max-w-3xl break-words text-sm leading-6 text-slate-300">
-                Platinum is a coming-soon premium intelligence layer for
-                advanced trend visibility, maintenance pattern awareness,
-                out-of-route expense context, repair trends, receipt
-                intelligence, and operational anomaly awareness. It is not wired
-                to checkout yet, and Gold remains the complete operational tier.
-              </p>
-            </div>
-            <div className="min-w-0 rounded-xl border border-sky-400/20 bg-[#060B14] p-4 text-sm text-sky-100">
-              <div className="break-words text-2xl font-black">
-                {formatPriceLabel(PLATINUM_ACCESS.monthlyPrice, "month")}
-              </div>
-              <div className="mt-1 break-words text-sky-200/75 [overflow-wrap:anywhere]">
-                {formatPriceLabel(PLATINUM_ACCESS.annualPrice, "year")} ·{" "}
-                {PLATINUM_ACCESS.pricingModel}
-              </div>
-              <div className="mt-2 text-xs leading-5 text-sky-100/80">
-                7-day free trial planned. Prices subject to change.
-              </div>
-              <div className="mt-3 inline-flex max-w-full rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-black uppercase leading-5 tracking-[0.16em] text-red-100">
-                Coming Soon
-              </div>
-            </div>
-          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
+            Provider-Controlled Checkout
+          </p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+            Existing checkout controls remain wired to the current provider plan
+            IDs. Price, trial, invoice, and renewal details remain controlled by
+            the payment provider, but the app-side amount language now follows
+            the current website pricing architecture.
+          </p>
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            {PUBLIC_PRICING_PLANS.map((publicPlan) => {
+              const plan = PLAN_LIMITS[publicPlan.tier];
+              const isActive = activeTier === publicPlan.tier;
+              const checkoutLabel =
+                publicPlan.interval === "month"
+                  ? "Existing monthly checkout"
+                  : "Existing annual checkout";
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {PLATINUM_ACCESS.features.map((feature) => (
-              <div
-                key={feature}
-                className="min-w-0 break-words rounded-xl border border-slate-800 bg-[#060B14] px-4 py-3 text-sm text-slate-300"
-              >
-                {feature}
-              </div>
-            ))}
-          </div>
+              return (
+                <div
+                  key={publicPlan.id}
+                  className="rounded-2xl border border-slate-800 bg-[#060B14] p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-100">
+                        {checkoutLabel}
+                      </h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        Uses the existing provider-controlled plan ID mapped to
+                        current Standard Public Access language.
+                      </p>
+                    </div>
 
-          <div className="mt-5 rounded-xl border border-red-400/20 bg-red-500/10 p-4 text-sm leading-6 text-red-100">
-            Platinum intelligence is planning support only. It does not
-            guarantee savings, repairs, dispatch outcomes, legal compliance, tax
-            treatment, or mechanical performance. IFTA support remains
-            estimation assistance, not filing or jurisdictional certification.
+                    {isActive && (
+                      <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-5 space-y-3 text-sm text-slate-300">
+                    <PlanLine
+                      label="Price"
+                      value={formatPriceLabel(
+                        publicPlan.price,
+                        publicPlan.interval
+                      )}
+                    />
+                    <PlanLine
+                      label="Calculations"
+                      value={String(plan.monthlyCalculations)}
+                    />
+                    <PlanLine label="Saved loads" value={String(plan.savedLoads)} />
+                    <PlanLine label="Exports" value={plan.exports ? "Yes" : "No"} />
+                    <PlanLine
+                      label="Advanced analytics"
+                      value={plan.advancedAnalytics ? "Yes" : "No"}
+                    />
+                    <PlanLine
+                      label="Comparisons"
+                      value={plan.comparisons ? "Yes" : "No"}
+                    />
+                  </div>
+
+                  {activeTier === "no_access" && (
+                    <>
+                      <div className="mt-6 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
+                        Checkout opens the existing provider-controlled plan for
+                        Standard Public Access. Final trial, invoice, renewal,
+                        and cancellation details are controlled by the payment
+                        provider.
+                      </div>
+
+                      {billingTestHarness?.enabled ? (
+                        <div className="mt-6 rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+                          Stripe checkout is disabled while developer billing
+                          simulation is active. Disable the harness to test live
+                          checkout behavior.
+                        </div>
+                      ) : (
+                        <CheckoutAcknowledgement
+                          label="Agree & Open Checkout"
+                          planId={publicPlan.id as StripeCheckoutPlanId}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -494,9 +474,9 @@ function BillingContent({
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                 {FOUNDER_ACCESS.publicTeaser} Claimed seats are tracked
-                internally. Legacy Launch preserves lifetime pricing lock and
-                future released Karpilo LoadIQ platform feature access while the
-                subscription remains active.
+                internally. Legacy Launch preserves lifetime pricing lock while
+                the subscription remains active and in good standing within the
+                purchased entitlement scope.
               </p>
             </div>
 
@@ -545,13 +525,12 @@ function BillingContent({
             {PILOT_ACCESS.name}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            {PILOT_ACCESS.publicTeaser} Approved pilot operators receive
-            locked pricing at ${PILOT_ACCESS.monthlyPrice}/month for the first{" "}
-            {PILOT_ACCESS.maxSeats} approved users, with a 7-day trial where
-            supported by the payment provider. Pilot pricing and future
-            released Karpilo LoadIQ platform feature access stay protected while
-            the subscription remains active. It is not transferable and is lost
-            if canceled, lapsed, revoked, or deleted.
+            {PILOT_ACCESS.publicTeaser} Approved pilot operators receive locked
+            pricing at {formatPriceLabel(PILOT_ACCESS.monthlyPrice, "month")} or{" "}
+            {formatPriceLabel(PILOT_ACCESS.annualPrice, "year")} for the first{" "}
+            {PILOT_ACCESS.maxSeats} approved users. Pilot checkout must be
+            server-validated before payment, and pricing stays protected only
+            while the account remains active and in good standing.
           </p>
           {canSeePilotPricing ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -634,6 +613,55 @@ function Metric({ label, value }: { label: string; value: string }) {
       </div>
       <div className="mt-3 break-words text-2xl font-black text-slate-100 [overflow-wrap:anywhere]">
         {value}
+      </div>
+    </div>
+  );
+}
+
+function LaunchPricingCard({ phase }: { phase: LaunchPricingPhase }) {
+  return (
+    <div
+      className={
+        phase.id === "standard_active"
+          ? "rounded-2xl border border-sky-400/35 bg-[#060B14] p-4 shadow-[0_0_35px_rgba(56,189,248,0.14)]"
+          : "rounded-2xl border border-slate-800 bg-[#060B14] p-4"
+      }
+    >
+      <div className="flex min-h-[94px] flex-col justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
+            {phase.statusLabel}
+          </p>
+          <h3 className="mt-2 text-xl font-black text-slate-100">
+            {phase.name}
+          </h3>
+        </div>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
+          {phase.disclosure}
+        </p>
+      </div>
+
+      <div className="mt-5 space-y-2 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+        <PlanLine
+          label="Monthly"
+          value={formatPriceLabel(phase.monthlyPrice, "month")}
+        />
+        <PlanLine
+          label="Annual"
+          value={formatPriceLabel(phase.annualPrice, "year")}
+        />
+        <PlanLine
+          label="Slots"
+          value={phase.slotLimit === null ? "Uncapped" : String(phase.slotLimit)}
+        />
+        <PlanLine
+          label="Lifetime lock"
+          value={phase.lifetimePricing ? "Eligible" : "No"}
+        />
+      </div>
+
+      <div className="mt-5 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
+        {phase.paymentMode}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import {
   GOLD_ACCESS,
   PILOT_ACCESS,
   PLATINUM_ACCESS,
+  STANDARD_PUBLIC_ACCESS,
 } from "@/config/pricing";
 import type {
   EntitlementPlanTier,
@@ -28,10 +29,34 @@ export type PlanLimits = {
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   no_access: {
     tier: "no_access",
-    featureAccess: "none",
+    featureAccess: "standard",
     monthlyPrice: 0,
     annualPrice: 0,
-    monthlyCalculations: 0,
+    monthlyCalculations: "unlimited",
+    savedLoads: 0,
+    exports: false,
+    advancedAnalytics: false,
+    comparisons: false,
+    laneTemplates: false,
+  },
+  beta_test: {
+    tier: "beta_test",
+    featureAccess: "platinum",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    monthlyCalculations: "unlimited",
+    savedLoads: "unlimited",
+    exports: true,
+    advancedAnalytics: true,
+    comparisons: true,
+    laneTemplates: true,
+  },
+  silver: {
+    tier: "silver",
+    featureAccess: "standard",
+    monthlyPrice: STANDARD_PUBLIC_ACCESS.monthlyPrice,
+    annualPrice: STANDARD_PUBLIC_ACCESS.annualPrice,
+    monthlyCalculations: "unlimited",
     savedLoads: 0,
     exports: false,
     advancedAnalytics: false,
@@ -105,10 +130,12 @@ export function getPlanLimits(tier: PlanTier | null | undefined) {
 }
 
 export function formatPlanTierLabel(tier: PlanTier | string | null | undefined) {
+  if (tier === "beta_test") return "Beta Tester";
+  if (tier === "silver") return "Silver";
   if (tier === "gold") return "Gold";
   if (tier === "platinum") return "Platinum";
   if (tier === "pilot") return "Pilot";
   if (tier === "launch500" || tier === "founder") return "Legacy Launch";
   if (tier === "pro") return "Future Pro";
-  return "No active access";
+  return "Starter access";
 }

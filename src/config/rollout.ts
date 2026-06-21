@@ -25,7 +25,7 @@ export const ROLLOUT_PHASES = [
   {
     code: "FOUNDER_PILOT",
     cohort: "pilot50",
-    label: "Founder Pilot",
+    label: "Founding 50 Pilot",
     badge: "Users 1-50",
     seatStart: 1,
     seatEnd: 50,
@@ -39,7 +39,7 @@ export const ROLLOUT_PHASES = [
   {
     code: "CONTROLLED_PUBLIC_LAUNCH",
     cohort: "launch500",
-    label: "Controlled Public Launch",
+    label: "Official Launch Active",
     badge: "Users 51-300",
     seatStart: 51,
     seatEnd: 300,
@@ -53,7 +53,7 @@ export const ROLLOUT_PHASES = [
   {
     code: "EXPANSION_ACCESS",
     cohort: "launch500",
-    label: "Expansion Access",
+    label: "Legacy Pricing Active",
     badge: "Users 301-550",
     seatStart: 301,
     seatEnd: 550,
@@ -67,11 +67,11 @@ export const ROLLOUT_PHASES = [
   {
     code: "GENERAL_AVAILABILITY",
     cohort: "standard",
-    label: "General Availability",
+    label: "Standard Public Access",
     badge: "Users 551+",
     seatStart: 551,
     seatEnd: null,
-    pricingSummary: "$29.99/mo or $299.99/yr standard access.",
+    pricingSummary: "$24.99/mo or $189.99/yr standard public access.",
     onboardingTitle: "General availability",
     onboardingMessage:
       "Karpilo LoadIQ is operating as a standard paid freight profitability platform with secure profiles, saved-load history, and production support routing.",
@@ -83,7 +83,7 @@ export const ROLLOUT_PHASES = [
 export const ROLLOUT_CONFIG = {
   version: "2026.05.rollout-control",
   defaultPhase: "GENERAL_AVAILABILITY",
-  supportFooter: `Support, privacy, deletion, and app issues route through ${LOADIQ_EMAILS.support}. Feature requests route through ${LOADIQ_EMAILS.founderFeedback}. Billing issues use ${LOADIQ_EMAILS.billing}.`,
+  supportFooter: `Support, privacy, deletion, app issues, and feature questions route through ${LOADIQ_EMAILS.support}. Billing issues use ${LOADIQ_EMAILS.billing}. Founder-level escalation remains available through ${LOADIQ_EMAILS.founderFeedback}.`,
   telemetrySources: {
     appGate: "app_access_gate",
     onboarding: "onboarding",

@@ -32,7 +32,7 @@ export const STRIPE_CHECKOUT_PLANS = {
   "pro-monthly": {
     id: "pro-monthly",
     tier: "gold",
-    label: "Karpilo LoadIQ Gold Monthly",
+    label: "Karpilo LoadIQ Standard Public Monthly",
     interval: "month",
     amount: GOLD_ACCESS.monthlyPrice,
     trialDays: SUBSCRIPTION_TRIAL_DAYS,
@@ -42,7 +42,7 @@ export const STRIPE_CHECKOUT_PLANS = {
   "pro-annual": {
     id: "pro-annual",
     tier: "gold",
-    label: "Karpilo LoadIQ Gold Annual",
+    label: "Karpilo LoadIQ Standard Public Annual",
     interval: "year",
     amount: GOLD_ACCESS.annualPrice,
     trialDays: SUBSCRIPTION_TRIAL_DAYS,

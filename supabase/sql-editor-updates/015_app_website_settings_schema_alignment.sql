@@ -802,7 +802,7 @@ insert into public.launch_program_state (
 values
   ('founder_50', 'Founding 50 Pilot Program', 'pre_pilot', 50, 14.99, 129.99, true, false, true, true),
   ('launch_500', 'First 500 Launch Operators', 'queued', 500, 19.99, 149.99, true, false, true, true),
-  ('standard_future', 'Standard Future Users', 'future_standard', 2147483647, 29.99, 299.99, true, false, false, true)
+  ('standard_future', 'Standard Public Access', 'standard_active', 2147483647, 24.99, 189.99, true, false, false, true)
 on conflict (program_key) do nothing;
 
 insert into public.rollout_phases (

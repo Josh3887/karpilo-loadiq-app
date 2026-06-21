@@ -21,9 +21,20 @@ export const SUBSCRIPTION_TERMS_SECTIONS: LegalSection[] = [
     id: "plan-access",
     title: "Plan Access and Feature Gates",
     paragraphs: [
-      "Gold and Platinum are current paid subscription tiers. Pilot and Legacy Launch are protected legacy or lifetime-access programs within their purchased entitlement scope. Future tiers or products, including reserved Pro or Karpilo FleetOS-related offerings, may have different pricing, eligibility, feature limits, support paths, usage limits, or licensing terms.",
+      "Karpilo LoadIQ subscription pricing follows the public launch architecture: Founding 50 Pilot Access is $14.99 per month or $129.99 per year, Launch 500 Access is $19.99 per month or $149.99 per year, and Standard Public Access is $24.99 per month or $189.99 per year.",
+      "Pilot and Legacy Launch are protected rollout or promotional access programs within their purchased entitlement scope. They are not commercial tier names. Checkout availability, billing provider configuration, and entitlement enforcement may roll out separately.",
+      "Platinum, Pro, FleetOS, team, API, usage-based, enterprise, or separately licensed offerings are reserved future or separate product structures unless a checkout screen or signed agreement says otherwise.",
+      "Any displayed future surcharge, reserved tier, or modeled-truck pricing is commercial pricing communication only until supported by an approved billing provider configuration.",
       "Subscription access is tied to the account and billing platform used at purchase. Promotional access may not be transferable between accounts, platforms, businesses, or app stores.",
       "Feature availability may evolve for future billing periods, future subscribers, future product modules, enterprise licensing, or separately licensed offerings where permitted by law and platform rules.",
+    ],
+  },
+  {
+    id: "launch-payment-gating",
+    title: "Launch Pricing and Checkout Validation",
+    paragraphs: [
+      "Founding 50 and Launch 500 checkout depends on server-authoritative launch state, slot availability, assigned eligibility, and payment-provider configuration. Frontend countdowns, displayed slot counts, local browser state, query strings, or copied URLs do not grant discounted pricing or paid access.",
+      "If launch-state validation, slot validation, payment synchronization, webhook reconciliation, or active phase verification cannot be proven, Karpilo LoadIQ may place the account or flow into waitlist-only mode. Waitlist-only mode does not create checkout sessions, activate subscriptions, assign grandfathered pricing, or reserve paid pilot slots.",
     ],
   },
   {

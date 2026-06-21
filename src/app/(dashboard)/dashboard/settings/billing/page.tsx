@@ -84,7 +84,7 @@ function BillingSettingsContent({
   return (
     <SettingsPageShell
       title="Billing Command"
-      description="One entitlement brain, multiple payment rails. Stripe, Apple, Google, manual, or unknown provider states all feed the same access decision."
+      description="One entitlement brain, multiple payment rails. Pricing follows Founding 50, Launch 500, then Standard Public Access."
       actions={
         <StatusPill tone={paymentAccess.hasActiveAccess ? "green" : "red"}>
           {formatStatus(paymentAccess.entitlementStatus)}
@@ -136,7 +136,7 @@ function BillingSettingsContent({
         <SettingsMetric
           label="Price Rule"
           value={hasLifetimeDisplay || paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
-          detail="Gold and Platinum public prices may change for future periods"
+          detail="Standard Public Access has no lifetime lock"
         />
       </section>
 
@@ -146,7 +146,7 @@ function BillingSettingsContent({
       >
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-300">
           {futureFeatureScope ??
-            "Pilot and Legacy Launch accounts can carry lifetime pricing protection and future released Karpilo LoadIQ platform feature access when assigned by backend entitlement records. Gold remains the complete operational feature tier; Platinum is planned as enhanced intelligence."}
+            "Pilot and Legacy Launch accounts can carry lifetime pricing protection when assigned by backend entitlement records. Standard Public Access has no lifetime lock; entitlement enforcement remains unchanged."}
         </div>
       </SettingsPanel>
 

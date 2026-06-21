@@ -15,7 +15,7 @@ export type LegalSection = {
   links?: LegalLink[];
 };
 
-export const LEGAL_CONTACT_EMAIL = LOADIQ_EMAILS.corporate;
+export const LEGAL_CONTACT_EMAIL = LOADIQ_EMAILS.support;
 export const BILLING_CONTACT_EMAIL = BILLING_EMAIL;
 
 export const APPLE_BILLING_LINKS: LegalLink[] = [
@@ -56,6 +56,7 @@ export const STRIPE_BILLING_DISCLOSURES: LegalSection[] = [
     paragraphs: [
       "Direct website subscriptions for Karpilo LoadIQ may be processed through Stripe or another authorized payment provider. When a user starts a paid plan, the user authorizes recurring billing for the selected billing interval until the subscription is canceled or otherwise ends.",
       "Subscription cancellation stops future renewal charges. Unless otherwise stated at checkout or required by law, cancellation does not automatically create a refund for the current billing period.",
+      "Provider price IDs are mapped to internal Karpilo LoadIQ entitlement records. Frontend labels, countdowns, copied links, or local browser state do not independently select a discounted price.",
     ],
     bullets: [
       "Monthly plans renew monthly until canceled.",
@@ -91,6 +92,7 @@ export const PLATFORM_BILLING_DISCLOSURES: LegalSection[] = [
     paragraphs: [
       "Subscriptions purchased through the Apple App Store are governed by Apple's billing, subscription management, and refund systems. Where Apple processes the payment, users may need to manage cancellation, refunds, purchase history, and billing disputes directly through Apple.",
       "Karpilo Endeavor Technologies LLC cannot directly issue refunds for Apple-controlled in-app purchases where Apple is the merchant of record or payment processor. Apple determines eligibility and processing for Apple-managed refunds.",
+      "If Apple subscription pricing differs from direct website pricing, the Apple checkout price controls the Apple purchase while the internal entitlement classification remains separate.",
     ],
     links: APPLE_BILLING_LINKS,
   },
@@ -100,10 +102,11 @@ export const PLATFORM_BILLING_DISCLOSURES: LegalSection[] = [
     paragraphs: [
       "Subscriptions purchased through Google Play are governed by Google's billing, subscription management, and refund systems. Where Google processes the payment, users may need to manage cancellation, refunds, purchase history, and billing disputes directly through Google Play.",
       "Karpilo Endeavor Technologies LLC cannot directly issue refunds for Google-controlled purchases where Google is the merchant of record or payment processor. Google determines eligibility and processing for Google-managed refunds.",
+      "If Google Play subscription pricing differs from direct website pricing, the Google Play checkout price controls the Google purchase while the internal entitlement classification remains separate.",
     ],
     links: GOOGLE_PLAY_BILLING_LINKS,
   },
 ];
 
 export const CHECKOUT_ACKNOWLEDGEMENT_TEXT =
-  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand Karpilo LoadIQ provides informational estimates based on user-supplied inputs, understand eligible paid tiers include a 7-day free trial where supported by the payment provider, and understand paid subscriptions renew unless canceled through the applicable billing platform before the trial or billing period ends.";
+  "I agree to the Terms, Privacy Policy, Refund Policy, and Subscription Terms, understand Karpilo LoadIQ provides informational estimates based on user-supplied inputs, understand eligible paid plans include a 7-day free trial where supported by the payment provider, and understand paid subscriptions renew unless canceled through the applicable billing platform before the trial or billing period ends.";
