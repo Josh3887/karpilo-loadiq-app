@@ -29,8 +29,8 @@ export function LoginForm() {
       return;
     }
 
-    setStatus("Signed in. Checking setup...");
-    router.push("/dashboard");
+    setStatus("Signed in. Opening portal...");
+    router.push("/portal");
     router.refresh();
   }
 
@@ -68,9 +68,9 @@ export function LoginForm() {
       </p>
 
       <p className="text-sm text-slate-400">
-        No account?{" "}
-        <Link href="/auth/register" className="text-sky-400">
-          Create one
+        Need access?{" "}
+        <Link href="/request-access" className="text-sky-400">
+          Request controlled access
         </Link>
       </p>
 

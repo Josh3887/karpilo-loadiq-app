@@ -7,9 +7,9 @@ export const APP_CONFIG = {
   description: BRAND.description,
   routes: {
     home: "/",
-    dashboard: "/dashboard",
-    login: "/auth/login",
-    register: "/auth/register",
+    dashboard: "/portal",
+    login: "/login",
+    register: "/request-access",
   },
 } as const;
 

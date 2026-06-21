@@ -1,26 +1,11 @@
-import { LoadIqMark } from "@/components/brand/loadiq-mark";
-import { BRAND } from "@/config/brand";
+import { redirect } from "next/navigation";
 
-import { RegisterForm } from "./register-form";
+export const metadata = {
+  title: "Request Access | Karpilo LoadIQ App",
+  description:
+    "Public signup is not available. Karpilo LoadIQ app access is controlled.",
+};
 
 export default function RegisterPage() {
-  return (
-    <main className="min-h-screen bg-[#060B14] px-4 py-8 text-slate-100">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center">
-        <section className="rounded-2xl border border-slate-800 bg-[#0B1220] p-6 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
-          <LoadIqMark size="lg" />
-          <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-sky-400">
-            {BRAND.productName}
-          </p>
-          <h1 className="mt-2 text-3xl font-black">Create Access</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            Create your APP account with the shared Karpilo LoadIQ Supabase
-            identity. Website pilot reservations and launch pricing remain
-            available as separate public access paths.
-          </p>
-          <RegisterForm />
-        </section>
-      </div>
-    </main>
-  );
+  redirect("/request-access");
 }

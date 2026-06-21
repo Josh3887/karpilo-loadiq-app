@@ -37,7 +37,7 @@ function getSafeRedirectPath(value: string | null) {
     value.startsWith("//") ||
     /^[a-z][a-z0-9+.-]*:/i.test(value)
   ) {
-    return "/dashboard";
+    return "/portal";
   }
 
   try {
@@ -45,7 +45,7 @@ function getSafeRedirectPath(value: string | null) {
 
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return "/dashboard";
+    return "/portal";
   }
 }
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   const next = getSafeRedirectPath(searchParams.get("next"));
 
   if (!code) {
-    return NextResponse.redirect(new URL("/auth/login", origin));
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
   const supabase = await createClient();
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("SUPABASE_AUTH_CALLBACK_EXCHANGE_FAILED");
-    return NextResponse.redirect(new URL("/auth/login", origin));
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
   return NextResponse.redirect(new URL(next, origin));
