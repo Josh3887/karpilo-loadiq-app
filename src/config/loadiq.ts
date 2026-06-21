@@ -9,8 +9,8 @@ export const LOADIQ_BRAND = {
 } as const;
 
 export const LOADIQ_URLS = {
-  website: "https://www.karpiloloadiq.com",
-  app: "https://app.karpiloloadiq.com",
+  website: "https://karpilo-liq.com",
+  app: "https://app.karpilo-liq.com",
 } as const;
 
 export const LOADIQ_EMAILS = {

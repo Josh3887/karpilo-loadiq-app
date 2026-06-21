@@ -47,7 +47,7 @@ export function isCanonicalAdminEmail(email: string) {
 const TRUSTED_APP_ORIGINS = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-  "https://app.karpiloloadiq.com",
+  "https://app.karpilo-liq.com",
 ]);
 
 export function getTrustedAdminRequestOrigin(request: Request) {
@@ -68,13 +68,13 @@ export function getTrustedAdminRequestOrigin(request: Request) {
     TRUSTED_APP_ORIGINS.has(origin),
   );
 
-  return trustedOrigin ?? "https://app.karpiloloadiq.com";
+  return trustedOrigin ?? "https://app.karpilo-liq.com";
 }
 
 export function buildAdminPasswordlessRedirectUrl(origin: string) {
   const safeOrigin = TRUSTED_APP_ORIGINS.has(origin)
     ? origin
-    : "https://app.karpiloloadiq.com";
+    : "https://app.karpilo-liq.com";
   const callbackUrl = new URL("/auth/callback", safeOrigin);
   callbackUrl.searchParams.set("next", "/admin/elevated");
   return callbackUrl.toString();

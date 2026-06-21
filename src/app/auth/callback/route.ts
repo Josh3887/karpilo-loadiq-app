@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const TRUSTED_APP_ORIGINS = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-  "https://app.karpiloloadiq.com",
+  "https://app.karpilo-liq.com",
 ]);
 
 function getTrustedRequestOrigin(request: NextRequest) {
@@ -26,7 +26,7 @@ function getTrustedRequestOrigin(request: NextRequest) {
 
   return (
     candidateOrigins.find((origin) => TRUSTED_APP_ORIGINS.has(origin)) ??
-    "https://app.karpiloloadiq.com"
+    "https://app.karpilo-liq.com"
   );
 }
 
@@ -41,7 +41,7 @@ function getSafeRedirectPath(value: string | null) {
   }
 
   try {
-    const parsed = new URL(value, "https://app.karpiloloadiq.com");
+    const parsed = new URL(value, "https://app.karpilo-liq.com");
 
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
