@@ -55,11 +55,11 @@ body {
   box-shadow: 0 0 24px color-mix(in srgb, var(--atlas-primary) 18%, transparent);
 }
 
-.iation-signal-shell {
+.atlas-signal-shell {
   isolation: isolate;
 }
 
-.iation-signal-shell::after {
+.atlas-signal-shell::after {
   position: absolute;
   inset: 0.28rem;
   z-index: -1;
@@ -73,16 +73,16 @@ body {
   content: "";
   filter: blur(10px);
   opacity: 0.78;
-  animation: iation-telemetry-glow 3.6s ease-in-out infinite;
+  animation: atlas-telemetry-glow 3.6s ease-in-out infinite;
 }
 
-.iation-scan-ring {
+.atlas-scan-ring {
   pointer-events: none;
   opacity: 0.65;
-  animation: iation-scan-ring 4.8s ease-in-out infinite;
+  animation: atlas-scan-ring 4.8s ease-in-out infinite;
 }
 
-@keyframes iation-telemetry-glow {
+@keyframes atlas-telemetry-glow {
   0%,
   100% {
     opacity: 0.46;
@@ -94,7 +94,7 @@ body {
   }
 }
 
-@keyframes iation-scan-ring {
+@keyframes atlas-scan-ring {
   0% {
     opacity: 0.18;
     transform: scale(0.985);
@@ -110,8 +110,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .iation-signal-shell::after,
-  .iation-scan-ring {
+  .atlas-signal-shell::after,
+  .atlas-scan-ring {
     animation: none;
   }
 }

@@ -5,9 +5,27 @@ export const BILLING_TEST_HARNESS_STATES = [
   "gold_active",
   "gold_past_due",
   "gold_canceled",
-  "pilot_lifetime_full_access",
-  "launch_lifetime_full_access",
-  "platinum_coming_soon",
+  "beta_testing_app_access",
+  "beta_testing_cap_full",
+  "legacy_launch_silver_active",
+  "legacy_launch_gold_active",
+  "legacy_launch_platinum_active",
+  "legacy_launch_pro_active",
+  "legacy_launch_expired",
+  "founding_operator_phase_1_silver_active",
+  "founding_operator_phase_1_gold_active",
+  "founding_operator_phase_1_platinum_active",
+  "founding_operator_phase_1_pro_active",
+  "founding_operator_phase_1_cap_full",
+  "founding_operator_phase_2_silver_active",
+  "founding_operator_phase_2_gold_active",
+  "founding_operator_phase_2_platinum_active",
+  "founding_operator_phase_2_pro_active",
+  "founding_operator_phase_2_expired",
+  "open_market_silver_active",
+  "open_market_gold_active",
+  "open_market_platinum_active",
+  "open_market_pro_active",
 ] as const;
 
 export type BillingTestHarnessState =
@@ -44,9 +62,35 @@ export const BILLING_TEST_HARNESS_STATE_LABELS: Record<
   gold_active: "Gold active",
   gold_past_due: "Gold past due",
   gold_canceled: "Gold canceled",
-  pilot_lifetime_full_access: "Pilot lifetime full access",
-  launch_lifetime_full_access: "Launch lifetime full access",
-  platinum_coming_soon: "Platinum coming soon",
+  beta_testing_app_access: "Beta testing app access",
+  beta_testing_cap_full: "Beta testing cap full",
+  legacy_launch_silver_active: "Founding 50 pilot Silver alias",
+  legacy_launch_gold_active: "Founding 50 pilot active",
+  legacy_launch_platinum_active: "Founding 50 pilot Platinum alias",
+  legacy_launch_pro_active: "Founding 50 pilot Pro alias",
+  legacy_launch_expired: "Founding 50 pilot expired",
+  founding_operator_phase_1_silver_active:
+    "Launch 500 Silver alias",
+  founding_operator_phase_1_gold_active:
+    "Launch 500 active",
+  founding_operator_phase_1_platinum_active:
+    "Launch 500 Platinum alias",
+  founding_operator_phase_1_pro_active:
+    "Launch 500 Pro alias",
+  founding_operator_phase_1_cap_full: "Launch 500 cap full",
+  founding_operator_phase_2_silver_active:
+    "Launch 500 second-window Silver alias",
+  founding_operator_phase_2_gold_active:
+    "Launch 500 second-window active",
+  founding_operator_phase_2_platinum_active:
+    "Launch 500 second-window Platinum alias",
+  founding_operator_phase_2_pro_active:
+    "Launch 500 second-window Pro alias",
+  founding_operator_phase_2_expired: "Launch 500 expired",
+  open_market_silver_active: "Standard Public Silver alias",
+  open_market_gold_active: "Standard Public active",
+  open_market_platinum_active: "Standard Public Platinum alias",
+  open_market_pro_active: "Standard Public Pro alias",
 };
 
 export function isBillingTestHarnessState(

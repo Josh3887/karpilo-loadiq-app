@@ -2,6 +2,8 @@ import { FUTURE_PLATFORM_FEATURE_SCOPE } from "@/config/pricing";
 
 export type EntitlementPlanTier =
   | "no_access"
+  | "beta_test"
+  | "silver"
   | "gold"
   | "platinum"
   | "pilot"
@@ -10,6 +12,8 @@ export type EntitlementPlanTier =
 
 export type SubscriptionTier =
   | "none"
+  | "beta_test"
+  | "silver"
   | "pilot"
   | "launch"
   | "gold"
@@ -58,6 +62,16 @@ export const FEATURE_ACCESS_CLASSIFICATION = {
     "billing/account management",
     "support and legal surfaces",
   ],
+  silver: [
+    "load viability decision support",
+    "break-even and margin pressure framing",
+    "load-level operating-cost awareness",
+  ],
+  betaTest: [
+    "internal beta tester app access",
+    "time-boxed app validation",
+    "non-commercial testing entitlement",
+  ],
   gold: [
     "saved loads",
     "trip actuals",
@@ -99,6 +113,8 @@ function asNullablePositiveInteger(value: unknown) {
 }
 
 export function normalizeLegacyPlanTier(value: unknown): EntitlementPlanTier {
+  if (value === "beta_test") return "beta_test";
+  if (value === "silver") return "silver";
   if (value === "gold") return "gold";
   if (value === "pro") return "pro";
   if (value === "platinum") return "platinum";
@@ -118,13 +134,17 @@ export function normalizeSubscriptionTier(
   if (subscriptionTier === "launch" || subscriptionTier === "launch500") {
     return "launch";
   }
+  if (subscriptionTier === "beta_test") return "beta_test";
+  if (subscriptionTier === "silver") return "silver";
   if (subscriptionTier === "gold") return "gold";
   if (subscriptionTier === "platinum") return "platinum";
   if (subscriptionTier === "pro" || subscriptionTier === "fleet") return "pro";
 
   const tier = normalizeLegacyPlanTier(legacyTier);
+  if (tier === "beta_test") return "beta_test";
   if (tier === "pilot") return "pilot";
   if (tier === "launch500") return "launch";
+  if (tier === "silver") return "silver";
   if (tier === "platinum") return "platinum";
   if (tier === "gold") return "gold";
 
@@ -137,6 +157,8 @@ export function planTierFromSubscriptionTier(
 ): EntitlementPlanTier {
   if (tier === "pilot") return "pilot";
   if (tier === "launch") return "launch500";
+  if (tier === "beta_test") return "beta_test";
+  if (tier === "silver") return "silver";
   if (tier === "gold") return "gold";
   if (tier === "platinum") return "platinum";
   if (tier === "pro") return "pro";
@@ -153,6 +175,8 @@ export function normalizeFeatureAccess(
   if (value === "platinum") return "platinum";
   if (value === "fleet") return "fleet";
 
+  if (tier === "beta_test") return "platinum";
+  if (tier === "silver") return "standard";
   if (tier === "pro") return "none";
   if (tier === "platinum" || tier === "pilot" || tier === "launch") {
     return "platinum";
@@ -177,8 +201,10 @@ export function resolveFeatureAccessArchitecture(
   const isProtectedCohort =
     subscriptionTier === "pilot" ||
     subscriptionTier === "launch" ||
+    subscriptionTier === "beta_test" ||
     planTier === "pilot" ||
-    planTier === "launch500";
+    planTier === "launch500" ||
+    planTier === "beta_test";
   const lifetimePriceLock = Boolean(source?.lifetime_price_lock);
   const derivedGrandfatheredAccess = isProtectedCohort && lifetimePriceLock;
   const grandfatheredAccess =
@@ -238,6 +264,10 @@ export function hasGoldAccess(access: FeatureAccessArchitecture) {
     hasFleetAccess(access) ||
     hasGrandfatheredLoadIqAccess(access)
   );
+}
+
+export function hasSilverAccess(access: FeatureAccessArchitecture) {
+  return access.subscriptionTier === "silver" || access.planTier === "silver";
 }
 
 export function hasPlatinumAccess(access: FeatureAccessArchitecture) {

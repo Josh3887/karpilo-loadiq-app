@@ -339,3 +339,52 @@ Success is measured by:
 * Operational usefulness
 
 Not clever code.
+
+⸻
+
+LoadIQ Repository Addendum
+
+This repository is the LoadIQ application.
+
+Domain boundary:
+
+* `karpilo-liq.com` is the public website.
+* The LoadIQ app project includes the protected product application and future Apple App Store / Google Play application surfaces.
+* `app.karpilo-liq.com` is the web account-access portal for profile, settings, billing, Fit Check, access/request status, and related account-side flows.
+* `/portal` routes are account-side bridge routes only. They must not become a blockade, replacement, or limiting definition for the full app project.
+* `/dashboard` and related protected routes are operational web-app routes. Mobile/app-store work and protected product workflows must not be reduced to portal/billing-only behavior unless Joshua explicitly scopes the task that way.
+* Website code should not duplicate app business logic; app code should not treat public marketing pages as operational application surfaces.
+
+Repository evidence at the time this addendum was written:
+
+* Next.js app using `src/app`.
+* `package.json` declares Next.js `16.2.6`, React `19.2.4`, Tailwind CSS 4, Supabase, Stripe, Sentry, PostHog, OpenAI, Upstash Redis, Zustand, Recharts, and Capacitor iOS dependencies.
+* Supabase schemas and migrations exist under `supabase/`.
+* iOS/Capacitor surface exists under `ios/` and `capacitor.config.ts`.
+* Product areas include dashboard, billing, calculator, Atlas/AI, fit check, saved loads, settings, support, and admin surfaces.
+
+Do not rely on older Next.js assumptions. For version-sensitive framework behavior, inspect the local Next.js documentation in `node_modules/next/dist/docs/` or the local package source before changing APIs, routing, metadata, middleware/proxy behavior, server actions, or config.
+
+LoadIQ-specific implementation rules:
+
+* Do not turn LoadIQ into FleetOS.
+* Do not duplicate billing, entitlement, rollout, governance, AI, or analytics systems.
+* Keep billing, entitlement, rollout, and governance logic explicitly separated.
+* Treat AI output, diagnostics, and analytics as governed operational surfaces, not decorative UI.
+* Treat trucking operations, driver records, saved loads, billing records, diagnostics, and AI events as sensitive operational data.
+* Do not weaken RLS, auth, billing checks, or entitlement checks to make a UI path work.
+* Do not say a UI works unless it was verified in the rendered app.
+
+Permanent repo-safety rules:
+
+* Before making code changes, always check the current branch and working tree status. Do not work on main. Create or switch to a dedicated task branch before editing. If the working tree is dirty, stop and report the existing changes before proceeding. Do not commit or deploy unless explicitly instructed.
+* Never replace the existing app experience with a temporary portal, bridge page, launch gate, or controlled-access shell. Temporary access surfaces must be isolated and must not remove calculator, dashboard, settings, billing, saved loads, Fit Check, or core application routes.
+* Preserve existing product pillars unless explicitly instructed. Do not remove, rename, deprecate, or replace calculator, mileage, fuel, billing, settings, saved loads, Supabase, Stripe, Sentry, PostHog, auth, dashboard, pricing, or app routing logic without explicit approval.
+
+Recommended validation when relevant:
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```

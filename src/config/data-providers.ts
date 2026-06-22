@@ -73,11 +73,12 @@ export const DATA_PROVIDERS: DataProvider[] = [
     shortName: "Mapping",
     category: "mapping",
     status: "planned",
-    attribution: "Future routing intelligence may include third-party mapping providers.",
+    attribution:
+      "Future Platinum/Pro routing intelligence may include third-party mapping providers.",
     description:
-      "Future routing inputs may support mileage, route, toll, and location intelligence.",
+      "Future routing inputs may support mileage, route, toll, location, and truck-specific routing estimation for eligible tiers.",
     disclaimer:
-      "Routing data can vary by equipment, restrictions, detours, traffic, and local conditions.",
+      "Routing data can vary by equipment, restrictions, detours, traffic, and local conditions. Truck-specific routing estimates are not route legality, permit, bridge, clearance, hazmat, or compliance certification.",
   },
   {
     id: "telematics",

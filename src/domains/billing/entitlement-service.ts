@@ -6,6 +6,7 @@ import {
   hasGoldAccess,
   hasGrandfatheredLoadIqAccess,
   hasPlatinumAccess,
+  hasSilverAccess,
   normalizeLegacyPlanTier,
   resolveFeatureAccessArchitecture,
   type FeatureAccessArchitecture,
@@ -42,6 +43,8 @@ export type Entitlements = {
   canExport: boolean;
   canUseAdvancedAnalytics: boolean;
   canUsePlatinumIntelligence: boolean;
+  canUseWeatherProfitabilityRisk: boolean;
+  canSaveWeatherProfitabilitySnapshot: boolean;
   canUseFleetFeatures: boolean;
   canCompareScenarios: boolean;
   canCreateLaneTemplates: boolean;
@@ -155,6 +158,10 @@ function asNullableBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
 }
 
+function hasProCommercialAccess(access: FeatureAccessArchitecture) {
+  return access.subscriptionTier === "pro" || access.planTier === "pro";
+}
+
 function isFutureIso(value: string | null) {
   if (!value) return false;
   const timestamp = Date.parse(value);
@@ -172,22 +179,30 @@ export function resolveEntitlements(
       tier,
     });
   const limits = getPlanLimits(access.planTier);
-  const goldAccess = hasGoldAccess(access);
-  const platinumAccess = hasPlatinumAccess(access);
+  const resolvedFeatureAccess =
+    access.featureAccess === "none" && limits.tier !== "no_access"
+      ? limits.featureAccess
+      : access.featureAccess;
+  const proCommercialAccess = hasProCommercialAccess(access);
+  const goldAccess = hasGoldAccess(access) || proCommercialAccess;
+  const platinumAccess = hasPlatinumAccess(access) || proCommercialAccess;
   const fleetAccess = hasFleetAccess(access);
-  const activeLoadIqAccess = access.fullLoadIqAccess || goldAccess;
+  const activeLoadIqAccess =
+    access.fullLoadIqAccess || hasSilverAccess(access) || goldAccess;
+  const weatherProfitabilityRiskAccess =
+    limits.tier === "platinum" || limits.tier === "pro";
 
   return {
     tier: limits.tier,
     subscriptionTier: access.subscriptionTier,
-    featureAccess: access.featureAccess,
+    featureAccess: resolvedFeatureAccess,
     grandfatheredAccess: hasGrandfatheredLoadIqAccess(access),
     lifetimeAccess: access.lifetimeAccess,
     fullLoadIqAccess: access.fullLoadIqAccess,
     fleetEnabled: access.fleetEnabled,
     fleetOsProAccess: access.fleetOsProAccess,
     truckCapacityLimit: access.truckCapacityLimit,
-    canCalculate: activeLoadIqAccess && withinLimit(
+    canCalculate: withinLimit(
       usage.monthlyCalculations,
       limits.monthlyCalculations
     ),
@@ -196,6 +211,8 @@ export function resolveEntitlements(
     canExport: limits.exports && goldAccess,
     canUseAdvancedAnalytics: limits.advancedAnalytics && goldAccess,
     canUsePlatinumIntelligence: limits.advancedAnalytics && platinumAccess,
+    canUseWeatherProfitabilityRisk: weatherProfitabilityRiskAccess,
+    canSaveWeatherProfitabilitySnapshot: limits.tier === "pro",
     canUseFleetFeatures: limits.advancedAnalytics && fleetAccess,
     canCompareScenarios: limits.comparisons && goldAccess,
     canCreateLaneTemplates: limits.laneTemplates && goldAccess,
@@ -223,9 +240,11 @@ export function resolvePaymentAccess(
     (featureArchitecture.planTier === "pilot" ||
       featureArchitecture.planTier === "launch500");
   const hasResolvedLoadIqAccess =
+    hasSilverAccess(featureArchitecture) ||
     featureArchitecture.fullLoadIqAccess ||
     hasGoldAccess(featureArchitecture) ||
     hasPlatinumAccess(featureArchitecture) ||
+    hasProCommercialAccess(featureArchitecture) ||
     hasFleetAccess(featureArchitecture);
   const hasActiveAccess =
     (isActiveEntitlementStatus(entitlementStatus) && hasResolvedLoadIqAccess) ||

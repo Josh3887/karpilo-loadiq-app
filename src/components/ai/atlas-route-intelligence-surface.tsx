@@ -7,6 +7,7 @@ import {
   AtlasMetricTile,
   AtlasRuntimeFrame,
 } from "@/components/ai/atlas-runtime-frame";
+import { isTruckSpecificRoutingTier } from "@/lib/atlas/atlas-intelligence-system";
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import { formatNumber, formatPercent } from "@/utils/format";
 
@@ -27,9 +28,21 @@ type AtlasRouteIntelligenceSurfaceProps = {
   deadheadStartDate?: string | null;
   deadheadEndDate?: string | null;
   estimatedLoadWeightLbs?: number | null;
+  equipmentType?: string | null;
+  equipmentPackLabel?: string | null;
+  combinationType?: string | null;
+  equipmentDimensions?: string | null;
+  maxPayloadLbs?: number | null;
+  grossVehicleWeightRatingLbs?: number | null;
+  axleCount?: number | null;
+  hazmatCapable?: boolean | null;
+  tankerCapable?: boolean | null;
+  refrigeratedCapable?: boolean | null;
+  routeRestrictionNotes?: string | null;
   routeModelVersion?: string | null;
   reserveMode?: string | null;
   targetRpmSnapshot?: string | null;
+  entitlementTier?: string | null;
   compact?: boolean;
 };
 
@@ -52,9 +65,21 @@ export function AtlasRouteIntelligenceSurface({
   deadheadStartDate,
   deadheadEndDate,
   estimatedLoadWeightLbs,
+  equipmentType,
+  equipmentPackLabel,
+  combinationType,
+  equipmentDimensions,
+  maxPayloadLbs,
+  grossVehicleWeightRatingLbs,
+  axleCount,
+  hazmatCapable,
+  tankerCapable,
+  refrigeratedCapable,
+  routeRestrictionNotes,
   routeModelVersion,
   reserveMode,
   targetRpmSnapshot,
+  entitlementTier,
   compact = false,
 }: AtlasRouteIntelligenceSurfaceProps) {
   const routeSignal = getRouteSignal({
@@ -65,15 +90,16 @@ export function AtlasRouteIntelligenceSurface({
     deadheadMiles,
     dispatchDays,
   });
+  const truckRoutingEligible = isTruckSpecificRoutingTier(entitlementTier);
 
   return (
     <AtlasRuntimeFrame
       layer={ATLAS_ROUTE_LAYER}
       compact={compact}
-      description="Educational context for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, and route assumptions. Route values remain user-entered context."
+      description="Educational context for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, equipment assumptions, and route assumptions. Route and vehicle values remain user-entered context; truck-specific provider routing is Platinum/Pro only."
       signal={
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <AtlasMetricTile
               label="Movement Flow"
               value={formatMovementFlow(pickup, delivery)}
@@ -101,6 +127,12 @@ export function AtlasRouteIntelligenceSurface({
               layer={ATLAS_ROUTE_LAYER}
               icon={<GitBranch className="h-4 w-4" aria-hidden="true" />}
             />
+            <AtlasMetricTile
+              label="Equipment Context"
+              value={equipmentPackLabel || equipmentType || "Not set"}
+              detail={combinationType || "Combination not set"}
+              layer={ATLAS_ROUTE_LAYER}
+            />
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -112,6 +144,11 @@ export function AtlasRouteIntelligenceSurface({
             </p>
             <p className="mt-2 text-xs leading-5 text-slate-400">
               {routeSignal.body}
+            </p>
+            <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-300">
+              {truckRoutingEligible
+                ? "Platinum/Pro truck routing eligible"
+                : "Manual context only"}
             </p>
           </div>
         </div>
@@ -136,6 +173,16 @@ export function AtlasRouteIntelligenceSurface({
               layer={ATLAS_ROUTE_LAYER}
             />
           </div>
+
+          <AtlasInfoBlock
+            title="Truck-Specific Routing Boundary"
+            body={
+              truckRoutingEligible
+                ? "This tier is eligible for future truck-specific provider routing estimates when Google Maps, AWS Geo, and vehicle-parameter routing are wired. Equipment values remain planning assumptions only and do not certify route legality, clearances, bridge limits, permits, hazmat routing, or securement."
+                : "This view shows manual route context only. Truck-specific provider routing, vehicle-constraint routing, and enriched route intelligence are reserved for Platinum/Pro. Equipment values do not certify fit, route legality, permits, hazmat routing, or securement."
+            }
+            layer={ATLAS_ROUTE_LAYER}
+          />
 
           <div className="grid gap-3 text-sm md:grid-cols-2">
             <RouteContextRow
@@ -169,6 +216,35 @@ export function AtlasRouteIntelligenceSurface({
                   ? `${formatNumber(Number(estimatedLoadWeightLbs))} lbs est.`
                   : "Not provided"
               }
+            />
+            <RouteContextRow
+              label="Equipment"
+              value={equipmentPackLabel || equipmentType || "Not provided"}
+            />
+            <RouteContextRow
+              label="Combination"
+              value={combinationType || "Not provided"}
+            />
+            <RouteContextRow
+              label="Equipment Dimensions"
+              value={equipmentDimensions || "Not provided"}
+            />
+            <RouteContextRow
+              label="Payload / GVWR"
+              value={formatWeightPair(maxPayloadLbs, grossVehicleWeightRatingLbs)}
+            />
+            <RouteContextRow
+              label="Axles / Capability"
+              value={formatCapabilitySummary({
+                axleCount,
+                hazmatCapable,
+                tankerCapable,
+                refrigeratedCapable,
+              })}
+            />
+            <RouteContextRow
+              label="Route Restriction Notes"
+              value={routeRestrictionNotes || "Not provided"}
             />
             <RouteContextRow
               label="Route Model"
@@ -296,6 +372,46 @@ function formatOptionalDays(value?: number | null) {
   return Number.isFinite(numeric) && numeric > 0
     ? `${formatNumber(numeric)} days`
     : "0 days";
+}
+
+function formatWeightPair(
+  maxPayloadLbs?: number | null,
+  grossVehicleWeightRatingLbs?: number | null
+) {
+  const payload = Number(maxPayloadLbs);
+  const gross = Number(grossVehicleWeightRatingLbs);
+  const payloadLabel =
+    Number.isFinite(payload) && payload > 0
+      ? `${formatNumber(payload)} lbs payload`
+      : "payload not set";
+  const grossLabel =
+    Number.isFinite(gross) && gross > 0
+      ? `${formatNumber(gross)} lbs gross`
+      : "gross not set";
+
+  return `${payloadLabel} / ${grossLabel}`;
+}
+
+function formatCapabilitySummary({
+  axleCount,
+  hazmatCapable,
+  tankerCapable,
+  refrigeratedCapable,
+}: {
+  axleCount?: number | null;
+  hazmatCapable?: boolean | null;
+  tankerCapable?: boolean | null;
+  refrigeratedCapable?: boolean | null;
+}) {
+  const flags = [
+    hazmatCapable ? "hazmat capable" : "",
+    tankerCapable ? "tanker capable" : "",
+    refrigeratedCapable ? "reefer capable" : "",
+  ].filter(Boolean);
+  const axleLabel =
+    Number(axleCount) > 0 ? `${Number(axleCount)} axles` : "axles not set";
+
+  return [axleLabel, ...flags].join(" / ");
 }
 
 function formatDateValue(value: string | null | undefined) {

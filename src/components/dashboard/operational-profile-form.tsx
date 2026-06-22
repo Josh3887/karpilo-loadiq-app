@@ -13,12 +13,18 @@ import {
   getOperationalProfile,
   OperationalProfile,
   PayTemplate,
+  buildOperationalEquipmentProfile,
   saveOperationalProfile,
 } from "@/services/operational-profile";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { LearnMore } from "@/components/ui/learn-more";
 import { EDUCATION_TOPICS } from "@/config/education";
+import {
+  COMBINATION_TYPE_OPTIONS,
+  TRANSPORT_EQUIPMENT_OPTIONS,
+  formatEquipmentDimensions,
+} from "@/lib/equipment-profile";
 import { PayStructure } from "@/types/load";
 import { saveOnboardingState } from "@/services/onboarding";
 import { formatCurrency } from "@/utils/format";
@@ -153,6 +159,7 @@ export function OperationalProfileForm() {
     profile.incomeTargetAmount,
     profile.incomeTargetPeriod
   );
+  const equipmentProfile = buildOperationalEquipmentProfile(profile);
 
   return (
     <div className="space-y-8">
@@ -360,6 +367,87 @@ export function OperationalProfileForm() {
               setProfile((prev) => ({ ...prev, defaultMpg: Number(value) }))
             }
           />
+          <SelectField
+            label="Equipment Type"
+            value={profile.equipmentType}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                equipmentType: value,
+                trailerType: prev.trailerType || value,
+              }))
+            }
+            options={TRANSPORT_EQUIPMENT_OPTIONS.map((option) => [
+              option,
+              option,
+            ])}
+          />
+          <SelectField
+            label="Combination Type"
+            value={profile.combinationType}
+            onChange={(value) =>
+              setProfile((prev) => ({ ...prev, combinationType: value }))
+            }
+            options={COMBINATION_TYPE_OPTIONS.map((option) => [
+              option,
+              option,
+            ])}
+          />
+          <InputField
+            label="Fuel Tanks"
+            type="number"
+            value={String(profile.fuelTankCount)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                fuelTankCount: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Tank Size (gal each)"
+            type="number"
+            value={String(profile.fuelTankCapacityGallons)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                fuelTankCapacityGallons: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Trailer Length (ft)"
+            type="number"
+            value={String(profile.trailerLengthFeet)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                trailerLengthFeet: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Trailer Width (in)"
+            type="number"
+            value={String(profile.trailerWidthInches)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                trailerWidthInches: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Trailer Height (in)"
+            type="number"
+            value={String(profile.trailerHeightInches)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                trailerHeightInches: Number(value),
+              }))
+            }
+          />
           <InputField
             label="Trailer Division"
             value={profile.trailerDivisionType}
@@ -400,6 +488,39 @@ export function OperationalProfileForm() {
             }
           />
           <InputField
+            label="Max Payload (lbs)"
+            type="number"
+            value={String(profile.maxPayloadLbs)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                maxPayloadLbs: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="GVWR / Max Gross (lbs)"
+            type="number"
+            value={String(profile.grossVehicleWeightRatingLbs)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                grossVehicleWeightRatingLbs: Number(value),
+              }))
+            }
+          />
+          <InputField
+            label="Axle Count"
+            type="number"
+            value={String(profile.axleCount)}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                axleCount: Number(value),
+              }))
+            }
+          />
+          <InputField
             label="Operational Class"
             value={profile.operationalClassification}
             onChange={(value) =>
@@ -409,10 +530,60 @@ export function OperationalProfileForm() {
               }))
             }
           />
+          <BooleanField
+            label="Hazmat Capable"
+            checked={profile.hazmatCapable}
+            onChange={(checked) =>
+              setProfile((prev) => ({ ...prev, hazmatCapable: checked }))
+            }
+          />
+          <BooleanField
+            label="Tanker Capable"
+            checked={profile.tankerCapable}
+            onChange={(checked) =>
+              setProfile((prev) => ({ ...prev, tankerCapable: checked }))
+            }
+          />
+          <BooleanField
+            label="Refrigerated Capable"
+            checked={profile.refrigeratedCapable}
+            onChange={(checked) =>
+              setProfile((prev) => ({
+                ...prev,
+                refrigeratedCapable: checked,
+              }))
+            }
+          />
+          <InputField
+            label="Specialized Capabilities"
+            value={profile.specializedCapabilities}
+            onChange={(value) =>
+              setProfile((prev) => ({
+                ...prev,
+                specializedCapabilities: value,
+              }))
+            }
+          />
+          <InputField
+            label="Securement Equipment"
+            value={profile.securementEquipment}
+            onChange={(value) =>
+              setProfile((prev) => ({ ...prev, securementEquipment: value }))
+            }
+          />
+          <InputField
+            label="Route Restriction Notes"
+            value={profile.routeRestrictionNotes}
+            onChange={(value) =>
+              setProfile((prev) => ({ ...prev, routeRestrictionNotes: value }))
+            }
+          />
         </div>
         <p className="text-xs leading-5 text-slate-500">
-          Weight and classification fields support operational modeling only.
-          They are not treated as certified scale, permit, or compliance data.
+          Atlas equipment pack: {equipmentProfile.atlasEquipmentPack}. Dimensions:{" "}
+          {formatEquipmentDimensions(equipmentProfile)}. Weight, dimension, and
+          classification fields support operational modeling only. They are not
+          certified scale, permit, route legality, or compliance data.
         </p>
       </section>
 
@@ -819,5 +990,28 @@ function SelectField({
         label: optionLabel,
       }))}
     />
+  );
+}
+
+function BooleanField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-800 bg-[#060B14] px-4 text-sm font-semibold uppercase tracking-[0.12em] text-slate-300">
+      <input
+        type="checkbox"
+        data-preview-explain="vehicle-profile"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-4 w-4 accent-sky-400"
+      />
+      {label}
+    </label>
   );
 }

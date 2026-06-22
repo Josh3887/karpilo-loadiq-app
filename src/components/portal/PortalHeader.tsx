@@ -8,14 +8,14 @@ export function PortalHeader({ userEmail }: { userEmail?: string | null }) {
   return (
     <header className="border-b border-white/10 bg-[#060B14]/95">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <Link href="/portal" className="flex items-center gap-4">
+        <Link href="/dashboard" className="flex items-center gap-4">
           <LoadIqMark size="md" />
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-sky-300">
               {BRAND.productName}
             </p>
             <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-              Controlled App Portal
+              Account Portal
             </p>
           </div>
         </Link>
@@ -26,6 +26,12 @@ export function PortalHeader({ userEmail }: { userEmail?: string | null }) {
               {userEmail}
             </p>
           ) : null}
+          <Link
+            href="/dashboard"
+            className="rounded-lg border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-200 hover:bg-sky-400/20"
+          >
+            Open App
+          </Link>
           <Link
             href="https://karpilo-liq.com"
             className="rounded-lg border border-white/10 bg-white/[0.035] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-200 hover:border-sky-400/30"

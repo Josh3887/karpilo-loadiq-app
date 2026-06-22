@@ -9,18 +9,26 @@ import {
   writeAtlasEducationalEnabled,
 } from "@/lib/ai/atlas-educational-preferences";
 import {
-  readIationVisibility,
-  subscribeIationVisibility,
-  writeIationVisibility,
-} from "@/lib/ai/iation-events";
+  readAtlasOverlayVisibility,
+  subscribeAtlasOverlayVisibility,
+  writeAtlasOverlayVisibility,
+} from "@/lib/ai/atlas-events";
 import { AtlasRuntimeFrame } from "@/components/ai/atlas-runtime-frame";
 import {
   ATLAS_INTELLIGENCE_LAYERS,
   ATLAS_LAYER_ORDER,
+  ATLAS_CORE_CONTROLLED_ORCHESTRATION_NOTE,
   ATLAS_PROCESSING_DISCLOSURE,
   ATLAS_PROPRIETARY_STATEMENT,
   type AtlasLayerKey,
 } from "@/lib/atlas/atlas-registry";
+import {
+  ATLAS_CONTROLLED_ACTIVATION_POLICY,
+  ATLAS_CORE_SECONDARY_ROLES,
+  ATLAS_EQUIPMENT_INTELLIGENCE_PACKS,
+  ATLAS_SYSTEM_MISSION,
+  ATLAS_TIER_INTELLIGENCE_POLICY,
+} from "@/lib/atlas/atlas-intelligence-system";
 
 export function AtlasIntelligenceSettingsCard({
   enabled,
@@ -34,13 +42,13 @@ export function AtlasIntelligenceSettingsCard({
     () => true
   );
   const showCompatibilityOverlay = useSyncExternalStore(
-    subscribeIationVisibility,
-    readIationVisibility,
+    subscribeAtlasOverlayVisibility,
+    readAtlasOverlayVisibility,
     () => false
   );
 
   function updateVisibility(nextValue: boolean) {
-    writeIationVisibility(nextValue);
+    writeAtlasOverlayVisibility(nextValue);
   }
 
   return (
@@ -58,8 +66,8 @@ export function AtlasIntelligenceSettingsCard({
             accent="sky"
           />
           <ToggleRow
-            label="Compatibility overlay"
-            description="Optional overlay while embedded Atlas guidance surfaces continue rolling out."
+            label="Karpilo Atlas on-demand panel"
+            description="Optional on-demand panel for controlled Atlas Education and Freight context."
             checked={enabled && showCompatibilityOverlay}
             disabled={!enabled}
             onChange={updateVisibility}
@@ -86,9 +94,108 @@ export function AtlasIntelligenceSettingsCard({
             {ATLAS_PROPRIETARY_STATEMENT}
           </p>
           <p className="mt-3 text-xs leading-6 text-slate-500">
-            Active automated orchestration is intentionally deferred to protect
-            calculator authority and user decision responsibility.
+            {ATLAS_CORE_CONTROLLED_ORCHESTRATION_NOTE}
           </p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            Core Mission
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            {ATLAS_SYSTEM_MISSION}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            Controlled Activation
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            {ATLAS_CONTROLLED_ACTIVATION_POLICY.summary}
+          </p>
+          <div className="mt-4 grid gap-2 md:grid-cols-2">
+            {ATLAS_CONTROLLED_ACTIVATION_POLICY.allowedTriggers.map(
+              (trigger) => (
+                <div
+                  key={trigger.key}
+                  className="rounded-lg border border-white/10 bg-white/5 p-3"
+                >
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-200">
+                    {trigger.label}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {trigger.description}
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            Core Secondary Roles
+          </p>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {Object.entries(ATLAS_CORE_SECONDARY_ROLES).map(([key, role]) => (
+              <div
+                key={key}
+                className="rounded-lg border border-white/10 bg-white/5 p-3"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-purple-200">
+                  {role.label}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  {role.purpose}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  {role.boundary}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            Equipment Intelligence Packs
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.values(ATLAS_EQUIPMENT_INTELLIGENCE_PACKS).map((pack) => (
+              <span
+                key={pack.label}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300"
+              >
+                {pack.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            Tier Guardrails
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {ATLAS_TIER_INTELLIGENCE_POLICY.map((policy) => (
+              <div
+                key={policy.tier}
+                className="rounded-lg border border-white/10 bg-white/5 p-3"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-lime-200">
+                  {policy.tier}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  {policy.education}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {policy.freight}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {policy.route}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {policy.addOnCredits}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

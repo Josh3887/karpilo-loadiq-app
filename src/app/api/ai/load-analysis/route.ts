@@ -1,9 +1,23 @@
 import {
-  LOADIQ_AI_MODEL,
   LoadIqAiConfigurationError,
   getOpenAIClient,
   isLoadIqAiDevEnabled,
 } from "@/lib/ai/openai-client";
+import {
+  AI_FEATURE_LOAD_ANALYSIS,
+  AiGovernanceError,
+  buildAiErrorResponse,
+  buildAiRequestCacheIdentity,
+  createAiAdminClient,
+  evaluateAiThrottleGate,
+  evaluateTokenBudgetGuard,
+  getAiSafeFailureMessage,
+  getAiSystemStatus,
+  readAiRequestCache,
+  recordAiUsageEvent,
+  resolveAiModel,
+  writeAiRequestCache,
+} from "@/lib/ai/ai-governance";
 import { validateLoadAnalysisPayload } from "@/lib/ai/validate-load-analysis-payload";
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import { createClient } from "@/lib/supabase-server";
@@ -130,17 +144,62 @@ export async function POST(request: Request) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const featureKey = AI_FEATURE_LOAD_ANALYSIS;
+  let admin;
+
+  try {
+    admin = createAiAdminClient();
+  } catch {
+    return buildAiErrorResponse({
+      code: "ai_governance_unavailable",
+      statusCode: 500,
+    });
+  }
+
+  const userId = user.id;
+  const userEmail = user.email;
+  const blockedMetadata = {
+    route: "/api/ai/load-analysis",
+    deterministicOutputPreserved: true,
+  };
   let body: unknown;
 
   try {
     body = await request.json();
   } catch {
+    await recordAiUsageEvent({
+      admin,
+      event: {
+        userId,
+        featureKey,
+        status: "blocked",
+        blockReason: "invalid_json",
+        errorCode: "invalid_json",
+        metadata: blockedMetadata,
+      },
+    });
+
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
 
   const validation = validateLoadAnalysisPayload(body);
 
   if (!validation.ok) {
+    await recordAiUsageEvent({
+      admin,
+      event: {
+        userId,
+        featureKey,
+        status: "blocked",
+        blockReason: "invalid_payload",
+        errorCode: "invalid_payload",
+        metadata: {
+          ...blockedMetadata,
+          validationError: validation.error,
+        },
+      },
+    });
+
     return Response.json(
       {
         error: "invalid_payload",
@@ -151,9 +210,167 @@ export async function POST(request: Request) {
   }
 
   try {
+    const systemStatus = await getAiSystemStatus({
+      admin,
+      featureKey,
+    });
+
+    if (!systemStatus.enabled) {
+      await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "blocked",
+          blockReason: systemStatus.reason,
+          errorCode: "ai_governance_disabled",
+          metadata: blockedMetadata,
+        },
+      });
+
+      throw new AiGovernanceError({
+        code: systemStatus.reason ?? "ai_governance_disabled",
+        statusCode: 503,
+      });
+    }
+
+    const budgetResult = await evaluateTokenBudgetGuard({
+      admin,
+      userId,
+      userEmail,
+      featureKey,
+    });
+
+    if (!budgetResult.allowed) {
+      const budgetBlockCode = budgetResult.code ?? "ai_budget_exceeded";
+      await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "blocked",
+          blockReason: budgetBlockCode,
+          errorCode: budgetBlockCode,
+          planTier: budgetResult.budget.planTier,
+          modelTier: budgetResult.budget.modelTier,
+          metadata: blockedMetadata,
+        },
+      });
+
+      throw new AiGovernanceError({
+        code: budgetBlockCode,
+        statusCode: 429,
+        budget: budgetResult.budget,
+      });
+    }
+
+    const throttleResult = await evaluateAiThrottleGate({
+      admin,
+      userId,
+      featureKey,
+      cooldownSeconds: budgetResult.budget.cooldownSeconds,
+    });
+
+    if (!throttleResult.allowed) {
+      await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "blocked",
+          blockReason: throttleResult.code,
+          errorCode: throttleResult.code,
+          planTier: budgetResult.budget.planTier,
+          modelTier: budgetResult.budget.modelTier,
+          metadata: {
+            ...blockedMetadata,
+            retryAfterSeconds: throttleResult.retryAfterSeconds,
+          },
+        },
+      });
+
+      throw new AiGovernanceError({
+        code: throttleResult.code ?? "ai_cooldown_active",
+        statusCode: throttleResult.code === "ai_governance_unavailable" ? 500 : 429,
+        retryAfterSeconds: throttleResult.retryAfterSeconds,
+        budget: budgetResult.budget,
+      });
+    }
+
+    const model = resolveAiModel(budgetResult.budget.modelTier);
+    const cacheIdentity = buildAiRequestCacheIdentity({
+      featureKey,
+      model,
+      payload: validation.value,
+    });
+    const requestedEventId = await recordAiUsageEvent({
+      admin,
+      event: {
+        userId,
+        featureKey,
+        status: "requested",
+        requestHash: cacheIdentity.requestHash,
+        cacheKey: cacheIdentity.cacheKey,
+        model,
+        modelTier: budgetResult.budget.modelTier,
+        planTier: budgetResult.budget.planTier,
+        metadata: {
+          route: "/api/ai/load-analysis",
+          storesRawUserNotes: false,
+        },
+      },
+    });
+
+    if (!requestedEventId) {
+      throw new AiGovernanceError({
+        code: "ai_governance_unavailable",
+        statusCode: 500,
+        budget: budgetResult.budget,
+      });
+    }
+
+    const cached = await readAiRequestCache<LoadIqAiLoadAnalysisOutput>({
+      admin,
+      featureKey,
+      cacheKey: cacheIdentity.cacheKey,
+    });
+
+    if (cached) {
+      const cacheHitEventId = await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "cache_hit",
+          requestHash: cacheIdentity.requestHash,
+          cacheKey: cacheIdentity.cacheKey,
+          model,
+          modelTier: budgetResult.budget.modelTier,
+          planTier: budgetResult.budget.planTier,
+          cacheHit: true,
+          metadata: {
+            requestedEventId,
+            deterministicOutputPreserved: true,
+          },
+        },
+      });
+
+      return Response.json({
+        analysis: sanitizeAiOutput(cached.response),
+        model,
+        governance: {
+          status: "cache_hit",
+          usageEventId: cacheHitEventId,
+          requestedEventId,
+          cacheKey: cacheIdentity.cacheKey,
+          budget: budgetResult.budget,
+        },
+      });
+    }
+
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
-      model: LOADIQ_AI_MODEL,
+      model,
       temperature: 0.2,
       max_completion_tokens: 700,
       response_format: {
@@ -173,8 +390,9 @@ export async function POST(request: Request) {
             "Karpilo Atlas AI provides educational assistance, calculation explanation support, profitability interpretation support, user-interface guidance, and non-authoritative analytical context.",
             "You are trucking-aware, owner-operator focused, direct, calm, operationally realistic, concise, and educational.",
             "The calculator values are authoritative. Do not recalculate, replace, or contradict them. Interpret only.",
+            "Use equipment, combination, dimension, weight, hazmat, and securement fields only as user-entered planning context.",
             "Do not calculate final financial values. Do not make final business decisions for the user.",
-            "Do not claim guaranteed profit, savings, compliance, tax treatment, dispatch outcome, settlement outcome, route legality, safety outcome, or broker authority.",
+            "Do not claim guaranteed profit, savings, compliance, tax treatment, dispatch outcome, settlement outcome, route legality, safety outcome, permit approval, bridge clearance, hazmat route approval, securement sufficiency, load fit certification, or broker authority.",
             "Do not position Karpilo Atlas AI as dispatch authority, routing authority, compliance authority, broker authority, financial advisor, tax advisor, legal advisor, safety certifier, DOT/FMCSA compliance officer, operational control software, or carrier management authority.",
             "Do not use the phrases: as an AI, I guarantee, you should definitely take, you should definitely reject, financial advice, legal advice, tax advice.",
             "Keep each field compact and practical. Return JSON only.",
@@ -184,6 +402,25 @@ export async function POST(request: Request) {
           role: "user",
           content: JSON.stringify({
             calculatorValues: validation.value,
+            equipmentContext: {
+              equipmentType: validation.value.equipmentType,
+              equipmentPackLabel: validation.value.equipmentPackLabel,
+              combinationType: validation.value.combinationType,
+              equipmentDimensions: validation.value.equipmentDimensions,
+              maxPayloadLbs: validation.value.maxPayloadLbs,
+              grossVehicleWeightRatingLbs:
+                validation.value.grossVehicleWeightRatingLbs,
+              axleCount: validation.value.axleCount,
+              hazmatCapable: validation.value.hazmatCapable,
+              tankerCapable: validation.value.tankerCapable,
+              refrigeratedCapable: validation.value.refrigeratedCapable,
+              specializedCapabilities:
+                validation.value.specializedCapabilities,
+              securementEquipment: validation.value.securementEquipment,
+              routeRestrictionNotes: validation.value.routeRestrictionNotes,
+              authorityBoundary:
+                "User-entered equipment planning context only; not certification, route permission, permit approval, or compliance advice.",
+            },
             outputSections: [
               "Signal Readout",
               "Margin Pressure",
@@ -199,18 +436,115 @@ export async function POST(request: Request) {
     const content = completion.choices[0]?.message?.content;
 
     if (!content) {
-      return Response.json({ error: "ai_unavailable" }, { status: 502 });
+      await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "failed",
+          requestHash: cacheIdentity.requestHash,
+          cacheKey: cacheIdentity.cacheKey,
+          model,
+          modelTier: budgetResult.budget.modelTier,
+          planTier: budgetResult.budget.planTier,
+          errorCode: "ai_provider_unavailable",
+          metadata: {
+            requestedEventId,
+            providerReturnedContent: false,
+          },
+        },
+      });
+
+      return buildAiErrorResponse({
+        code: "ai_provider_unavailable",
+        statusCode: 502,
+      });
     }
+    const analysis = sanitizeAiOutput(JSON.parse(content));
+
+    await writeAiRequestCache({
+      admin,
+      featureKey,
+      cacheKey: cacheIdentity.cacheKey,
+      requestHash: cacheIdentity.requestHash,
+      model,
+      modelTier: budgetResult.budget.modelTier,
+      responseJson: analysis,
+      userId,
+    });
+
+    const completedEventId = await recordAiUsageEvent({
+      admin,
+      event: {
+        userId,
+        featureKey,
+        status: "completed",
+        requestHash: cacheIdentity.requestHash,
+        cacheKey: cacheIdentity.cacheKey,
+        model,
+        modelTier: budgetResult.budget.modelTier,
+        planTier: budgetResult.budget.planTier,
+        inputTokens: completion.usage?.prompt_tokens,
+        outputTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens,
+        metadata: {
+          requestedEventId,
+          deterministicOutputPreserved: true,
+        },
+      },
+    });
 
     return Response.json({
-      analysis: sanitizeAiOutput(JSON.parse(content)),
-      model: LOADIQ_AI_MODEL,
+      analysis,
+      model,
+      governance: {
+        status: "completed",
+        usageEventId: completedEventId,
+        requestedEventId,
+        cacheKey: cacheIdentity.cacheKey,
+        budget: budgetResult.budget,
+      },
     });
   } catch (error) {
-    if (error instanceof LoadIqAiConfigurationError) {
-      return Response.json({ error: "ai_not_configured" }, { status: 500 });
+    if (error instanceof AiGovernanceError) {
+      return buildAiErrorResponse(error);
     }
 
-    return Response.json({ error: "ai_provider_unavailable" }, { status: 500 });
+    if (error instanceof LoadIqAiConfigurationError) {
+      await recordAiUsageEvent({
+        admin,
+        event: {
+          userId,
+          featureKey,
+          status: "failed",
+          errorCode: "ai_not_configured",
+          metadata: blockedMetadata,
+        },
+      });
+
+      return buildAiErrorResponse({
+        code: "ai_not_configured",
+        statusCode: 500,
+      });
+    }
+
+    await recordAiUsageEvent({
+      admin,
+      event: {
+        userId,
+        featureKey,
+        status: "failed",
+        errorCode: "ai_provider_unavailable",
+        metadata: blockedMetadata,
+      },
+    });
+
+    return Response.json(
+      {
+        error: "ai_provider_unavailable",
+        message: getAiSafeFailureMessage("ai_provider_unavailable"),
+      },
+      { status: 500 }
+    );
   }
 }

@@ -273,7 +273,7 @@ function inferSettingsPreviewKey(value: string): PreviewExplanationKey {
     return "operator-identity";
   }
 
-  if (label.includes("ifta") || label.includes("platinum")) {
+  if (label.includes("ifta") || label.includes("pro")) {
     return "ifta-estimate";
   }
 

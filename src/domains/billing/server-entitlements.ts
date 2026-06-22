@@ -1,4 +1,5 @@
 import {
+  type SubscriptionAccessRecord,
   resolveEntitlements,
   resolvePaymentAccess,
 } from "@/domains/billing/entitlement-service";
@@ -7,6 +8,36 @@ import {
   resolveInternalBillingTestSubscription,
 } from "@/domains/billing/internal-test-harness";
 import { createClient } from "@/lib/supabase-server";
+
+const DEVELOPER_ACCESS_EMAILS = new Set(["karpilotrucking@outlook.com"]);
+
+function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() ?? "";
+}
+
+function getDeveloperAccessSubscription(
+  email: string | null | undefined
+): SubscriptionAccessRecord | null {
+  if (!DEVELOPER_ACCESS_EMAILS.has(normalizeEmail(email))) return null;
+
+  return {
+    tier: "pro",
+    subscription_tier: "pro",
+    status: "active",
+    entitlement_status: "active",
+    provider: "manual",
+    feature_access: "fleet",
+    lifetime_access: true,
+    full_loadiq_access: true,
+    fleet_enabled: true,
+    fleetos_pro_access: true,
+    truck_capacity_limit: null,
+    lifetime_price_lock: true,
+    future_feature_access_scope:
+      "developer_full_access_to_karpilo_loadiq_features",
+    price_subject_to_change: false,
+  };
+}
 
 async function getSubscriptionUsage(userId: string, userEmail?: string | null) {
   const supabase = await createClient();
@@ -39,9 +70,10 @@ async function getSubscriptionUsage(userId: string, userEmail?: string | null) {
     await getInternalBillingTestHarnessSnapshot(userEmail);
   const harnessSubscription =
     resolveInternalBillingTestSubscription(billingTestHarness);
+  const developerSubscription = getDeveloperAccessSubscription(userEmail);
 
   return {
-    subscription: harnessSubscription ?? subscription,
+    subscription: developerSubscription ?? harnessSubscription ?? subscription,
     usage,
     billingTestHarness,
   };

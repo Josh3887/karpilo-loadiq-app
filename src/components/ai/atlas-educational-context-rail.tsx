@@ -16,7 +16,8 @@ import {
 import {
   getAtlasEducationalHelpEntry,
   type AtlasEducationalHelpEntry,
-} from "@/lib/ai/iation-help-registry";
+} from "@/lib/ai/atlas-help-registry";
+import { subscribeAtlasEducationalContextRequests } from "@/lib/ai/atlas-events";
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 
 type ActiveContext = {
@@ -25,18 +26,6 @@ type ActiveContext = {
 };
 
 const ATLAS_EDUCATIONAL_LAYER = ATLAS_INTELLIGENCE_LAYERS.educational;
-
-const CONTEXT_SELECTOR = [
-  "[data-atlas-edu]",
-  "[data-iation-help]",
-  "[data-preview-explain]",
-  "input",
-  "textarea",
-  "select",
-  "button",
-  "[role='button']",
-  "[aria-haspopup='listbox']",
-].join(",");
 
 export function AtlasEducationalContextRail({
   enabled,
@@ -64,40 +53,33 @@ export function AtlasEducationalContextRail({
       return;
     }
 
-    function updateFromEvent(event: Event) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (target.closest("[data-atlas-educational-root='true']")) return;
-      if (target.closest("[data-iation-root='true']")) return;
-
-      const contextElement = target.closest<HTMLElement>(CONTEXT_SELECTOR);
-      const key = getContextKey(contextElement);
+    return subscribeAtlasEducationalContextRequests(({ key }) => {
       const entry = getAtlasEducationalHelpEntry(key);
 
-      if (!key || !entry) return;
+      if (!entry) return;
 
-      setDismissedKey((current) => (current === key ? current : null));
+      setDismissedKey(null);
       setActiveContext({ key, entry });
-    }
+    });
+  }, [educationalEnabled, enabled]);
+
+  useEffect(() => {
+    if (!visibleContext) return;
+
+    const visibleContextKey = visibleContext.key;
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setDismissedKey(activeContext?.key ?? null);
+        setDismissedKey(visibleContextKey);
       }
     }
 
-    document.addEventListener("focusin", updateFromEvent, true);
-    document.addEventListener("click", updateFromEvent, true);
-    document.addEventListener("pointerover", updateFromEvent, true);
     document.addEventListener("keydown", closeOnEscape, true);
 
     return () => {
-      document.removeEventListener("focusin", updateFromEvent, true);
-      document.removeEventListener("click", updateFromEvent, true);
-      document.removeEventListener("pointerover", updateFromEvent, true);
       document.removeEventListener("keydown", closeOnEscape, true);
     };
-  }, [activeContext?.key, educationalEnabled, enabled]);
+  }, [visibleContext]);
 
   if (!visibleContext) return null;
 
@@ -162,66 +144,4 @@ function ContextBlock({ title, body }: { title: string; body: string }) {
       <p className="mt-1 text-xs leading-5 text-slate-400">{body}</p>
     </div>
   );
-}
-
-function getContextKey(element: HTMLElement | null) {
-  if (!element) return null;
-
-  const explicit =
-    element.dataset.atlasEdu ??
-    element.dataset.iationHelp ??
-    element.dataset.previewExplain;
-
-  if (explicit) return explicit;
-
-  return inferContextKey(element);
-}
-
-function inferContextKey(element: HTMLElement) {
-  const label = getElementLabel(element);
-
-  if (label.includes("deadhead") && label.includes("mile")) {
-    return "deadhead-miles";
-  }
-  if (label.includes("loaded") && label.includes("mile")) {
-    return "loaded-miles";
-  }
-  if (label.includes("fuel price") || label.includes("diesel")) {
-    return "fuel-price";
-  }
-  if (label.includes("fuel surcharge") || label.includes("fsc")) {
-    return "fuel-surcharge";
-  }
-  if (label.includes("mpg")) return "mpg";
-  if (label.includes("weight")) return "estimated-load-weight";
-  if (label.includes("stop")) return "route-stop";
-  if (label.includes("dispatch") || label.includes("pickup") || label.includes("delivery")) {
-    return "dispatch-dates";
-  }
-  if (label.includes("analyze")) return "analyze-load";
-  if (label.includes("save load")) return "save-load";
-  if (label.includes("rpm")) return "rpm";
-  if (label.includes("gross") || label.includes("revenue")) {
-    return "gross-revenue";
-  }
-
-  return "calculator-field";
-}
-
-function getElementLabel(element: HTMLElement) {
-  const explicitLabel =
-    element.getAttribute("aria-label") ??
-    element.getAttribute("name") ??
-    element.getAttribute("id") ??
-    element.getAttribute("placeholder") ??
-    "";
-
-  const visibleLabel =
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    element instanceof HTMLSelectElement
-      ? element.labels?.[0]?.textContent ?? ""
-      : element.textContent ?? "";
-
-  return `${explicitLabel} ${visibleLabel}`.toLowerCase();
 }

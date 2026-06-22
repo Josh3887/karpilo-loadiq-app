@@ -16,6 +16,65 @@ type Table<Row, Insert, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
+      diagnostic_events: Table<
+        {
+          id: string;
+          created_at: string;
+          event_type: "app_error";
+          severity: "debug" | "info" | "warning" | "error" | "critical";
+          source: "app" | "dashboard" | "admin" | "api" | "server" | "client";
+          environment: string;
+          route: string | null;
+          user_id: string | null;
+          session_id: string | null;
+          release_version: string | null;
+          message: string;
+          stack: string | null;
+          digest: string | null;
+          metadata: Json;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          resolution_note: string | null;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          event_type?: "app_error";
+          severity: "debug" | "info" | "warning" | "error" | "critical";
+          source: "app" | "dashboard" | "admin" | "api" | "server" | "client";
+          environment: string;
+          route?: string | null;
+          user_id?: string | null;
+          session_id?: string | null;
+          release_version?: string | null;
+          message: string;
+          stack?: string | null;
+          digest?: string | null;
+          metadata?: Json;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          event_type?: "app_error";
+          severity?: "debug" | "info" | "warning" | "error" | "critical";
+          source?: "app" | "dashboard" | "admin" | "api" | "server" | "client";
+          environment?: string;
+          route?: string | null;
+          user_id?: string | null;
+          session_id?: string | null;
+          release_version?: string | null;
+          message?: string;
+          stack?: string | null;
+          digest?: string | null;
+          metadata?: Json;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+        }
+      >;
       operator_profiles: Table<
         {
           id: string;
@@ -103,17 +162,46 @@ export type Database = {
           driver_load_number: string | null;
           load_name: string | null;
           load_outcome: string;
-          load_run_status: "ran" | "test" | "planned" | null;
-          was_run_status: "ran" | "test" | "planned" | null;
+          load_run_status:
+            | "planned"
+            | "booked"
+            | "dispatched"
+            | "running"
+            | "rejected"
+            | "pulled"
+            | "ran"
+            | "test"
+            | null;
+          was_run_status:
+            | "planned"
+            | "booked"
+            | "dispatched"
+            | "running"
+            | "rejected"
+            | "pulled"
+            | "ran"
+            | "test"
+            | null;
+          load_status_reason: "breach" | "accident" | "breakdown" | "other" | null;
           pickup_zip: string;
           pickup_city: string | null;
           pickup_state: string | null;
           delivery_zip: string;
           delivery_city: string | null;
           delivery_state: string | null;
+          deadhead_start_city: string | null;
+          deadhead_start_state: string | null;
+          deadhead_start_zip: string | null;
           loaded_miles: number;
           deadhead_miles: number;
           total_miles: number;
+          estimated_load_weight_lbs: number | null;
+          route_stop_count: number | null;
+          route_model_version: string | null;
+          reserve_allocation_mode: "flat" | "cpm" | "percent" | null;
+          reserve_allocation_cpm: number | null;
+          reserve_allocation_percent: number | null;
+          target_true_rpm_snapshot: number | null;
           rate_per_mile: number;
           gross_revenue: number;
           fuel_cost: number;
@@ -123,6 +211,8 @@ export type Database = {
           fuel_override: boolean;
           eia_period: string | null;
           fuel_fetched_at: string | null;
+          fuel_gauge_snapshot: Json;
+          equipment_context_snapshot: Json;
           dispatch_days: number | null;
           daily_overhead: number | null;
           overhead_applied: number | null;
@@ -161,17 +251,46 @@ export type Database = {
           driver_load_number?: string | null;
           load_name?: string | null;
           load_outcome?: string;
-          load_run_status?: "ran" | "test" | "planned" | null;
-          was_run_status?: "ran" | "test" | "planned" | null;
+          load_run_status?:
+            | "planned"
+            | "booked"
+            | "dispatched"
+            | "running"
+            | "rejected"
+            | "pulled"
+            | "ran"
+            | "test"
+            | null;
+          was_run_status?:
+            | "planned"
+            | "booked"
+            | "dispatched"
+            | "running"
+            | "rejected"
+            | "pulled"
+            | "ran"
+            | "test"
+            | null;
+          load_status_reason?: "breach" | "accident" | "breakdown" | "other" | null;
           pickup_zip: string;
           pickup_city?: string | null;
           pickup_state?: string | null;
           delivery_zip: string;
           delivery_city?: string | null;
           delivery_state?: string | null;
+          deadhead_start_city?: string | null;
+          deadhead_start_state?: string | null;
+          deadhead_start_zip?: string | null;
           loaded_miles: number;
           deadhead_miles?: number;
           total_miles?: number;
+          estimated_load_weight_lbs?: number | null;
+          route_stop_count?: number | null;
+          route_model_version?: string | null;
+          reserve_allocation_mode?: "flat" | "cpm" | "percent" | null;
+          reserve_allocation_cpm?: number | null;
+          reserve_allocation_percent?: number | null;
+          target_true_rpm_snapshot?: number | null;
           rate_per_mile?: number;
           gross_revenue?: number;
           fuel_cost?: number;
@@ -181,6 +300,8 @@ export type Database = {
           fuel_override?: boolean;
           eia_period?: string | null;
           fuel_fetched_at?: string | null;
+          fuel_gauge_snapshot?: Json;
+          equipment_context_snapshot?: Json;
           dispatch_days?: number | null;
           daily_overhead?: number | null;
           overhead_applied?: number | null;
@@ -204,6 +325,38 @@ export type Database = {
           calculated_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
+        }
+      >;
+      saved_load_stops: Table<
+        {
+          id: string;
+          saved_load_id: string;
+          user_id: string;
+          stop_sequence: number;
+          stop_type: "pickup" | "stop_off" | "delivery";
+          city: string | null;
+          state: string | null;
+          zip: string | null;
+          miles_from_previous: number | null;
+          stop_revenue: number | null;
+          stop_expense: number | null;
+          notes: string | null;
+          created_at: string | null;
+        },
+        {
+          id?: string;
+          saved_load_id: string;
+          user_id: string;
+          stop_sequence: number;
+          stop_type: "pickup" | "stop_off" | "delivery";
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
+          miles_from_previous?: number | null;
+          stop_revenue?: number | null;
+          stop_expense?: number | null;
+          notes?: string | null;
+          created_at?: string | null;
         }
       >;
       operator_program_status: Table<

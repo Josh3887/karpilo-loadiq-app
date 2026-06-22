@@ -54,7 +54,8 @@ const PREVIEW_EXPLANATIONS = {
   rpm: {
     title: "RPM Input",
     body: "RPM is the rate per loaded mile. In live use, Karpilo LoadIQ compares RPM against loaded miles, deadhead, fuel, overhead, and target true RPM to show whether a load can support the truck.",
-    unlock: "Gold, Pilot, Legacy Launch, or Platinum access unlocks live load analysis.",
+    unlock:
+      "Silver, Gold, Platinum, Pro, Pilot, or Legacy Launch access unlocks live load analysis when assigned by entitlement records.",
   },
   "gross-revenue": {
     title: "Gross Revenue Input",
@@ -89,7 +90,8 @@ const PREVIEW_EXPLANATIONS = {
   "analyze-load": {
     title: "Analyze Load",
     body: "Analyze runs the freight profitability estimate using route, revenue, fuel, overhead, reserves, and profile assumptions. Preview mode blocks execution so no usage or production records are created.",
-    unlock: "Activate Gold, Pilot, Legacy Launch, or Platinum access to run real analyses.",
+    unlock:
+      "Activate Silver, Gold, Platinum, Pro, Pilot, or Legacy Launch access to run real analyses.",
   },
   "save-load": {
     title: "Save Load",
@@ -103,8 +105,9 @@ const PREVIEW_EXPLANATIONS = {
   },
   "ifta-estimate": {
     title: "IFTA Estimation",
-    body: "Platinum IFTA support is planned as estimation and planning assistance using jurisdiction miles, gallons, fuel purchases, and route context. It is not tax filing or jurisdictional certification.",
-    unlock: "Platinum is planned as the future premium intelligence layer.",
+    body: "Pro is positioned for jurisdictional fuel-tax estimation using route, fuel purchase, gallon, MPG, and load-history context. It is not tax filing, jurisdictional certification, or compliance management.",
+    unlock:
+      "Pro unlock timing remains governed by assigned entitlement records.",
   },
   "fuel-price": {
     title: "Fuel Price",
@@ -128,7 +131,7 @@ const PREVIEW_EXPLANATIONS = {
   },
   "subscription-tile": {
     title: "Subscription Tile",
-    body: "Subscription tiles show the plan, entitlement state, usage limits, pricing locks, and payment rail. They help separate Pilot, Legacy Launch, Gold, and planned Platinum access.",
+    body: "Subscription tiles show commercial tier messaging, entitlement state, usage limits, pricing locks, and payment rail. They keep Silver, Gold, Platinum, and Pro separate from Pilot and Legacy Launch rollout records.",
     unlock: "Preview blocks payment changes and production billing sessions.",
   },
   "stripe-checkout": {
@@ -168,7 +171,7 @@ const PREVIEW_EXPLANATIONS = {
   },
   "vehicle-profile": {
     title: "Vehicle Intelligence",
-    body: "Vehicle settings store MPG, reserve, truck, target income, and operating assumptions used by the calculator.",
+    body: "Vehicle settings store MPG, reserves, truck, tank, equipment, target income, and operating assumptions used by the calculator. Truck-specific provider routing is reserved for Platinum/Pro.",
     unlock: "Signed-in users can save vehicle and operating assumptions to their Supabase profile.",
   },
   "pay-template": {

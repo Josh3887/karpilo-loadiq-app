@@ -59,9 +59,35 @@ export async function acceptRequiredAppPolicies() {
     },
   }));
 
-  const { error } = await supabase
-    .from("app_policy_acceptances")
-    .upsert(rows, { onConflict: "user_id,policy_key,policy_version" });
+  const { data: existingAcceptances, error: existingAcceptancesError } =
+    await supabase
+      .from("app_policy_acceptances")
+      .select("policy_key, policy_version")
+      .eq("user_id", user.id)
+      .in(
+        "policy_key",
+        REQUIRED_APP_POLICIES.map((policy) => policy.key),
+      );
+
+  if (existingAcceptancesError) {
+    throw new Error(existingAcceptancesError.message);
+  }
+
+  const acceptedPolicies = new Set(
+    (existingAcceptances ?? []).map(
+      (acceptance) =>
+        `${acceptance.policy_key}:${acceptance.policy_version}`,
+    ),
+  );
+  const missingRows = rows.filter(
+    (row) => !acceptedPolicies.has(`${row.policy_key}:${row.policy_version}`),
+  );
+
+  const { error } = missingRows.length
+    ? await supabase
+        .from("app_policy_acceptances")
+        .insert(missingRows)
+    : { error: null };
 
   if (error) throw new Error(error.message);
 

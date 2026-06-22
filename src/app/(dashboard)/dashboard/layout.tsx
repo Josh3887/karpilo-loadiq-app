@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AtlasEducationalContextRail } from "@/components/ai/atlas-educational-context-rail";
-import { IationOverlay } from "@/components/ai/iation-overlay";
+import { AtlasOverlay } from "@/components/ai/atlas-overlay";
 import { PaymentSetupModal } from "@/components/billing/payment-setup-modal";
 import { AppAccessGate } from "@/components/legal/app-access-gate";
 import { PreviewModeProvider } from "@/components/preview/preview-mode-provider";
@@ -64,7 +64,7 @@ export default async function DashboardLayout({
         billingEmail={BILLING_EMAIL}
       />
       <AtlasEducationalContextRail enabled={isLoadIqAiDevEnabled()} />
-      <IationOverlay enabled={isLoadIqAiDevEnabled()} />
+      <AtlasOverlay enabled={isLoadIqAiDevEnabled()} />
       <div
         className={
           gateState.requiresPolicyAcceptance || gateState.requiresSafetyReminder

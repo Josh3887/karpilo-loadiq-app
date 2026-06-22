@@ -6,7 +6,7 @@ export const CONTACT_EMAILS = {
   newsletter: LOADIQ_EMAILS.newsletter,
   updates: LOADIQ_EMAILS.updates,
   billing: LOADIQ_EMAILS.billing,
-  feedback: LOADIQ_EMAILS.founderFeedback,
+  feedback: LOADIQ_EMAILS.feedback,
   founderFeedback: LOADIQ_EMAILS.founderFeedback,
   corporate: LOADIQ_EMAILS.corporate,
   legal: LOADIQ_EMAILS.legal,

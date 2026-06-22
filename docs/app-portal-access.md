@@ -2,9 +2,9 @@
 
 ## Scope
 
-`app.karpilo-liq.com` is the authenticated Karpilo LoadIQ app portal. The public website at `karpilo-liq.com` should route users here for login, access requests, billing status, settings, and Fit Check.
+`app.karpilo-liq.com` is the web account-access portal for the LoadIQ app ecosystem. The `/portal` routes are account-side bridge routes between the public website at `karpilo-liq.com` and app account services such as login, access requests, billing status, settings, profile, and Fit Check status.
 
-The primitive portal is intentionally limited. It does not expose the full calculator, reports, maps, AI insights, fleet tools, dispatch workflows, admin tooling, or developer observability surfaces.
+The primitive portal is intentionally limited. It must not become a blockade, replacement, or limiting definition for the full LoadIQ app project, including protected web-app routes and future Apple App Store / Google Play surfaces. It does not expose the full calculator, reports, maps, AI insights, fleet tools, dispatch workflows, admin tooling, or developer observability surfaces.
 
 ## Routes
 

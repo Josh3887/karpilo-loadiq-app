@@ -1,11 +1,19 @@
 import "server-only";
 
-import { FUTURE_PLATFORM_FEATURE_SCOPE } from "@/config/pricing";
+import {
+  FUTURE_PLATFORM_FEATURE_SCOPE,
+  type LoadIqCommercialTierId,
+} from "@/config/pricing";
 import type { SubscriptionAccessRecord } from "@/domains/billing/entitlement-service";
 import {
+  isBillingTestHarnessState,
   type BillingTestHarnessState,
   type InternalBillingTestHarnessSnapshot,
 } from "@/domains/billing/internal-test-harness-types";
+import {
+  evaluateSubscriptionLaunchPhase,
+  type SubscriptionLaunchPhaseId,
+} from "@/domains/billing/subscription-launch-phases";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 const AUTHORIZED_TEST_EMAIL = "karpilotrucking@outlook.com";
@@ -80,6 +88,108 @@ function normalizeFutureFeatureScope(value: string | null) {
   return value === FUTURE_FEATURE_SCOPE_SLUG
     ? FUTURE_PLATFORM_FEATURE_SCOPE
     : value;
+}
+
+function launchPhaseSimulationFields({
+  state,
+  phaseId,
+  userCount,
+  daysElapsed,
+  selectedPlan,
+}: {
+  state: BillingTestHarnessState;
+  phaseId: SubscriptionLaunchPhaseId;
+  userCount: number;
+  daysElapsed: number;
+  selectedPlan: LoadIqCommercialTierId;
+}): HarnessSimulationFields {
+  const now = new Date().toISOString();
+  const evaluation = evaluateSubscriptionLaunchPhase({
+    phaseId,
+    userCount,
+    daysElapsed,
+  });
+  const active = evaluation.transitionReason === "phase_active";
+
+  return {
+    simulated_state: state,
+    entitlement_status: active || evaluation.isOpenMarket ? "active" : "unknown",
+    tier: selectedPlan,
+    program: evaluation.phase.id,
+    trial_status: evaluation.phase.betaOnly ? "testing" : "not_required",
+    trial_duration_days: evaluation.phase.durationDays,
+    trial_start: null,
+    trial_end:
+      evaluation.phase.durationDays === null
+        ? null
+        : isoFromNow(evaluation.phase.durationDays - daysElapsed),
+    billing_starts_at: now,
+    lifetime_price_lock: evaluation.lifetimePricingEligible,
+    future_feature_access_scope: evaluation.lifetimePricingEligible
+      ? FUTURE_FEATURE_SCOPE_SLUG
+      : null,
+    cohort_phase: evaluation.phase.id,
+    cohort_cap: evaluation.phase.cap,
+    price_subject_to_change: !evaluation.lifetimePricingEligible,
+    notes: [
+      `Internal launch simulation only: ${evaluation.phase.label}.`,
+      `Selected commercial plan: ${selectedPlan}.`,
+      `Purpose: ${evaluation.phase.purpose}.`,
+      `Users: ${evaluation.userCount}/${evaluation.phase.cap ?? "uncapped"}.`,
+      `Days elapsed: ${evaluation.daysElapsed}/${evaluation.phase.durationDays ?? "ongoing"}.`,
+      `Transition: ${evaluation.transitionReason}.`,
+      `Lifetime pricing eligible: ${evaluation.lifetimePricingEligible ? "yes" : "no"}.`,
+      `Eligible plans: ${evaluation.eligiblePlans.join(", ")}.`,
+      "Does not write Stripe subscriptions or production entitlement records.",
+    ].join(" "),
+  };
+}
+
+function betaTestingSimulationFields({
+  state,
+  userCount,
+  daysElapsed,
+}: {
+  state: BillingTestHarnessState;
+  userCount: number;
+  daysElapsed: number;
+}): HarnessSimulationFields {
+  const evaluation = evaluateSubscriptionLaunchPhase({
+    phaseId: "beta_testing",
+    userCount,
+    daysElapsed,
+  });
+  const active = evaluation.transitionReason === "phase_active";
+
+  return {
+    simulated_state: state,
+    entitlement_status: active ? "active" : "expired",
+    tier: "beta_test",
+    program: evaluation.phase.id,
+    trial_status: active ? "testing" : "ended",
+    trial_duration_days: evaluation.phase.durationDays,
+    trial_start: null,
+    trial_end:
+      evaluation.phase.durationDays === null
+        ? null
+        : isoFromNow(evaluation.phase.durationDays - daysElapsed),
+    billing_starts_at: null,
+    lifetime_price_lock: false,
+    future_feature_access_scope: null,
+    cohort_phase: evaluation.phase.id,
+    cohort_cap: evaluation.phase.cap,
+    price_subject_to_change: true,
+    notes: [
+      `Internal beta simulation only: ${evaluation.phase.label}.`,
+      "Access purpose: allow beta testers to test the app.",
+      "Commercial plan selection is not active during beta testing.",
+      `Users: ${evaluation.userCount}/${evaluation.phase.cap ?? "uncapped"}.`,
+      `Days elapsed: ${evaluation.daysElapsed}/${evaluation.phase.durationDays ?? "ongoing"}.`,
+      `Transition: ${evaluation.transitionReason}.`,
+      "Lifetime pricing eligible: no.",
+      "Does not write Stripe subscriptions or production entitlement records.",
+    ].join(" "),
+  };
 }
 
 function simulationFieldsForState(
@@ -182,62 +292,170 @@ function simulationFieldsForState(
         price_subject_to_change: true,
         notes: "Internal test state: Gold canceled. Not a real Stripe subscriber.",
       };
-    case "pilot_lifetime_full_access":
-      return {
-        simulated_state: state,
-        entitlement_status: "active",
-        tier: "pilot",
-        program: "pilot",
-        trial_status: "not_required",
-        trial_duration_days: null,
-        trial_start: null,
-        trial_end: null,
-        billing_starts_at: now,
-        lifetime_price_lock: true,
-        future_feature_access_scope: FUTURE_FEATURE_SCOPE_SLUG,
-        cohort_phase: "pilot",
-        cohort_cap: 50,
-        price_subject_to_change: false,
-        notes:
-          "Internal dummy billing/entitlement test account only. Not a real Stripe subscriber.",
-      };
-    case "launch_lifetime_full_access":
-      return {
-        simulated_state: state,
-        entitlement_status: "active",
-        tier: "launch500",
-        program: "launch500",
-        trial_status: "not_required",
-        trial_duration_days: null,
-        trial_start: null,
-        trial_end: null,
-        billing_starts_at: now,
-        lifetime_price_lock: true,
-        future_feature_access_scope: FUTURE_FEATURE_SCOPE_SLUG,
-        cohort_phase: "launch",
-        cohort_cap: 500,
-        price_subject_to_change: false,
-        notes: "Internal test state: Legacy Launch lifetime access. Not a real Stripe subscriber.",
-      };
-    case "platinum_coming_soon":
-      return {
-        simulated_state: state,
-        entitlement_status: "unknown",
-        tier: "platinum",
-        program: "platinum",
-        trial_status: "not_available",
-        trial_duration_days: 7,
-        trial_start: null,
-        trial_end: null,
-        billing_starts_at: null,
-        lifetime_price_lock: false,
-        future_feature_access_scope: null,
-        cohort_phase: "planned",
-        cohort_cap: null,
-        price_subject_to_change: true,
-        notes:
-          "Internal test state: Platinum planned/coming soon. Checkout remains disabled.",
-      };
+    case "beta_testing_app_access":
+      return betaTestingSimulationFields({
+        state,
+        userCount: 24,
+        daysElapsed: 20,
+      });
+    case "beta_testing_cap_full":
+      return betaTestingSimulationFields({
+        state,
+        userCount: 50,
+        daysElapsed: 35,
+      });
+    case "legacy_launch_silver_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "legacy_launch",
+        userCount: 72,
+        daysElapsed: 25,
+        selectedPlan: "silver",
+      });
+    case "legacy_launch_gold_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "legacy_launch",
+        userCount: 72,
+        daysElapsed: 25,
+        selectedPlan: "gold",
+      });
+    case "legacy_launch_platinum_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "legacy_launch",
+        userCount: 72,
+        daysElapsed: 25,
+        selectedPlan: "platinum",
+      });
+    case "legacy_launch_pro_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "legacy_launch",
+        userCount: 72,
+        daysElapsed: 25,
+        selectedPlan: "pro",
+      });
+    case "legacy_launch_expired":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "legacy_launch",
+        userCount: 88,
+        daysElapsed: 60,
+        selectedPlan: "gold",
+      });
+    case "founding_operator_phase_1_silver_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_1",
+        userCount: 128,
+        daysElapsed: 45,
+        selectedPlan: "silver",
+      });
+    case "founding_operator_phase_1_gold_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_1",
+        userCount: 128,
+        daysElapsed: 45,
+        selectedPlan: "gold",
+      });
+    case "founding_operator_phase_1_platinum_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_1",
+        userCount: 128,
+        daysElapsed: 45,
+        selectedPlan: "platinum",
+      });
+    case "founding_operator_phase_1_pro_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_1",
+        userCount: 128,
+        daysElapsed: 45,
+        selectedPlan: "pro",
+      });
+    case "founding_operator_phase_1_cap_full":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_1",
+        userCount: 200,
+        daysElapsed: 70,
+        selectedPlan: "gold",
+      });
+    case "founding_operator_phase_2_silver_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_2",
+        userCount: 120,
+        daysElapsed: 20,
+        selectedPlan: "silver",
+      });
+    case "founding_operator_phase_2_gold_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_2",
+        userCount: 120,
+        daysElapsed: 20,
+        selectedPlan: "gold",
+      });
+    case "founding_operator_phase_2_platinum_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_2",
+        userCount: 120,
+        daysElapsed: 20,
+        selectedPlan: "platinum",
+      });
+    case "founding_operator_phase_2_pro_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_2",
+        userCount: 120,
+        daysElapsed: 20,
+        selectedPlan: "pro",
+      });
+    case "founding_operator_phase_2_expired":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "founding_operator_phase_2",
+        userCount: 140,
+        daysElapsed: 45,
+        selectedPlan: "gold",
+      });
+    case "open_market_silver_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "open_market",
+        userCount: 0,
+        daysElapsed: 0,
+        selectedPlan: "silver",
+      });
+    case "open_market_gold_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "open_market",
+        userCount: 0,
+        daysElapsed: 0,
+        selectedPlan: "gold",
+      });
+    case "open_market_platinum_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "open_market",
+        userCount: 0,
+        daysElapsed: 0,
+        selectedPlan: "platinum",
+      });
+    case "open_market_pro_active":
+      return launchPhaseSimulationFields({
+        state,
+        phaseId: "open_market",
+        userCount: 0,
+        daysElapsed: 0,
+        selectedPlan: "pro",
+      });
     case "no_subscription":
     default:
       return {
@@ -275,7 +493,9 @@ function toSnapshot(
   return {
     email: source.email,
     enabled: source.enabled,
-    simulatedState: source.simulated_state,
+    simulatedState: isBillingTestHarnessState(source.simulated_state)
+      ? source.simulated_state
+      : "no_subscription",
     entitlementStatus: source.entitlement_status,
     tier: source.tier,
     program: source.program,
@@ -328,12 +548,22 @@ export function resolveInternalBillingTestSubscription(
   snapshot: InternalBillingTestHarnessSnapshot | null
 ): SubscriptionAccessRecord | null {
   if (!snapshot?.enabled || snapshot.error) return null;
+  const harnessTier = normalizeHarnessTier(snapshot.tier);
+  const featureFields = featureFieldsForHarnessTier(harnessTier);
 
   return {
     provider: "manual",
     status: snapshot.entitlementStatus,
     entitlement_status: snapshot.entitlementStatus,
-    tier: snapshot.tier,
+    tier: harnessTier ?? snapshot.tier,
+    subscription_tier: harnessTier,
+    feature_access: featureFields.featureAccess,
+    grandfathered_access: Boolean(snapshot.lifetimePriceLock),
+    lifetime_access: Boolean(snapshot.lifetimePriceLock),
+    full_loadiq_access: featureFields.fullLoadIqAccess,
+    fleet_enabled: featureFields.fleetEnabled,
+    fleetos_pro_access: featureFields.fleetOsProAccess,
+    truck_capacity_limit: featureFields.truckCapacityLimit,
     trial_end: snapshot.trialEnd,
     trial_duration_days: snapshot.trialDurationDays,
     trial_status: snapshot.trialStatus,
@@ -346,6 +576,90 @@ export function resolveInternalBillingTestSubscription(
     cancel_at_period_end: false,
     canceled_at: snapshot.entitlementStatus === "canceled" ? new Date().toISOString() : null,
   };
+}
+
+type HarnessTier = LoadIqCommercialTierId | "beta_test";
+
+function normalizeHarnessTier(
+  value: string | null | undefined
+): HarnessTier | null {
+  if (value === "beta_test") return "beta_test";
+  return normalizeCommercialTier(value);
+}
+
+function normalizeCommercialTier(
+  value: string | null | undefined
+): LoadIqCommercialTierId | null {
+  if (
+    value === "silver" ||
+    value === "gold" ||
+    value === "platinum" ||
+    value === "pro"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function featureFieldsForHarnessTier(tier: HarnessTier | null) {
+  if (tier === "beta_test") {
+    return {
+      featureAccess: "platinum",
+      fullLoadIqAccess: true,
+      fleetEnabled: false,
+      fleetOsProAccess: false,
+      truckCapacityLimit: 1,
+    } as const;
+  }
+
+  if (tier === "pro") {
+    return {
+      featureAccess: "fleet",
+      fullLoadIqAccess: true,
+      fleetEnabled: true,
+      fleetOsProAccess: true,
+      truckCapacityLimit: null,
+    } as const;
+  }
+
+  if (tier === "platinum") {
+    return {
+      featureAccess: "platinum",
+      fullLoadIqAccess: true,
+      fleetEnabled: false,
+      fleetOsProAccess: false,
+      truckCapacityLimit: 1,
+    } as const;
+  }
+
+  if (tier === "gold") {
+    return {
+      featureAccess: "premium",
+      fullLoadIqAccess: true,
+      fleetEnabled: false,
+      fleetOsProAccess: false,
+      truckCapacityLimit: 1,
+    } as const;
+  }
+
+  if (tier === "silver") {
+    return {
+      featureAccess: "standard",
+      fullLoadIqAccess: false,
+      fleetEnabled: false,
+      fleetOsProAccess: false,
+      truckCapacityLimit: 1,
+    } as const;
+  }
+
+  return {
+    featureAccess: null,
+    fullLoadIqAccess: false,
+    fleetEnabled: false,
+    fleetOsProAccess: false,
+    truckCapacityLimit: null,
+  } as const;
 }
 
 export async function updateInternalBillingTestHarness({

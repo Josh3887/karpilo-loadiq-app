@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FieldErrors, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,11 +12,22 @@ import {
   usePreviewMode,
 } from "@/components/preview/preview-mode-provider";
 import { LearnMore } from "@/components/ui/learn-more";
+import { ThemedSelect } from "@/components/ui/themed-select";
 import {
   defaultLoadInputValues,
   loadInputSchema,
   LoadInputFormValues,
 } from "@/lib/load-schema";
+import {
+  LOAD_PULLED_REASON_OPTIONS,
+  LOAD_RUN_STATUS_OPTIONS,
+  type LoadPulledReason,
+  type LoadRunStatus,
+} from "@/lib/fuel-gauge";
+import {
+  buildDefaultStructuredEquipmentProfile,
+  type StructuredEquipmentProfile,
+} from "@/lib/equipment-profile";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
 import {
@@ -67,6 +78,8 @@ const PREVIEW_PROFILE_VALUES: ProfileDerivedValues = {
 const PREVIEW_FUEL_STATUS =
   "Preview estimate · live EIA lookup is not called in preview mode.";
 
+const PREVIEW_EQUIPMENT_PROFILE = buildDefaultStructuredEquipmentProfile();
+
 const FIELD_VALIDATION_MESSAGES: Record<string, string> = {
   pickupZip: "Enter a pickup ZIP with at least 5 characters.",
   deliveryZip: "Enter a delivery ZIP with at least 5 characters.",
@@ -103,6 +116,11 @@ const FIELD_VALIDATION_MESSAGES: Record<string, string> = {
   dispatchPercent: "Dispatch percent must be between 0 and 100.",
   targetTrueRpm: "Target true RPM must be greater than 0.",
   estimatedLoadWeightLbs: "Estimated load weight cannot be negative.",
+  loadRunStatus: "Select the load lifecycle status.",
+  loadPulledReason: "Select why the load was pulled.",
+  fuelTankCount: "Fuel tank count cannot be negative.",
+  fuelTankCapacityGallons: "Tank size cannot be negative.",
+  startingFuelPercent: "Starting fuel must be between 0 and 100%.",
 };
 
 export function LoadInputForm({
@@ -149,6 +167,32 @@ export function LoadInputForm({
   });
   const watchedValues = useWatch({ control });
 
+  const setEquipmentProfileValues = useCallback(
+    (profile: StructuredEquipmentProfile) => {
+      setValue("equipmentType", profile.equipmentType);
+      setValue("atlasEquipmentPack", profile.atlasEquipmentPack);
+      setValue("combinationType", profile.combinationType);
+      setValue("trailerLengthFeet", profile.trailerLengthFeet);
+      setValue("trailerWidthInches", profile.trailerWidthInches);
+      setValue("trailerHeightInches", profile.trailerHeightInches);
+      setValue("vehicleTareWeightLbs", profile.vehicleTareWeightLbs);
+      setValue("estimatedMaxGrossLbs", profile.estimatedMaxGrossLbs);
+      setValue("maxPayloadLbs", profile.maxPayloadLbs);
+      setValue(
+        "grossVehicleWeightRatingLbs",
+        profile.grossVehicleWeightRatingLbs
+      );
+      setValue("axleCount", profile.axleCount);
+      setValue("hazmatCapable", profile.hazmatCapable);
+      setValue("tankerCapable", profile.tankerCapable);
+      setValue("refrigeratedCapable", profile.refrigeratedCapable);
+      setValue("specializedCapabilities", profile.specializedCapabilities);
+      setValue("securementEquipment", profile.securementEquipment);
+      setValue("routeRestrictionNotes", profile.routeRestrictionNotes);
+    },
+    [setValue]
+  );
+
   useEffect(() => {
     if (previewActive) {
       setValue("profileDerivedValues", PREVIEW_PROFILE_VALUES);
@@ -157,6 +201,10 @@ export function LoadInputForm({
       setValue("overhead", PREVIEW_PROFILE_VALUES.dailyFixedOverhead);
       setValue("targetTrueRpm", PREVIEW_PROFILE_VALUES.targetTrueRpm);
       setValue("mpg", PREVIEW_PROFILE_VALUES.mpg);
+      setValue("fuelTankCount", 2);
+      setValue("fuelTankCapacityGallons", 100);
+      setValue("startingFuelPercent", 100);
+      setEquipmentProfileValues(PREVIEW_EQUIPMENT_PROFILE);
       setValue("reserveAllocation", PREVIEW_PROFILE_VALUES.reserveAllocation);
       setValue("reserveAllocationValue", PREVIEW_PROFILE_VALUES.reserveAllocation);
       setValue("reserveAllocationMode", "flat");
@@ -204,6 +252,9 @@ export function LoadInputForm({
         });
         setValue("targetTrueRpm", defaults.targetTrueRpm);
         setValue("mpg", defaults.defaultMpg);
+        setValue("fuelTankCount", defaults.fuelTankCount);
+        setValue("fuelTankCapacityGallons", defaults.fuelTankCapacityGallons);
+        setEquipmentProfileValues(defaults.equipmentProfile);
         setValue("reserveAllocation", defaults.reserveAllocation);
         setValue("reserveAllocationValue", defaults.reserveAllocation);
         setValue("reserveAllocationMode", "flat");
@@ -225,7 +276,7 @@ export function LoadInputForm({
     }
 
     loadDefaults();
-  }, [previewActive, setValue]);
+  }, [previewActive, setEquipmentProfileValues, setValue]);
 
   useEffect(() => {
     if (previewActive) return;
@@ -481,9 +532,42 @@ export function LoadInputForm({
   const revenueInputMode = watchedValues?.revenueInputMode ?? "rpm";
   const reserveAllocationMode =
     watchedValues?.reserveAllocationMode ?? "flat";
+  const loadRunStatus =
+    (watchedValues?.loadRunStatus ?? "planned") as LoadRunStatus;
   const fuelSurchargeIncludedInGross = Boolean(
     watchedValues?.fuelSurchargeIncludedInGross
   );
+
+  function selectLoadRunStatus(status: LoadRunStatus) {
+    if (preview.enabled) {
+      preview.explain("calculator-field");
+      return;
+    }
+
+    setValue("loadRunStatus", status, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    if (status !== "pulled") {
+      setValue("loadPulledReason", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }
+
+  function selectLoadPulledReason(reason: LoadPulledReason) {
+    if (preview.enabled) {
+      preview.explain("calculator-field");
+      return;
+    }
+
+    setValue("loadPulledReason", reason, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
 
   function selectReserveAllocationMode(mode: ReserveAllocationMode) {
     if (preview.enabled) {
@@ -636,8 +720,11 @@ export function LoadInputForm({
       <input type="hidden" {...register("fuelPriceFetchedAt")} />
       <input type="hidden" {...register("fuelPriceExpiresAt")} />
       <input type="hidden" {...register("loadRunStatus")} />
+      <input type="hidden" {...register("loadPulledReason")} />
       <input type="hidden" {...register("overhead")} />
       <input type="hidden" {...register("mpg")} />
+      <input type="hidden" {...register("fuelTankCount")} />
+      <input type="hidden" {...register("fuelTankCapacityGallons")} />
       <input type="hidden" {...register("reserveAllocation")} />
       <input type="hidden" {...register("reserveAllocationMode")} />
       <input type="hidden" {...register("maintenanceReserve")} />
@@ -675,6 +762,59 @@ export function LoadInputForm({
       </section>
 
       <section className="space-y-4">
+        <SectionTitle title="Load Lifecycle" />
+
+        <ThemedSelect
+          label="Load Status"
+          value={loadRunStatus}
+          previewExplanation="calculator-field"
+          onChange={(value) => selectLoadRunStatus(value as LoadRunStatus)}
+          options={LOAD_RUN_STATUS_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+            description: option.description,
+          }))}
+        />
+
+        {loadRunStatus === "pulled" && (
+          <ThemedSelect
+            label="Pulled Reason"
+            value={String(watchedValues?.loadPulledReason ?? "")}
+            previewExplanation="calculator-field"
+            onChange={(value) =>
+              selectLoadPulledReason(value as LoadPulledReason)
+            }
+            options={LOAD_PULLED_REASON_OPTIONS.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InputField
+            label="Fuel Gauge Preset %"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            error={errors.startingFuelPercent?.message}
+            helper="Set this before the load runs. The value stays attached to this load when booked, dispatched, or running."
+            previewKey="fuel-price"
+            atlasEduKey="fuel-efficiency"
+            {...register("startingFuelPercent")}
+          />
+        </div>
+
+        <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+          Fuel monitoring is load-tied. Planned, rejected, test, completed, and
+          pulled loads do not open the fuel gauge. Active load monitoring uses
+          vehicle profile MPG, tank count, tank size, this load&apos;s fuel gauge
+          preset, route miles, and the current fuel price estimate.
+        </p>
+      </section>
+
+      <section className="space-y-4">
         <SectionTitle title="Atlas Operational Context" />
 
         <AtlasEducationalSignal
@@ -691,21 +831,27 @@ export function LoadInputForm({
             Optional starting point before pickup. Manual deadhead miles still
             control the math; this gives saved loads better route context.
           </p>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <InputField
-              label="Start City"
+              label="Address"
+              error={errors.deadheadStartAddress?.message}
+              previewKey="calculator-field"
+              {...register("deadheadStartAddress")}
+            />
+            <InputField
+              label="City"
               error={errors.deadheadStartCity?.message}
               previewKey="calculator-field"
               {...register("deadheadStartCity")}
             />
             <InputField
-              label="Start State"
+              label="State"
               error={errors.deadheadStartState?.message}
               previewKey="calculator-field"
               {...register("deadheadStartState")}
             />
             <InputField
-              label="Start ZIP"
+              label="ZIP"
               error={errors.deadheadStartZip?.message}
               previewKey="calculator-field"
               {...register("deadheadStartZip")}
@@ -713,49 +859,67 @@ export function LoadInputForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
+            Pickup Origin
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InputField
+              label="Address"
+              error={errors.pickupAddress?.message}
+              {...register("pickupAddress")}
+            />
           <InputField
-            label="Pickup City"
+            label="City"
             error={errors.pickupCity?.message}
             {...register("pickupCity")}
           />
 
           <InputField
-            label="Pickup State"
+            label="State"
             error={errors.pickupState?.message}
             {...register("pickupState")}
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <InputField
-            label="Pickup ZIP"
+            label="ZIP"
             error={errors.pickupZip?.message}
             {...register("pickupZip")}
           />
-
-          <InputField
-            label="Delivery ZIP"
-            error={errors.deliveryZip?.message}
-            {...register("deliveryZip")}
-          />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
+            Delivery Origin
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InputField
+              label="Address"
+              error={errors.deliveryAddress?.message}
+              {...register("deliveryAddress")}
+            />
           <InputField
-            label="Delivery City"
+            label="City"
             error={errors.deliveryCity?.message}
             {...register("deliveryCity")}
           />
 
           <InputField
-            label="Delivery State"
+            label="State"
             error={errors.deliveryState?.message}
             {...register("deliveryState")}
           />
+
+          <InputField
+            label="ZIP"
+            error={errors.deliveryZip?.message}
+            {...register("deliveryZip")}
+          />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Loaded Miles"
             type="number"
@@ -1284,7 +1448,6 @@ export function LoadInputForm({
         <button
           type="submit"
           onClick={() => preview.enabled && preview.explain("analyze-load")}
-          data-iation-help="analyze-load"
           data-atlas-edu="analyze-load"
           className="w-full rounded-xl bg-sky-400 px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-[#060B14] shadow-[0_0_25px_rgba(56,189,248,0.35)] transition hover:bg-sky-300"
         >
@@ -1327,9 +1490,9 @@ function RouteStopEditor({
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
-            Stop-Off {index + 1}
-          </div>
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+                Stop #{index + 1}
+              </div>
           <p className="mt-1 text-xs text-slate-500">
             Optional revenue, expense, and miles from previous stop.
           </p>
@@ -1343,7 +1506,32 @@ function RouteStopEditor({
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+            Stop Type
+          </span>
+          <select
+            data-preview-explain="calculator-field"
+            data-atlas-edu="route-stop"
+            value={stop.stopType}
+            onChange={(event) =>
+              onChange({
+                stopType:
+                  event.target.value === "delivery" ? "delivery" : "pickup",
+              })
+            }
+            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+          >
+            <option value="pickup">P-U</option>
+            <option value="delivery">DEL</option>
+          </select>
+        </label>
+        <StopInputField
+          label="Address"
+          value={stop.address}
+          onChange={(value) => onChange({ address: value })}
+        />
         <StopInputField
           label="City"
           value={stop.city}

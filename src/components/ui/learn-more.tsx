@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Layers } from "lucide-react";
 
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
+import { requestAtlasEducationalContext } from "@/lib/ai/atlas-events";
 
 type LearnMoreProps = {
   title: string;
@@ -26,7 +27,13 @@ export function LearnMore({
       <button
         type="button"
         data-atlas-edu={atlasEduKey}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          requestAtlasEducationalContext({
+            key: atlasEduKey,
+            source: "learn_more",
+          });
+          setOpen((value) => !value);
+        }}
         className="flex w-full items-start gap-3 text-left"
       >
         <Layers className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />

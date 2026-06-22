@@ -1,0 +1,298 @@
+{
+  "generatedAt": "2026-05-17T19:43:10.994Z",
+  "source": "Karpilo LoadIQ app project",
+  "formats": {
+    "vertical": "1080x1920 PNG",
+    "wide": "1920x1080 PNG"
+  },
+  "frames": [
+    {
+      "id": "01-brand-system",
+      "eyebrow": "KARPILO LOADIQ",
+      "title": "Transportation Profitability Estimation",
+      "subtitle": "A calculator-first operating view for owner-operators.",
+      "stats": [
+        [
+          "CORE",
+          "Load calculator"
+        ],
+        [
+          "SUPPORT",
+          "Atlas guidance"
+        ],
+        [
+          "OUTPUT",
+          "Estimated insight"
+        ]
+      ],
+      "bullets": [
+        "Built for user-supplied freight assumptions.",
+        "Designed to keep cost, miles, and margin visible."
+      ]
+    },
+    {
+      "id": "02-calculator-inputs",
+      "eyebrow": "LOAD ANALYSIS",
+      "title": "Enter The Load See The Pressure",
+      "subtitle": "Revenue, miles, fuel, FSC, overhead, and reserve assumptions in one workflow.",
+      "stats": [
+        [
+          "Gross",
+          "$2,350"
+        ],
+        [
+          "Loaded",
+          "812 mi"
+        ],
+        [
+          "Deadhead",
+          "147 mi"
+        ]
+      ],
+      "bullets": [
+        "Manual inputs remain the calculator authority.",
+        "Route and timing context stay attached to the load."
+      ]
+    },
+    {
+      "id": "03-true-rpm-results",
+      "eyebrow": "ESTIMATED RESULT",
+      "title": "True RPM After Deadhead",
+      "subtitle": "Loaded RPM alone can hide unpaid movement. True RPM keeps total trip miles visible.",
+      "stats": [
+        [
+          "True RPM",
+          "$2.14"
+        ],
+        [
+          "Net",
+          "$611"
+        ],
+        [
+          "Score",
+          "78"
+        ]
+      ],
+      "bullets": [
+        "All values are estimates from entered assumptions.",
+        "Profitability is interpreted, not guaranteed."
+      ]
+    },
+    {
+      "id": "04-deadhead-route",
+      "eyebrow": "ATLAS ROUTE CONTEXT",
+      "title": "Deadhead Changes The Whole Load",
+      "subtitle": "Route intelligence frames movement pressure, stop complexity, and distance imbalance.",
+      "stats": [
+        [
+          "Origin",
+          "147 mi"
+        ],
+        [
+          "Stops",
+          "2"
+        ],
+        [
+          "Window",
+          "2.5 days"
+        ]
+      ],
+      "bullets": [
+        "Deadhead is unpaid operating distance.",
+        "Pickup-to-delivery timing shapes earning capacity."
+      ]
+    },
+    {
+      "id": "05-fuel-fsc",
+      "eyebrow": "FUEL PRESSURE",
+      "title": "Fuel Cost Meets FSC Recovery",
+      "subtitle": "Fuel surcharge improves recovery, but it does not erase inefficient miles or bad assumptions.",
+      "stats": [
+        [
+          "Fuel",
+          "$522"
+        ],
+        [
+          "MPG",
+          "6.5"
+        ],
+        [
+          "FSC",
+          "tracked"
+        ]
+      ],
+      "bullets": [
+        "MPG, speed, weight, idle time, and terrain affect real-world outcomes.",
+        "Use actual receipts later to compare estimate vs. trip reality."
+      ]
+    },
+    {
+      "id": "06-post-trip-actuals",
+      "eyebrow": "POST-TRIP ACTUALS",
+      "title": "Estimate First Actuals After",
+      "subtitle": "Capture diesel, DEF, tolls, parking, scale tickets, repairs, hotel, and miscellaneous trip costs.",
+      "stats": [
+        [
+          "Diesel",
+          "PPG x gal"
+        ],
+        [
+          "DEF",
+          "PPG x gal"
+        ],
+        [
+          "Flat",
+          "direct cost"
+        ]
+      ],
+      "bullets": [
+        "Actual result stays separate from estimated analysis.",
+        "Trip expenses explain margin movement after the load is done."
+      ]
+    },
+    {
+      "id": "07-load-history",
+      "eyebrow": "LOAD HISTORY",
+      "title": "Save The Snapshot Review The Pattern",
+      "subtitle": "Saved loads preserve entered assumptions, calculated outputs, and later actuals for review.",
+      "stats": [
+        [
+          "Loads",
+          "history"
+        ],
+        [
+          "Reports",
+          "review"
+        ],
+        [
+          "Patterns",
+          "visible"
+        ]
+      ],
+      "bullets": [
+        "History supports operational awareness over time.",
+        "Saved records do not change the original calculator authority."
+      ]
+    },
+    {
+      "id": "08-operational-profile",
+      "eyebrow": "OPERATIONAL PROFILE",
+      "title": "Know Your Cost Before The Load",
+      "subtitle": "Vehicle, overhead, reserve, and target RPM settings help keep the calculator grounded.",
+      "stats": [
+        [
+          "Overhead",
+          "profiled"
+        ],
+        [
+          "Reserve",
+          "CPM / %"
+        ],
+        [
+          "Target",
+          "True RPM"
+        ]
+      ],
+      "bullets": [
+        "Profile values are assumptions the operator controls.",
+        "Better inputs make estimates more useful."
+      ]
+    },
+    {
+      "id": "09-atlas-educational",
+      "eyebrow": "ATLAS EDUCATIONAL SUPPORT",
+      "title": "Understand What The Fields Mean",
+      "subtitle": "Contextual guidance explains inputs, outputs, and operational meaning without changing formulas.",
+      "stats": [
+        [
+          "Inputs",
+          "explained"
+        ],
+        [
+          "Outputs",
+          "context"
+        ],
+        [
+          "Tokens",
+          "optional"
+        ]
+      ],
+      "bullets": [
+        "Atlas support is educational and informational.",
+        "The deterministic LoadIQ calculator remains the source of truth."
+      ]
+    },
+    {
+      "id": "10-atlas-freight-route",
+      "eyebrow": "ATLAS INSIGHTS",
+      "title": "Freight Economics Route Context",
+      "subtitle": "Atlas Freight and Route views interpret calculated outputs after the load result exists.",
+      "stats": [
+        [
+          "Margin",
+          "pressure"
+        ],
+        [
+          "Route",
+          "imbalance"
+        ],
+        [
+          "Risk",
+          "signals"
+        ]
+      ],
+      "bullets": [
+        "Atlas does not dispatch, route, or guarantee outcomes.",
+        "It helps explain what the entered numbers suggest."
+      ]
+    },
+    {
+      "id": "11-mobile-ready",
+      "eyebrow": "MOBILE-READY WORKFLOW",
+      "title": "Built For The Road",
+      "subtitle": "Fast estimate review, compact result cards, and saved-load access from the operating rhythm.",
+      "stats": [
+        [
+          "Form",
+          "mobile"
+        ],
+        [
+          "Results",
+          "compact"
+        ],
+        [
+          "Review",
+          "on hand"
+        ]
+      ],
+      "bullets": [
+        "Designed for practical field use.",
+        "Still an estimation platform, not operational control software."
+      ]
+    },
+    {
+      "id": "12-final-brand",
+      "eyebrow": "KARPILO ENDEAVOR TECHNOLOGIES",
+      "title": "Built On The Road One Mile At A Time",
+      "subtitle": "Karpilo LoadIQ with Karpilo Atlas AI educational and analytical support.",
+      "stats": [
+        [
+          "LoadIQ",
+          "calculator"
+        ],
+        [
+          "Atlas",
+          "support"
+        ],
+        [
+          "FleetOS",
+          "future"
+        ]
+      ],
+      "bullets": [
+        "Transportation profitability estimation.",
+        "Operational awareness without replacing operator judgment."
+      ]
+    }
+  ]
+}

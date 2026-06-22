@@ -51,7 +51,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-core-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Educational and analytical support for explaining Karpilo LoadIQ calculations and user-interface context.",
+      "Atlas Core orchestrates module activation, tier and usage gates, equipment context, regulation-reference boundaries, and operational review safeguards.",
   },
   freight: {
     key: "freight",
@@ -70,7 +70,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-freight-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Calculation interpretation support for profitability estimates, margin pressure, deadhead, fuel, RPM, and overhead context.",
+      "Equipment-aware freight intelligence for load fit, cargo handling, margin pressure, deadhead, fuel, RPM, overhead, accessorial, and operational risk context.",
   },
   route: {
     key: "route",
@@ -89,7 +89,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-route-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Informational context for entered route variables, deadhead exposure, stop complexity, timing, and distance assumptions.",
+      "Provider-backed route intelligence for verified address, mileage, deadhead, terrain, weather, traffic, construction, fuel, and Platinum/Pro truck-specific routing context.",
   },
   educational: {
     key: "educational",
@@ -108,7 +108,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-educational-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "User-interface guidance that explains fields, workflow meaning, and how user-supplied inputs affect estimates.",
+      "Transportation and app education that explains workflows, freight terms, equipment differences, routing concepts, and how user-supplied inputs affect estimates.",
   },
 } as const satisfies Record<AtlasLayerKey, AtlasIntelligenceLayer>;
 
@@ -120,7 +120,7 @@ export const ATLAS_LAYER_ORDER: AtlasLayerKey[] = [
 ];
 
 export const ATLAS_PROCESSING_DISCLOSURE =
-  "Karpilo Atlas AI provides embedded educational, informational, and analytical support inside Karpilo LoadIQ. Where applicable, third-party AI infrastructure may help process explanations, but Atlas remains supplemental to the calculator and does not make operational decisions.";
+  "Karpilo Atlas AI provides controlled educational, informational, and analytical support inside Karpilo LoadIQ. Atlas activates from explicit user actions, calculated results, saved snapshots, and server-side governance checks. It remains supplemental to the calculator and does not make operational decisions.";
 
 export const ATLAS_PROPRIETARY_STATEMENT =
   "Karpilo Atlas AI, Atlas Insights, Atlas Guidance, Atlas Educational Support, and Atlas Operational Context are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
@@ -128,12 +128,5 @@ export const ATLAS_PROPRIETARY_STATEMENT =
 export const ATLAS_EDUCATIONAL_DISCLAIMER =
   "Karpilo Atlas AI provides contextual educational support for navigating Karpilo LoadIQ features, workflows, and app tools. It explains functionality and calculation context only. It does not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
 
-// TODO(Atlas Core): active orchestration intentionally deferred to protect
-// deterministic calculator authority.
-
-// TODO(Atlas migration): remove these legacy aliases after iAtion/iAtion Core
-// references are fully replaced across APP and WEBSITE.
-export const ATLAS_LEGACY_COMPATIBILITY_ALIASES = {
-  iation: ATLAS_INTELLIGENCE_LAYERS.educational,
-  iationCore: ATLAS_INTELLIGENCE_LAYERS.freight,
-} as const;
+export const ATLAS_CORE_CONTROLLED_ORCHESTRATION_NOTE =
+  "Atlas Core owns controlled activation, equipment context, regulation-reference boundaries, and operational review. Hover, focus, route-change, and background navigation events must not open Atlas panels or call AI.";

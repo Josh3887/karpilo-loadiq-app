@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, RadioTower } from "lucide-react";
 
+import {
+  AtlasAiStatusIndicator,
+  type AtlasAiStatusInfo,
+} from "@/components/ai/atlas-ai-status-indicator";
 import {
   AtlasInfoBlock,
   AtlasMetricTile,
   AtlasRuntimeFrame,
 } from "@/components/ai/atlas-runtime-frame";
+import { AtlasOutputReportAction } from "@/components/ai/atlas-output-report-action";
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import type {
   LoadIqAiLoadAnalysisInput,
@@ -21,10 +26,19 @@ type AtlasFreightIntelligenceSurfaceProps = {
 
 type AiResponse = {
   analysis?: LoadIqAiLoadAnalysisOutput;
+  governance?: {
+    status?: "cache_hit" | "completed";
+    usageEventId?: string | null;
+    cacheKey?: string | null;
+    budget?: AtlasAiStatusInfo["budget"];
+  };
   error?: string;
+  message?: string;
+  retryAfterSeconds?: number;
 };
 
 const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
+const LOAD_ANALYSIS_FEATURE_KEY = "load_analysis";
 
 export function AtlasFreightIntelligenceSurface({
   payload,
@@ -36,12 +50,68 @@ export function AtlasFreightIntelligenceSurface({
   const [analysisPayloadKey, setAnalysisPayloadKey] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusInfo, setStatusInfo] = useState<AtlasAiStatusInfo | null>(null);
+  const [lastOutputReference, setLastOutputReference] = useState<{
+    usageEventId?: string | null;
+    cacheKey?: string | null;
+  } | null>(null);
   const payloadKey = useMemo(() => JSON.stringify(payload ?? null), [payload]);
   const baselineReadout = useMemo(
     () => buildFreightBaselineReadout(payload),
     [payload]
   );
   const visibleAnalysis = analysisPayloadKey === payloadKey ? analysis : null;
+  const atlasUnavailable =
+    statusInfo?.status === "disabled" || statusInfo?.reason === "ai_budget_exceeded";
+  const atlasCoolingDown = statusInfo?.reason === "ai_cooldown_active";
+
+  useEffect(() => {
+    let active = true;
+
+    if (!payload) {
+      return;
+    }
+
+    async function loadStatus() {
+      try {
+        const response = await fetch(
+          `/api/ai/status?featureKey=${LOAD_ANALYSIS_FEATURE_KEY}`
+        );
+        const data = (await response.json().catch(() => null)) as
+          | AtlasAiStatusInfo
+          | null;
+
+        if (!active || !data) {
+          return;
+        }
+
+        if (response.ok) {
+          setStatusInfo(data);
+        } else {
+          setStatusInfo({
+            status: "disabled",
+            message:
+              data.message ||
+              "Atlas analysis support is unavailable. Calculator output remains available.",
+          });
+        }
+      } catch {
+        if (active) {
+          setStatusInfo({
+            status: "disabled",
+            message:
+              "Atlas analysis support is unavailable. Calculator output remains available.",
+          });
+        }
+      }
+    }
+
+    void loadStatus();
+
+    return () => {
+      active = false;
+    };
+  }, [payload, payloadKey]);
 
   async function requestIntelligence() {
     if (!payload) {
@@ -65,16 +135,42 @@ export function AtlasFreightIntelligenceSurface({
       const data = (await response.json().catch(() => ({}))) as AiResponse;
 
       if (!response.ok || !data.analysis) {
+        setStatusInfo((current) => ({
+          status:
+            data.error === "ai_cooldown_active" ||
+            data.error === "ai_budget_exceeded"
+              ? "limited"
+              : "disabled",
+          reason: data.error,
+          message:
+            data.message ||
+            "Karpilo Atlas AI analysis support is temporarily unavailable.",
+          retryAfterSeconds: data.retryAfterSeconds,
+          budget: current?.budget,
+        }));
         setStatus(
           data.error === "ai_not_configured"
             ? "Karpilo Atlas AI is not configured on this server."
-            : "Karpilo Atlas AI analysis support is temporarily unavailable."
+            : data.message ||
+                "Karpilo Atlas AI analysis support is temporarily unavailable."
         );
         return;
       }
 
       setAnalysis(data.analysis);
       setAnalysisPayloadKey(payloadKey);
+      setLastOutputReference({
+        usageEventId: data.governance?.usageEventId,
+        cacheKey: data.governance?.cacheKey,
+      });
+      setStatusInfo((current) => ({
+        status: "available",
+        message:
+          data.governance?.status === "cache_hit"
+            ? "Atlas returned a cached readout for this matching load context."
+            : "Atlas analysis support is available.",
+        budget: data.governance?.budget ?? current?.budget,
+      }));
       setStatus("");
     } catch {
       setStatus("Karpilo Atlas AI analysis support is temporarily unavailable.");
@@ -92,7 +188,7 @@ export function AtlasFreightIntelligenceSurface({
         <button
           type="button"
           onClick={requestIntelligence}
-          disabled={loading}
+          disabled={loading || atlasUnavailable || atlasCoolingDown}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--atlas-accent)] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500 lg:w-auto"
         >
           {loading ? (
@@ -100,12 +196,16 @@ export function AtlasFreightIntelligenceSurface({
           ) : (
             <RadioTower className="h-4 w-4" aria-hidden="true" />
           )}
-          {visibleAnalysis ? "Refresh Atlas Insight" : "Update Atlas Insight"}
+          {atlasCoolingDown
+            ? "Atlas Cooling Down"
+            : visibleAnalysis
+              ? "Refresh Atlas Insight"
+              : "Update Atlas Insight"}
         </button>
       }
     >
         {!visibleAnalysis && (
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <AtlasMetricTile
               label="Margin Signal"
               value={baselineReadout.marginSignal}
@@ -124,6 +224,12 @@ export function AtlasFreightIntelligenceSurface({
               detail={baselineReadout.dispatchDetail}
               layer={ATLAS_FREIGHT_LAYER}
             />
+            <AtlasMetricTile
+              label="Equipment Signal"
+              value={baselineReadout.equipmentSignal}
+              detail={baselineReadout.equipmentDetail}
+              layer={ATLAS_FREIGHT_LAYER}
+            />
           </div>
         )}
 
@@ -132,6 +238,8 @@ export function AtlasFreightIntelligenceSurface({
             {status}
           </p>
         )}
+
+        <AtlasAiStatusIndicator statusInfo={payload ? statusInfo : null} />
 
         {visibleAnalysis && (
           <div className="grid gap-4">
@@ -182,6 +290,12 @@ export function AtlasFreightIntelligenceSurface({
               Confidence: {visibleAnalysis.confidence}.{" "}
               {visibleAnalysis.intelligenceDisclaimer}
             </div>
+
+            <AtlasOutputReportAction
+              featureKey={LOAD_ANALYSIS_FEATURE_KEY}
+              usageEventId={lastOutputReference?.usageEventId}
+              cacheKey={lastOutputReference?.cacheKey}
+            />
           </div>
         )}
     </AtlasRuntimeFrame>
@@ -199,6 +313,8 @@ function buildFreightBaselineReadout(
       deadheadDetail: "Deadhead exposure needs completed load values.",
       dispatchSignal: "No Readout",
       dispatchDetail: "Run Analyze Load before requesting Atlas interpretation.",
+      equipmentSignal: "Equipment Pending",
+      equipmentDetail: "Vehicle context loads from the operational profile.",
     };
   }
 
@@ -247,5 +363,25 @@ function buildFreightBaselineReadout(
           ? "Signal Stable"
           : "Review Inputs",
     dispatchDetail: `${daysCommitted.toFixed(2)} committed day(s), ${fuelPercent.toFixed(1)}% fuel share, and ${trueRpm.toFixed(2)} true RPM.`,
+    equipmentSignal:
+      payload.equipmentPackLabel ||
+      payload.equipmentType ||
+      "Equipment Context",
+    equipmentDetail: formatEquipmentDetail(payload),
   };
+}
+
+function formatEquipmentDetail(payload: LoadIqAiLoadAnalysisInput) {
+  const parts = [
+    payload.combinationType,
+    payload.equipmentDimensions,
+    Number(payload.maxPayloadLbs) > 0
+      ? `${Number(payload.maxPayloadLbs).toLocaleString()} lbs payload`
+      : "",
+    payload.hazmatCapable ? "hazmat-capable" : "",
+  ].filter(Boolean);
+
+  return parts.length > 0
+    ? parts.join(" / ")
+    : "Profile equipment context is not set.";
 }

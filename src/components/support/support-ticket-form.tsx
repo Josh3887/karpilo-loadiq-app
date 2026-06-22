@@ -29,7 +29,7 @@ type SupportTicketFormProps = {
 
 export function SupportTicketForm({
   title = "Contact Support",
-  description = `Use support for account, billing, privacy, deletion, and app issues. Recommendations are routed separately for product review. Email fallback: ${CONTACT_EMAILS.support}.`,
+  description = `Use support for account access, onboarding, app issues, calculator questions, privacy, deletion support, and beta feedback. Billing questions route through ${CONTACT_EMAILS.billing}. Email fallback: ${CONTACT_EMAILS.support}.`,
   initialCategory = "support",
 }: SupportTicketFormProps) {
   const preview = usePreviewMode();
@@ -67,6 +67,8 @@ export function SupportTicketForm({
       setStatus(
         isRecommendation
           ? `Recommendation received. Product feedback is reviewed separately through ${CONTACT_EMAILS.feedback}.`
+          : ticket.category === "billing" || ticket.category === "refund"
+            ? `Billing request received. We will reply through ${CONTACT_EMAILS.billing}.`
           : `Support request received. We will reply through ${CONTACT_EMAILS.support}.`
       );
     } catch (error) {

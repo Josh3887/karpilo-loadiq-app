@@ -7,7 +7,7 @@ import { LoginForm } from "@/app/auth/login/login-form";
 
 export const metadata = {
   title: "Login | Karpilo LoadIQ App",
-  description: "Sign in to the controlled Karpilo LoadIQ app portal.",
+  description: "Sign in to the controlled Karpilo LoadIQ app.",
 };
 
 export default function LoginPage() {
@@ -21,8 +21,9 @@ export default function LoginPage() {
           </p>
           <h1 className="mt-2 text-3xl font-black">Login</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Access the controlled app portal for billing, settings, Fit Check,
-            and launch status. Public signup is not available.
+            Access the controlled LoadIQ app. Account-side profile, billing,
+            settings, and Fit Check tools remain available through the account
+            portal.
           </p>
           <LoginForm />
           <Link

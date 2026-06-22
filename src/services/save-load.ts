@@ -2,13 +2,21 @@ import { createClient } from "@/lib/supabase-client";
 
 import { getClientEntitlementState } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
+import { calculateFuelGauge } from "@/lib/fuel-gauge";
 import { buildSavedLoadStopRows } from "@/services/route-intelligence";
 import { LoadInput, LoadResult } from "@/types/load";
+import type { WeatherProfitabilityResult } from "@/types/weather-profitability";
 import { roundFuelPrice } from "@/utils/format";
 
 type SaveLoadPayload = {
   input: LoadInput;
   result: LoadResult;
+  weatherProfitabilitySnapshot?: WeatherProfitabilityResult | null;
+};
+
+export type SaveLoadResult = {
+  id: string;
+  warning?: string;
 };
 
 function formatSupabaseError(error: unknown) {
@@ -33,7 +41,11 @@ function formatSupabaseError(error: unknown) {
     .join(" | ");
 }
 
-export async function saveLoad({ input, result }: SaveLoadPayload) {
+export async function saveLoad({
+  input,
+  result,
+  weatherProfitabilitySnapshot = null,
+}: SaveLoadPayload): Promise<SaveLoadResult> {
   const supabase = createClient();
 
   const {
@@ -78,11 +90,24 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
   if (!paymentAccess.hasActiveAccess || !paymentAccess.entitlements.canSaveLoad) {
     throw new Error("An active Karpilo LoadIQ subscription is required to save load history.");
   }
+  const savedWeatherProfitabilitySnapshot =
+    paymentAccess.entitlements.canSaveWeatherProfitabilitySnapshot
+      ? weatherProfitabilitySnapshot
+      : null;
 
   const loadiqLoadNumber = `LIQ-${String((count ?? 0) + 1).padStart(5, "0")}`;
 
   const stopRows = buildSavedLoadStopRows(input, user.id);
   const reserveAllocationMode = result.reserveAllocationMode;
+  const fuelGaugeSnapshot = calculateFuelGauge({
+    loadRunStatus: input.loadRunStatus,
+    totalMiles: result.totalMiles,
+    mpg: input.mpg,
+    fuelPrice: input.fuelPrice,
+    fuelTankCount: input.fuelTankCount,
+    fuelTankCapacityGallons: input.fuelTankCapacityGallons,
+    startingFuelPercent: input.startingFuelPercent,
+  });
 
   const { data: savedLoad, error: saveError } = await supabase
     .from("saved_loads")
@@ -92,13 +117,13 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
       loadiq_load_number: loadiqLoadNumber,
       driver_load_number: input.loadNumber || null,
       load_outcome:
-        input.loadRunStatus === "ran"
-          ? "ran"
-          : input.loadRunStatus === "test"
-            ? "test_calculation"
-            : "planned",
+        input.loadRunStatus === "test"
+          ? "test_calculation"
+          : input.loadRunStatus,
       load_run_status: input.loadRunStatus,
       was_run_status: input.loadRunStatus,
+      load_status_reason:
+        input.loadRunStatus === "pulled" ? input.loadPulledReason || null : null,
       pickup_zip: input.pickupZip,
       pickup_city: input.pickupCity,
       pickup_state: input.pickupState,
@@ -134,6 +159,8 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
       fuel_override: input.fuelPriceSource === "USER_OVERRIDE",
       eia_period: input.fuelPricePeriod || null,
       fuel_fetched_at: input.fuelPriceFetchedAt || null,
+      fuel_gauge_snapshot: fuelGaugeSnapshot,
+      equipment_context_snapshot: buildEquipmentContextSnapshot(input),
       operational_cost: result.operationalCost,
       dispatch_days: input.dispatchDays,
       daily_overhead: result.dailyFixedOverhead,
@@ -147,7 +174,10 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
       profitability_band: result.profitabilityBand,
       warnings: result.warnings,
       input_snapshot: input,
-      result_snapshot: result,
+      result_snapshot: buildResultSnapshot(
+        result,
+        savedWeatherProfitabilitySnapshot
+      ),
       actuals_snapshot: {},
       pay_structure_snapshot: input.payStructure ?? {},
       calculation_version: result.calculationVersion,
@@ -159,17 +189,36 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
     throw new Error(formatSupabaseError(saveError));
   }
 
-  const { error: stopsError } = await supabase
-    .from("saved_load_stops")
-    .insert(
-      stopRows.map((row) => ({
-        ...row,
-        saved_load_id: savedLoad.id,
-      }))
-    );
+  let routeStopWarning: string | undefined;
 
-  if (stopsError) {
-    throw new Error(formatSupabaseError(stopsError));
+  if (stopRows.length > 0) {
+    const { error: stopsError } = await supabase
+      .from("saved_load_stops")
+      .insert(
+        stopRows.map((row) => ({
+          ...row,
+          saved_load_id: savedLoad.id,
+        }))
+      );
+
+    if (stopsError) {
+      console.error("SAVED_LOAD_STOPS_INSERT_FAILED", stopsError);
+      const { error: routeStopStatusError } = await supabase
+        .from("saved_loads")
+        .update({
+          route_stop_count: 0,
+          route_model_version: "loadiq-route-v1-stops-unavailable",
+        })
+        .eq("id", savedLoad.id)
+        .eq("user_id", user.id);
+
+      if (routeStopStatusError) {
+        console.error("SAVED_LOAD_ROUTE_STOP_STATUS_UPDATE_FAILED", routeStopStatusError);
+      }
+
+      routeStopWarning =
+        "Load saved, but route stop detail could not be attached. The load will still appear on the Loads page.";
+    }
   }
 
   await recordUsageEvent("load_saved", {
@@ -180,4 +229,48 @@ export async function saveLoad({ input, result }: SaveLoadPayload) {
   }).catch((error) => {
     console.error(error);
   });
+  return { id: savedLoad.id as string, warning: routeStopWarning };
+}
+
+function buildResultSnapshot(
+  result: LoadResult,
+  weatherProfitabilitySnapshot: WeatherProfitabilityResult | null
+) {
+  if (!weatherProfitabilitySnapshot) return result;
+
+  return {
+    ...result,
+    weatherProfitabilitySnapshot,
+  };
+}
+
+function buildEquipmentContextSnapshot(input: LoadInput) {
+  return {
+    equipmentType: input.equipmentType,
+    atlasEquipmentPack: input.atlasEquipmentPack,
+    combinationType: input.combinationType,
+    dimensions: {
+      trailerLengthFeet: input.trailerLengthFeet,
+      trailerWidthInches: input.trailerWidthInches,
+      trailerHeightInches: input.trailerHeightInches,
+    },
+    weights: {
+      estimatedLoadWeightLbs: input.estimatedLoadWeightLbs,
+      maxPayloadLbs: input.maxPayloadLbs,
+      grossVehicleWeightRatingLbs: input.grossVehicleWeightRatingLbs,
+      vehicleTareWeightLbs: input.vehicleTareWeightLbs,
+      estimatedMaxGrossLbs: input.estimatedMaxGrossLbs,
+      axleCount: input.axleCount,
+    },
+    capabilities: {
+      hazmatCapable: input.hazmatCapable,
+      tankerCapable: input.tankerCapable,
+      refrigeratedCapable: input.refrigeratedCapable,
+      specializedCapabilities: input.specializedCapabilities,
+      securementEquipment: input.securementEquipment,
+    },
+    routeRestrictionNotes: input.routeRestrictionNotes,
+    boundary:
+      "User-entered operational context only; not certified scale, route, permit, hazmat, securement, or compliance data.",
+  };
 }

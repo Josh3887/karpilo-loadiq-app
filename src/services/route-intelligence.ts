@@ -25,6 +25,8 @@ export type SavedLoadStopRecord = SavedLoadStopInsert & {
 export function createRouteStopInput(): RouteStopInput {
   return {
     id: createRouteStopId(),
+    stopType: "pickup",
+    address: "",
     city: "",
     state: "",
     zip: "",
@@ -35,10 +37,14 @@ export function createRouteStopInput(): RouteStopInput {
   };
 }
 
-export function normalizeRouteStops(stops: RouteStopInput[] | undefined) {
+export function normalizeRouteStops(
+  stops: RouteStopInput[] | undefined
+): RouteStopInput[] {
   return (stops ?? [])
     .map((stop) => ({
       id: stop.id || createRouteStopId(),
+      stopType: stop.stopType === "delivery" ? "delivery" as const : "pickup" as const,
+      address: stop.address?.trim() ?? "",
       city: stop.city?.trim() ?? "",
       state: stop.state?.trim().toUpperCase() ?? "",
       zip: stop.zip?.trim() ?? "",
@@ -50,6 +56,7 @@ export function normalizeRouteStops(stops: RouteStopInput[] | undefined) {
     .filter((stop) => {
       return Boolean(
         stop.city ||
+          stop.address ||
           stop.state ||
           stop.zip ||
           stop.milesFromPrevious ||
@@ -79,13 +86,7 @@ export function buildSavedLoadStopRows(
           : null,
       stop_revenue: null,
       stop_expense: null,
-      notes: hasDeadheadOrigin(input)
-        ? `Deadhead origin: ${formatRoutePoint({
-            city: input.deadheadStartCity,
-            state: input.deadheadStartState,
-            zip: input.deadheadStartZip,
-          })}`
-        : null,
+      notes: formatPickupNotes(input),
     },
   ];
 
@@ -101,7 +102,15 @@ export function buildSavedLoadStopRows(
         stop.milesFromPrevious > 0 ? stop.milesFromPrevious : null,
       stop_revenue: stop.stopRevenue > 0 ? stop.stopRevenue : null,
       stop_expense: stop.stopExpense > 0 ? stop.stopExpense : null,
-      notes: emptyToNull(stop.notes),
+      notes: emptyToNull(
+        [
+          stop.stopType === "delivery" ? "Stop Type: DEL" : "Stop Type: P-U",
+          stop.address ? `Address: ${stop.address}` : "",
+          stop.notes,
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      ),
     });
   });
 
@@ -118,7 +127,9 @@ export function buildSavedLoadStopRows(
         : null,
     stop_revenue: null,
     stop_expense: null,
-    notes: null,
+    notes: emptyToNull(
+      input.deliveryAddress ? `Address: ${input.deliveryAddress}` : ""
+    ),
   });
 
   return rows;
@@ -130,18 +141,43 @@ export function routeStopCountForInput(input: LoadInput) {
 }
 
 export function formatRoutePoint(point: {
+  address?: string | null;
   city?: string | null;
   state?: string | null;
   zip?: string | null;
 }) {
   const cityState = [point.city, point.state].filter(Boolean).join(", ");
-  return [cityState, point.zip].filter(Boolean).join(" ");
+  return [point.address, cityState, point.zip].filter(Boolean).join(" ");
 }
 
 function hasDeadheadOrigin(input: LoadInput) {
   return Boolean(
-    input.deadheadStartCity || input.deadheadStartState || input.deadheadStartZip
+    input.deadheadStartAddress ||
+      input.deadheadStartCity ||
+      input.deadheadStartState ||
+      input.deadheadStartZip
   );
+}
+
+function formatPickupNotes(input: LoadInput) {
+  const notes: string[] = [];
+
+  if (input.pickupAddress) {
+    notes.push(`Address: ${input.pickupAddress}`);
+  }
+
+  if (hasDeadheadOrigin(input)) {
+    notes.push(
+      `Deadhead origin: ${formatRoutePoint({
+        address: input.deadheadStartAddress,
+        city: input.deadheadStartCity,
+        state: input.deadheadStartState,
+        zip: input.deadheadStartZip,
+      })}`
+    );
+  }
+
+  return emptyToNull(notes.join(" | "));
 }
 
 function emptyToNull(value: string | undefined | null) {

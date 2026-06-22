@@ -30,11 +30,14 @@ export function LoginForm() {
       return;
     }
 
-    setStatus("Signed in. Opening portal...");
+    setStatus("Signed in. Opening app...");
     void trackAnalyticsEvent(ANALYTICS_EVENTS.USER_SIGNED_IN, {
       route: "/auth/login",
     });
-    router.push("/portal");
+    const nextPath = getSafeRedirectPath(
+      new URLSearchParams(window.location.search).get("next")
+    );
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -86,4 +89,17 @@ export function LoginForm() {
       </p>
     </form>
   );
+}
+
+function getSafeRedirectPath(value: string | null) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(value)
+  ) {
+    return "/dashboard";
+  }
+
+  return value;
 }

@@ -21,7 +21,7 @@ export function InternalBillingTestHarnessPanel({
   const [updatedSnapshot, setUpdatedSnapshot] =
     useState<InternalBillingTestHarnessSnapshot | null>(null);
   const [selectedState, setSelectedState] = useState<BillingTestHarnessState>(
-    harness?.simulatedState ?? "pilot_lifetime_full_access"
+    harness?.simulatedState ?? "beta_testing_app_access"
   );
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
@@ -112,6 +112,12 @@ export function InternalBillingTestHarnessPanel({
         </div>
       )}
 
+      {snapshot.notes && (
+        <div className="mt-4 rounded-xl border border-amber-300/20 bg-[#060B14] p-4 text-sm leading-6 text-amber-50/90">
+          {snapshot.notes}
+        </div>
+      )}
+
       <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end">
         <label className="block text-sm font-bold text-amber-100">
           Simulated state
@@ -179,7 +185,7 @@ function HarnessMetric({
 }
 
 function labelState(state: BillingTestHarnessState) {
-  return BILLING_TEST_HARNESS_STATE_LABELS[state];
+  return BILLING_TEST_HARNESS_STATE_LABELS[state] ?? "Unknown simulation state";
 }
 
 function formatDate(value: string | null) {

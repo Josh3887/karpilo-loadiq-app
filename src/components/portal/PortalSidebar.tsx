@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Calculator,
   ClipboardCheck,
   CreditCard,
   LayoutDashboard,
@@ -10,7 +11,8 @@ import {
 } from "lucide-react";
 
 const portalLinks = [
-  { label: "Portal", href: "/portal", icon: LayoutDashboard },
+  { label: "Open App", href: "/dashboard", icon: Calculator },
+  { label: "Account", href: "/portal", icon: LayoutDashboard },
   { label: "Billing", href: "/portal/billing", icon: CreditCard },
   { label: "Settings", href: "/portal/settings", icon: Settings },
   { label: "Fit Check", href: "/portal/fit-check", icon: ClipboardCheck },

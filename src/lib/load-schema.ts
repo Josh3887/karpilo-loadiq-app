@@ -2,6 +2,13 @@ import { z } from "zod";
 import { AccessorialInputItem } from "@/types/accessorial";
 import { RouteStopInput } from "@/types/load";
 import {
+  LOAD_PULLED_REASON_OPTIONS,
+  LOAD_RUN_STATUS_OPTIONS,
+  type LoadPulledReason,
+  type LoadRunStatus,
+} from "@/lib/fuel-gauge";
+import { DEFAULT_EQUIPMENT_PROFILE_INPUT } from "@/lib/equipment-profile";
+import {
   isEndDateBeforeStartDate,
   snapToQuarterDay,
 } from "@/services/trip-dates";
@@ -21,8 +28,18 @@ const quarterDayField = numberField.transform((value) =>
   snapToQuarterDay(value)
 );
 
+const loadRunStatusValues = LOAD_RUN_STATUS_OPTIONS.map(
+  (option) => option.value
+) as [LoadRunStatus, ...LoadRunStatus[]];
+
+const loadPulledReasonValues = LOAD_PULLED_REASON_OPTIONS.map(
+  (option) => option.value
+) as [LoadPulledReason, ...LoadPulledReason[]];
+
 const routeStopSchema = z.object({
   id: z.string().optional(),
+  stopType: z.enum(["pickup", "delivery"]).default("pickup"),
+  address: z.string().optional().default(""),
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
   zip: z.string().optional().default(""),
@@ -32,23 +49,67 @@ const routeStopSchema = z.object({
   notes: z.string().optional().default(""),
 }) satisfies z.ZodType<RouteStopInput>;
 
+const optionalStringArrayField = z
+  .array(z.string())
+  .optional()
+  .default([]);
+
 export const loadInputSchema = z.object({
   loadNumber: z.string().optional().default(""),
   carrierLoadId: z.string().optional().default(""),
   dispatcherReference: z.string().optional().default(""),
 
   pickupZip: z.string().min(5),
+  pickupAddress: z.string().optional().default(""),
   pickupCity: z.string().optional().default(""),
   pickupState: z.string().optional().default(""),
   deliveryZip: z.string().min(5),
+  deliveryAddress: z.string().optional().default(""),
   deliveryCity: z.string().optional().default(""),
   deliveryState: z.string().optional().default(""),
 
+  deadheadStartAddress: z.string().optional().default(""),
   deadheadStartCity: z.string().optional().default(""),
   deadheadStartState: z.string().optional().default(""),
   deadheadStartZip: z.string().optional().default(""),
   routeStops: z.array(routeStopSchema).default([]),
   estimatedLoadWeightLbs: numberField.refine((value) => value >= 0),
+
+  equipmentType: z
+    .string()
+    .optional()
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.equipmentType),
+  atlasEquipmentPack: z.string().optional().default("dry_van"),
+  combinationType: z
+    .string()
+    .optional()
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.combinationType),
+  trailerLengthFeet: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerLengthFeet),
+  trailerWidthInches: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerWidthInches),
+  trailerHeightInches: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerHeightInches),
+  vehicleTareWeightLbs: numberField.refine((value) => value >= 0).default(0),
+  estimatedMaxGrossLbs: numberField.refine((value) => value >= 0).default(0),
+  maxPayloadLbs: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.maxPayloadLbs),
+  grossVehicleWeightRatingLbs: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.grossVehicleWeightRatingLbs),
+  axleCount: numberField
+    .refine((value) => value >= 0)
+    .default(DEFAULT_EQUIPMENT_PROFILE_INPUT.axleCount),
+  hazmatCapable: z.boolean().optional().default(false),
+  tankerCapable: z.boolean().optional().default(false),
+  refrigeratedCapable: z.boolean().optional().default(false),
+  specializedCapabilities: optionalStringArrayField,
+  securementEquipment: optionalStringArrayField,
+  routeRestrictionNotes: z.string().optional().default(""),
 
   loadedMiles: numberField.refine((value) => value >= 1),
   deadheadMiles: numberField.refine((value) => value >= 0),
@@ -70,7 +131,8 @@ export const loadInputSchema = z.object({
   deadheadEndDate: z.string().optional().default(""),
   payPeriodStartDate: z.string().optional().default(""),
   payPeriodEndDate: z.string().optional().default(""),
-  loadRunStatus: z.enum(["ran", "test", "planned"]).default("planned"),
+  loadRunStatus: z.enum(loadRunStatusValues).default("planned"),
+  loadPulledReason: z.enum(loadPulledReasonValues).default(""),
 
   revenueInputMode: z.enum(["rpm", "gross"]).default("rpm"),
   grossRevenue: numberField.refine((value) => value >= 0),
@@ -88,6 +150,16 @@ export const loadInputSchema = z.object({
   fuelPriceExpiresAt: z.string().optional().default(""),
   fuelPriceIsEstimate: z.boolean().optional().default(false),
   mpg: numberField.refine((value) => value >= 1),
+  fuelTankCount: numberField.refine((value) => value >= 0).default(0),
+  fuelTankCapacityGallons: numberField
+    .refine((value) => value >= 0)
+    .default(0),
+  startingFuelPercent: numberField.refine(
+    (value) => value >= 0 && value <= 100,
+    {
+      message: "Starting fuel must be between 0 and 100%.",
+    }
+  ).default(100),
 
   overhead: numberField.refine((value) => value >= 0),
   profileDerivedValues: z
@@ -210,6 +282,22 @@ export const loadInputSchema = z.object({
       path: ["grossRevenue"],
     });
   }
+
+  if (value.loadRunStatus === "pulled" && !value.loadPulledReason) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Select why the load was pulled.",
+      path: ["loadPulledReason"],
+    });
+  }
+
+  if (value.loadRunStatus !== "pulled" && value.loadPulledReason) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Pulled reason is only used when the load status is pulled.",
+      path: ["loadPulledReason"],
+    });
+  }
 });
 
 export type LoadInputFormValues = z.infer<typeof loadInputSchema>;
@@ -220,17 +308,39 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   dispatcherReference: "",
 
   pickupZip: "",
+  pickupAddress: "",
   pickupCity: "",
   pickupState: "",
   deliveryZip: "",
+  deliveryAddress: "",
   deliveryCity: "",
   deliveryState: "",
 
+  deadheadStartAddress: "",
   deadheadStartCity: "",
   deadheadStartState: "",
   deadheadStartZip: "",
   routeStops: [],
   estimatedLoadWeightLbs: 0,
+  equipmentType: DEFAULT_EQUIPMENT_PROFILE_INPUT.equipmentType,
+  atlasEquipmentPack: "dry_van",
+  combinationType: DEFAULT_EQUIPMENT_PROFILE_INPUT.combinationType,
+  trailerLengthFeet: DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerLengthFeet,
+  trailerWidthInches: DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerWidthInches,
+  trailerHeightInches: DEFAULT_EQUIPMENT_PROFILE_INPUT.trailerHeightInches,
+  vehicleTareWeightLbs: DEFAULT_EQUIPMENT_PROFILE_INPUT.vehicleTareWeightLbs,
+  estimatedMaxGrossLbs: DEFAULT_EQUIPMENT_PROFILE_INPUT.estimatedMaxGrossLbs,
+  maxPayloadLbs: DEFAULT_EQUIPMENT_PROFILE_INPUT.maxPayloadLbs,
+  grossVehicleWeightRatingLbs:
+    DEFAULT_EQUIPMENT_PROFILE_INPUT.grossVehicleWeightRatingLbs,
+  axleCount: DEFAULT_EQUIPMENT_PROFILE_INPUT.axleCount,
+  hazmatCapable: DEFAULT_EQUIPMENT_PROFILE_INPUT.hazmatCapable,
+  tankerCapable: DEFAULT_EQUIPMENT_PROFILE_INPUT.tankerCapable,
+  refrigeratedCapable: DEFAULT_EQUIPMENT_PROFILE_INPUT.refrigeratedCapable,
+  specializedCapabilities:
+    DEFAULT_EQUIPMENT_PROFILE_INPUT.specializedCapabilities,
+  securementEquipment: DEFAULT_EQUIPMENT_PROFILE_INPUT.securementEquipment,
+  routeRestrictionNotes: DEFAULT_EQUIPMENT_PROFILE_INPUT.routeRestrictionNotes,
 
   loadedMiles: 0,
   deadheadMiles: 0,
@@ -251,6 +361,7 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   payPeriodStartDate: "",
   payPeriodEndDate: "",
   loadRunStatus: "planned",
+  loadPulledReason: "",
 
   revenueInputMode: "rpm",
   grossRevenue: 0,
@@ -266,6 +377,9 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   fuelPriceExpiresAt: "",
   fuelPriceIsEstimate: false,
   mpg: 6.5,
+  fuelTankCount: 0,
+  fuelTankCapacityGallons: 0,
+  startingFuelPercent: 100,
 
   overhead: 0,
   profileDerivedValues: {

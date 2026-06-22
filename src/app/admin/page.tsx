@@ -8,6 +8,7 @@ import { requireAdminAccess } from "@/lib/admin/roles";
 const adminLinks = [
   ["/api/admin/identity", "Current admin identity"],
   ["/api/admin/audit-events", "Audit events"],
+  ["/admin/diagnostics", "Diagnostics"],
   ["/admin/posthog", "PostHog analytics status"],
   ["/api/admin/notification-templates", "Notification templates"],
   ["/api/admin/notification-publications", "Notification publications"],

@@ -1,5 +1,6 @@
 import { AccessorialInputItem } from "@/types/accessorial";
 import { FuelPriceSource } from "@/types/fuel";
+import type { LoadPulledReason, LoadRunStatus } from "@/lib/fuel-gauge";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
 export type PayCalculationBasis = "gross" | "gross_minus_fsc";
@@ -18,12 +19,12 @@ export type PayStructure = {
   payPeriodMode: PayPeriodMode;
 };
 
-export type LoadRunStatus = "ran" | "test" | "planned";
-
 export type ReserveAllocationMode = "flat" | "cpm" | "percent";
 
 export type RouteStopInput = {
   id?: string;
+  stopType: "pickup" | "delivery";
+  address: string;
   city: string;
   state: string;
   zip: string;
@@ -67,17 +68,38 @@ export type LoadInput = {
   dispatcherReference: string;
 
   pickupZip: string;
+  pickupAddress: string;
   pickupCity: string;
   pickupState: string;
   deliveryZip: string;
+  deliveryAddress: string;
   deliveryCity: string;
   deliveryState: string;
 
+  deadheadStartAddress: string;
   deadheadStartCity: string;
   deadheadStartState: string;
   deadheadStartZip: string;
   routeStops: RouteStopInput[];
   estimatedLoadWeightLbs: number;
+
+  equipmentType: string;
+  atlasEquipmentPack: string;
+  combinationType: string;
+  trailerLengthFeet: number;
+  trailerWidthInches: number;
+  trailerHeightInches: number;
+  vehicleTareWeightLbs: number;
+  estimatedMaxGrossLbs: number;
+  maxPayloadLbs: number;
+  grossVehicleWeightRatingLbs: number;
+  axleCount: number;
+  hazmatCapable: boolean;
+  tankerCapable: boolean;
+  refrigeratedCapable: boolean;
+  specializedCapabilities: string[];
+  securementEquipment: string[];
+  routeRestrictionNotes: string;
 
   loadedMiles: number;
   deadheadMiles: number;
@@ -97,6 +119,7 @@ export type LoadInput = {
   payPeriodStartDate: string;
   payPeriodEndDate: string;
   loadRunStatus: LoadRunStatus;
+  loadPulledReason: LoadPulledReason;
 
   revenueInputMode: "rpm" | "gross";
   grossRevenue: number;
@@ -112,6 +135,9 @@ export type LoadInput = {
   fuelPriceExpiresAt: string;
   fuelPriceIsEstimate: boolean;
   mpg: number;
+  fuelTankCount: number;
+  fuelTankCapacityGallons: number;
+  startingFuelPercent: number;
 
   overhead: number;
   profileDerivedValues: ProfileDerivedValues;

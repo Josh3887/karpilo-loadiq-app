@@ -46,7 +46,7 @@ export default function HomePage() {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
               Freight decision support for owner-operators who need load math,
               vehicle context, fuel awareness, saved history, and operating
-              settings inside a controlled-access app portal.
+              settings inside the controlled-access LoadIQ app.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -65,10 +65,17 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href="/portal"
+                href="/dashboard"
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-slate-600 bg-black/25 px-5 text-sm font-black uppercase tracking-[0.16em] text-slate-100 transition hover:border-sky-400/50 hover:text-sky-200"
               >
-                Open Portal
+                Open App
+              </Link>
+
+              <Link
+                href="/portal"
+                className="inline-flex min-h-12 items-center justify-center rounded-lg border border-slate-700 bg-black/20 px-5 text-sm font-black uppercase tracking-[0.16em] text-slate-300 transition hover:border-sky-400/40 hover:text-sky-200"
+              >
+                Account Portal
               </Link>
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500">

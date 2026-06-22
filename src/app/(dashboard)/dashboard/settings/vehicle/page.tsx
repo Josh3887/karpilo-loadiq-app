@@ -45,7 +45,7 @@ export default async function VehicleSettingsPage() {
     supabase
       .from("truck_profiles")
       .select(
-        "make, model, year, engine, odometer, default_mpg, trailer_division_type, trailer_type, vehicle_tare_weight_lbs, estimated_max_gross_lbs, operational_classification"
+        "make, model, year, engine, odometer, default_mpg, fuel_tank_count, fuel_tank_capacity_gallons, trailer_division_type, trailer_type, vehicle_tare_weight_lbs, estimated_max_gross_lbs, operational_classification"
       )
       .eq("user_id", user.id)
       .maybeSingle(),
@@ -62,6 +62,11 @@ export default async function VehicleSettingsPage() {
       engineLabel={truckProfile?.engine ?? "Engine profile pending"}
       mpgLabel={
         truckProfile?.default_mpg ? String(truckProfile.default_mpg) : "Not set"
+      }
+      fuelCapacityDetail={
+        truckProfile?.fuel_tank_count && truckProfile?.fuel_tank_capacity_gallons
+          ? `${truckProfile.fuel_tank_count} x ${truckProfile.fuel_tank_capacity_gallons} gal`
+          : "Tank setup pending"
       }
       operatorType={profile?.operation_type ?? "Not set"}
       operatorDetail={
@@ -91,6 +96,7 @@ function VehicleSettingsContent({
   vehicleLabel,
   engineLabel,
   mpgLabel,
+  fuelCapacityDetail,
   operatorType,
   operatorDetail,
   equipmentDetail,
@@ -100,6 +106,7 @@ function VehicleSettingsContent({
   vehicleLabel: string;
   engineLabel: string;
   mpgLabel: string;
+  fuelCapacityDetail?: string;
   operatorType: string;
   operatorDetail: string;
   equipmentDetail?: string;
@@ -121,7 +128,7 @@ function VehicleSettingsContent({
         <SettingsMetric
           label="Default MPG"
           value={mpgLabel}
-          detail="Used by load profitability math"
+          detail={fuelCapacityDetail ?? "Tank setup pending"}
         />
         <SettingsMetric
           label="Operator Type"

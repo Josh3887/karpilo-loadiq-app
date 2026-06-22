@@ -5,7 +5,8 @@ export type SavedLoadStatus =
   | "saved"
   | "accepted"
   | "completed"
-  | "archived";
+  | "archived"
+  | "estimated";
 
 export type PostTripExpenseCategory =
   | "fuel_fluids"
@@ -71,6 +72,7 @@ export type SavedLoadRecord = {
   loadiq_load_number: string | null;
   driver_load_number: string | null;
   load_outcome: string | null;
+  load_status_reason?: string | null;
   was_run_status: string | null;
   pickup_zip: string;
   deadhead_start_city?: string | null;
@@ -96,6 +98,8 @@ export type SavedLoadRecord = {
   fuel_override: boolean | null;
   eia_period: string | null;
   fuel_fetched_at: string | null;
+  fuel_gauge_snapshot?: unknown | null;
+  equipment_context_snapshot?: unknown | null;
   operational_cost: number;
   dispatch_days: number | null;
   overhead_applied: number | null;

@@ -16,12 +16,29 @@ const OPTIONAL_NUMERIC_FIELDS = [
   "tolls",
   "accessorials",
   "estimatedMaintenanceReserve",
+  "maxPayloadLbs",
+  "grossVehicleWeightRatingLbs",
+  "axleCount",
 ] as const satisfies readonly (keyof LoadIqAiLoadAnalysisInput)[];
 
 const OPTIONAL_TEXT_FIELDS = [
   "pickupRegion",
   "deliveryRegion",
+  "equipmentType",
+  "atlasEquipmentPack",
+  "equipmentPackLabel",
+  "combinationType",
+  "equipmentDimensions",
+  "specializedCapabilities",
+  "securementEquipment",
+  "routeRestrictionNotes",
   "notes",
+] as const satisfies readonly (keyof LoadIqAiLoadAnalysisInput)[];
+
+const OPTIONAL_BOOLEAN_FIELDS = [
+  "hazmatCapable",
+  "tankerCapable",
+  "refrigeratedCapable",
 ] as const satisfies readonly (keyof LoadIqAiLoadAnalysisInput)[];
 
 const NON_NEGATIVE_FIELDS = new Set<keyof LoadIqAiLoadAnalysisInput>([
@@ -36,6 +53,9 @@ const NON_NEGATIVE_FIELDS = new Set<keyof LoadIqAiLoadAnalysisInput>([
   "tolls",
   "accessorials",
   "estimatedMaintenanceReserve",
+  "maxPayloadLbs",
+  "grossVehicleWeightRatingLbs",
+  "axleCount",
 ]);
 
 const MAX_ABSOLUTE_VALUE = 100_000_000;
@@ -118,12 +138,23 @@ export function validateLoadAnalysisPayload(
   }
 
   for (const field of OPTIONAL_TEXT_FIELDS) {
-    const maxLength = field === "notes" ? MAX_NOTES_LENGTH : MAX_TEXT_LENGTH;
+    const maxLength =
+      field === "notes" || field === "routeRestrictionNotes"
+        ? MAX_NOTES_LENGTH
+        : MAX_TEXT_LENGTH;
     const sanitized = sanitizeText(payload[field], maxLength);
 
     if (sanitized) {
       value[field] = sanitized;
     }
+  }
+
+  for (const field of OPTIONAL_BOOLEAN_FIELDS) {
+    if (payload[field] === undefined || payload[field] === null) {
+      continue;
+    }
+
+    value[field] = payload[field] === true;
   }
 
   return {

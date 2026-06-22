@@ -37,7 +37,7 @@ function getSafeRedirectPath(value: string | null) {
     value.startsWith("//") ||
     /^[a-z][a-z0-9+.-]*:/i.test(value)
   ) {
-    return "/portal";
+    return "/dashboard";
   }
 
   try {
@@ -45,7 +45,7 @@ function getSafeRedirectPath(value: string | null) {
 
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return "/portal";
+    return "/dashboard";
   }
 }
 

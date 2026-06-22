@@ -247,17 +247,47 @@ create table if not exists public.saved_loads (
   driver_load_number text,
   load_name text,
   load_outcome text not null default 'unknown',
-  load_run_status text default 'planned' check (load_run_status in ('ran', 'test', 'planned')),
-  was_run_status text check (was_run_status is null or was_run_status in ('ran', 'test', 'planned')),
+  load_status_reason text,
+  load_run_status text default 'planned' check (
+    load_run_status in (
+      'planned',
+      'booked',
+      'dispatched',
+      'running',
+      'rejected',
+      'pulled',
+      'ran',
+      'test'
+    )
+  ),
+  was_run_status text check (
+    was_run_status is null
+    or was_run_status in (
+      'planned',
+      'booked',
+      'dispatched',
+      'running',
+      'rejected',
+      'pulled',
+      'ran',
+      'test'
+    )
+  ),
   pickup_zip text not null,
   pickup_city text,
   pickup_state text,
   delivery_zip text not null,
   delivery_city text,
   delivery_state text,
+  deadhead_start_city text,
+  deadhead_start_state text,
+  deadhead_start_zip text,
   loaded_miles numeric(12,2) not null check (loaded_miles >= 0),
   deadhead_miles numeric(12,2) not null default 0 check (deadhead_miles >= 0),
   total_miles numeric(12,2) not null default 0 check (total_miles >= 0),
+  estimated_load_weight_lbs integer check (estimated_load_weight_lbs is null or estimated_load_weight_lbs >= 0),
+  route_stop_count integer check (route_stop_count is null or route_stop_count >= 0),
+  route_model_version text,
   route_loaded_miles numeric(12,2) default 0 check (route_loaded_miles >= 0),
   actual_loaded_miles numeric(12,2) default 0 check (actual_loaded_miles >= 0),
   route_deadhead_miles numeric(12,2) default 0 check (route_deadhead_miles >= 0),
@@ -281,8 +311,14 @@ create table if not exists public.saved_loads (
   fuel_override boolean not null default false,
   eia_period text,
   fuel_fetched_at timestamptz,
+  fuel_gauge_snapshot jsonb not null default '{}'::jsonb,
+  equipment_context_snapshot jsonb not null default '{}'::jsonb,
   dispatch_days numeric(8,2) default 1 check (dispatch_days >= 1),
   deadhead_days numeric(8,2) default 0 check (deadhead_days >= 0),
+  reserve_allocation_mode text check (reserve_allocation_mode is null or reserve_allocation_mode in ('flat', 'cpm', 'percent')),
+  reserve_allocation_cpm numeric check (reserve_allocation_cpm is null or reserve_allocation_cpm >= 0),
+  reserve_allocation_percent numeric check (reserve_allocation_percent is null or reserve_allocation_percent >= 0),
+  target_true_rpm_snapshot numeric check (target_true_rpm_snapshot is null or target_true_rpm_snapshot >= 0),
   daily_overhead numeric(12,2) default 0 check (daily_overhead >= 0),
   overhead_applied numeric(12,2) default 0 check (overhead_applied >= 0),
   dispatch_fee numeric(12,2) default 0 check (dispatch_fee >= 0),
@@ -331,12 +367,19 @@ alter table public.saved_loads
   add column if not exists driver_load_number text,
   add column if not exists load_name text,
   add column if not exists load_outcome text not null default 'unknown',
+  add column if not exists load_status_reason text,
   add column if not exists load_run_status text default 'planned',
   add column if not exists was_run_status text,
   add column if not exists pickup_city text,
   add column if not exists pickup_state text,
   add column if not exists delivery_city text,
   add column if not exists delivery_state text,
+  add column if not exists deadhead_start_city text,
+  add column if not exists deadhead_start_state text,
+  add column if not exists deadhead_start_zip text,
+  add column if not exists estimated_load_weight_lbs integer,
+  add column if not exists route_stop_count integer,
+  add column if not exists route_model_version text,
   add column if not exists route_loaded_miles numeric(12,2) default 0,
   add column if not exists actual_loaded_miles numeric(12,2) default 0,
   add column if not exists route_deadhead_miles numeric(12,2) default 0,
@@ -358,8 +401,14 @@ alter table public.saved_loads
   add column if not exists fuel_override boolean not null default false,
   add column if not exists eia_period text,
   add column if not exists fuel_fetched_at timestamptz,
+  add column if not exists fuel_gauge_snapshot jsonb not null default '{}'::jsonb,
+  add column if not exists equipment_context_snapshot jsonb not null default '{}'::jsonb,
   add column if not exists dispatch_days numeric(8,2) default 1,
   add column if not exists deadhead_days numeric(8,2) default 0,
+  add column if not exists reserve_allocation_mode text,
+  add column if not exists reserve_allocation_cpm numeric,
+  add column if not exists reserve_allocation_percent numeric,
+  add column if not exists target_true_rpm_snapshot numeric,
   add column if not exists daily_overhead numeric(12,2) default 0,
   add column if not exists overhead_applied numeric(12,2) default 0,
   add column if not exists dispatch_fee numeric(12,2) default 0,
@@ -392,6 +441,23 @@ alter table public.saved_loads
   add column if not exists accessorial_items_snapshot jsonb not null default '[]'::jsonb,
   add column if not exists calculation_version text not null default 'loadiq-v1.1-profile-overhead',
   add column if not exists calculated_at timestamptz default now();
+
+create table if not exists public.saved_load_stops (
+  id uuid primary key default gen_random_uuid(),
+  saved_load_id uuid not null references public.saved_loads(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  stop_sequence integer not null check (stop_sequence >= 1),
+  stop_type text not null check (stop_type in ('pickup', 'stop_off', 'delivery')),
+  city text,
+  state text,
+  zip text,
+  miles_from_previous numeric check (miles_from_previous is null or miles_from_previous >= 0),
+  stop_revenue numeric check (stop_revenue is null or stop_revenue >= 0),
+  stop_expense numeric check (stop_expense is null or stop_expense >= 0),
+  notes text,
+  created_at timestamptz default now(),
+  unique (saved_load_id, stop_sequence)
+);
 
 create table if not exists public.calculation_overrides (
   id uuid primary key default gen_random_uuid(),
@@ -816,6 +882,9 @@ on public.saved_loads (user_id, load_run_status, created_at desc);
 create index if not exists idx_saved_loads_user_calculated
 on public.saved_loads (user_id, calculated_at desc);
 
+create index if not exists idx_saved_load_stops_user_load_sequence
+on public.saved_load_stops (user_id, saved_load_id, stop_sequence);
+
 create index if not exists idx_calculation_overrides_load
 on public.calculation_overrides (saved_load_id, created_at desc);
 
@@ -936,6 +1005,7 @@ alter table public.pay_structure_templates enable row level security;
 alter table public.user_overhead_items enable row level security;
 alter table public.overhead_categories enable row level security;
 alter table public.saved_loads enable row level security;
+alter table public.saved_load_stops enable row level security;
 alter table public.calculation_overrides enable row level security;
 alter table public.load_estimates enable row level security;
 alter table public.post_trip_actuals enable row level security;
@@ -973,6 +1043,7 @@ grant select, insert, update, delete on
   public.user_overhead_items,
   public.overhead_categories,
   public.saved_loads,
+  public.saved_load_stops,
   public.calculation_overrides,
   public.load_estimates,
   public.post_trip_actuals,
@@ -1041,6 +1112,43 @@ begin
 
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'saved_loads' and policyname = 'Users can manage own saved loads') then
     create policy "Users can manage own saved loads" on public.saved_loads for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'saved_load_stops' and policyname = 'Users can view own saved load stops') then
+    create policy "Users can view own saved load stops" on public.saved_load_stops for select to authenticated using ((select auth.uid()) = user_id);
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'saved_load_stops' and policyname = 'Users can insert own saved load stops') then
+    create policy "Users can insert own saved load stops" on public.saved_load_stops for insert to authenticated with check (
+      (select auth.uid()) = user_id
+      and exists (
+        select 1 from public.saved_loads sl
+        where sl.id = saved_load_id
+          and sl.user_id = (select auth.uid())
+      )
+    );
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'saved_load_stops' and policyname = 'Users can update own saved load stops') then
+    create policy "Users can update own saved load stops" on public.saved_load_stops for update to authenticated using (
+      (select auth.uid()) = user_id
+      and exists (
+        select 1 from public.saved_loads sl
+        where sl.id = saved_load_id
+          and sl.user_id = (select auth.uid())
+      )
+    ) with check (
+      (select auth.uid()) = user_id
+      and exists (
+        select 1 from public.saved_loads sl
+        where sl.id = saved_load_id
+          and sl.user_id = (select auth.uid())
+      )
+    );
+  end if;
+
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'saved_load_stops' and policyname = 'Users can delete own saved load stops') then
+    create policy "Users can delete own saved load stops" on public.saved_load_stops for delete to authenticated using ((select auth.uid()) = user_id);
   end if;
 
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'calculation_overrides' and policyname = 'Users can manage own calculation overrides') then

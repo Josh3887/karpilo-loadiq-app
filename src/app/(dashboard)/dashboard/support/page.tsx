@@ -69,12 +69,17 @@ export default async function SupportPage() {
           <ContactCard
             title="Support"
             email={CONTACT_EMAILS.support}
-            body="Customer support, account issues, deletion requests, billing support, app issues, and privacy requests."
+            body="Customer support, onboarding help, account access, app issues, calculator questions, beta feedback, deletion support, and privacy requests."
+          />
+          <ContactCard
+            title="Billing"
+            email={CONTACT_EMAILS.billing}
+            body="Payments, subscriptions, invoices, refunds, duplicate charges, failed payments, Stripe portal, App Store, and Google Play billing questions."
           />
           <ContactCard
             title="Recommendations / Feedback"
             email={CONTACT_EMAILS.feedback}
-            body="Driver feedback, feature recommendations, operational workflow suggestions, and founder-era product notes."
+            body="Driver feedback, feature recommendations, operational workflow suggestions, and beta product notes."
           />
         </section>
 
@@ -99,10 +104,15 @@ export default async function SupportPage() {
             Legal, privacy, and account requests
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            For privacy, data retention, restore purchase, subscription, or
-            account deletion requests, use the legal hub or email{" "}
+            For privacy, data retention, account access, or account deletion
+            requests, use the legal hub or email{" "}
             <span className="break-words font-semibold text-sky-200 [overflow-wrap:anywhere]">
               {CONTACT_EMAILS.support}
+            </span>
+            . Billing questions, refunds, invoices, duplicate charges, and
+            subscription payment issues route through{" "}
+            <span className="break-words font-semibold text-sky-200 [overflow-wrap:anywhere]">
+              {CONTACT_EMAILS.billing}
             </span>
             .
           </p>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Calculator,
   CircleDollarSign,
+  ClipboardCheck,
   Headset,
   Settings,
   Truck,
@@ -14,6 +15,7 @@ import { cn } from "@/utils/cn";
 
 const navItems = [
   { label: "Analyze", href: "/dashboard", icon: Calculator },
+  { label: "FitCheck", href: "/dashboard/intake/fitcheck", icon: ClipboardCheck },
   { label: "Loads", href: "/dashboard/history", icon: Truck },
   { label: "Billing", href: "/dashboard/billing", icon: CircleDollarSign },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -54,7 +56,7 @@ export function DashboardNav() {
         })}
       </nav>
 
-      <nav className="fixed inset-x-2 bottom-2 z-40 grid grid-cols-5 gap-1 rounded-2xl border border-slate-800 bg-[#08111F]/95 p-1.5 shadow-[0_0_30px_rgba(2,6,23,0.75)] backdrop-blur md:hidden">
+      <nav className="fixed inset-x-2 bottom-2 z-40 grid auto-cols-fr grid-flow-col gap-1 rounded-2xl border border-slate-800 bg-[#08111F]/95 p-1.5 shadow-[0_0_30px_rgba(2,6,23,0.75)] backdrop-blur md:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =

@@ -15,6 +15,20 @@ export type LoadIqAiLoadAnalysisInput = {
   estimatedMaintenanceReserve?: number;
   pickupRegion?: string;
   deliveryRegion?: string;
+  equipmentType?: string;
+  atlasEquipmentPack?: string;
+  equipmentPackLabel?: string;
+  combinationType?: string;
+  equipmentDimensions?: string;
+  maxPayloadLbs?: number;
+  grossVehicleWeightRatingLbs?: number;
+  axleCount?: number;
+  hazmatCapable?: boolean;
+  tankerCapable?: boolean;
+  refrigeratedCapable?: boolean;
+  specializedCapabilities?: string;
+  securementEquipment?: string;
+  routeRestrictionNotes?: string;
   notes?: string;
 };
 

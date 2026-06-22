@@ -17,7 +17,10 @@ type AdminApiContext = {
   access: AdminAccess;
 };
 
-type AdminApiHandler = (context: AdminApiContext) => Promise<Response>;
+type AdminApiHandler = (
+  context: AdminApiContext,
+  request: Request,
+) => Promise<Response>;
 
 type AdminApiOptions = {
   allowedRoles: readonly AdminRole[];
@@ -30,7 +33,7 @@ export function jsonResponse(body: unknown, init?: ResponseInit) {
 }
 
 export function withAdminApi(handler: AdminApiHandler, options: AdminApiOptions) {
-  return async function adminRouteHandler() {
+  return async function adminRouteHandler(request: Request) {
     try {
       const result = await requireAdminAccess(options.allowedRoles);
 
@@ -93,7 +96,7 @@ export function withAdminApi(handler: AdminApiHandler, options: AdminApiOptions)
         },
       });
 
-      return handler({ access: result.access });
+      return handler({ access: result.access }, request);
     } catch (error) {
       console.error("ADMIN_API_ROUTE_ERROR:", error);
       return jsonResponse({ error: "Admin route failed." }, { status: 500 });

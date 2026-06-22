@@ -7,8 +7,13 @@ import {
 } from "@/services/overhead-items";
 import {
   deriveIncomeTargets,
+  buildOperationalEquipmentProfile,
   getOperationalProfile,
 } from "@/services/operational-profile";
+import {
+  buildDefaultStructuredEquipmentProfile,
+  type StructuredEquipmentProfile,
+} from "@/lib/equipment-profile";
 import { PayStructure } from "@/types/load";
 
 export type CalculatorDefaults = {
@@ -25,6 +30,9 @@ export type CalculatorDefaults = {
   minimumHourlyProfitability: number;
   targetTrueRpm: number;
   defaultMpg: number;
+  fuelTankCount: number;
+  fuelTankCapacityGallons: number;
+  equipmentProfile: StructuredEquipmentProfile;
   defaultPayStructure?: PayStructure;
   reserveAllocation: number;
   maintenanceReserve: number;
@@ -73,6 +81,11 @@ export async function getCalculatorDefaults(): Promise<CalculatorDefaults> {
     minimumHourlyProfitability: profile?.minimumHourlyProfitability ?? 50,
     targetTrueRpm,
     defaultMpg: profile?.defaultMpg ?? 6.5,
+    fuelTankCount: profile?.fuelTankCount ?? 0,
+    fuelTankCapacityGallons: profile?.fuelTankCapacityGallons ?? 0,
+    equipmentProfile: profile
+      ? buildOperationalEquipmentProfile(profile)
+      : buildDefaultStructuredEquipmentProfile(),
     defaultPayStructure: payTemplate?.structure,
     reserveAllocation: profile?.defaultReserveAllocation ?? 0,
     maintenanceReserve: profile?.defaultMaintenanceReserve ?? 0,

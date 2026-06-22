@@ -7,6 +7,7 @@ import {
   ROLLOUT_PHASES,
   RolloutPhaseCode,
 } from "@/config/rollout";
+import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import {
   OperatorBadge,
@@ -267,7 +268,7 @@ export async function getOperatorProgramStatus(
 }
 
 export async function getOperatorProgramCounts() {
-  const supabase = await createClient();
+  const supabase = createSupabaseAdminClient();
   const { data } = await supabase.rpc("get_operator_program_counts");
 
   const counts = ((data ?? []) as CountRow[]).reduce(
