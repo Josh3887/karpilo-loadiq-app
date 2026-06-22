@@ -6,6 +6,7 @@ import { useState } from "react";
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { CHECKOUT_ACKNOWLEDGEMENT_TEXT } from "@/content/legal/billing-disclosures";
 import { StripeCheckoutPlanId } from "@/config/stripe";
+import { ANALYTICS_EVENTS, trackAnalyticsEvent } from "@/lib/analytics";
 
 type CheckoutAcknowledgementProps = {
   label?: string;
@@ -29,6 +30,14 @@ export function CheckoutAcknowledgement({
     if (!accepted || !planId) return;
 
     setStatus("Opening Stripe checkout...");
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.UPGRADE_CLICKED, {
+      route: "/dashboard/billing",
+      feature_key: "subscription_checkout",
+    });
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.CHECKOUT_STARTED, {
+      route: "/dashboard/billing",
+      feature_key: "subscription_checkout",
+    });
     const response = await fetch("/api/billing/checkout", {
       method: "POST",
       headers: {

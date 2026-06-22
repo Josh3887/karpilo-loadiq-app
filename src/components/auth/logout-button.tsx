@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { usePreviewMode } from "@/components/preview/preview-mode-provider";
+import { ANALYTICS_EVENTS, trackAnalyticsEvent } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase-client";
 
 export function LogoutButton() {
@@ -17,6 +18,9 @@ export function LogoutButton() {
     }
 
     await supabase.auth.signOut();
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.USER_SIGNED_OUT, {
+      route: "/auth/logout",
+    });
 
     router.push("/auth/login");
     router.refresh();

@@ -11,26 +11,34 @@ export const metadata = {
 const lockedFeatures = [
   {
     title: "Calculator",
+    featureKey: "calculator",
     description:
       "Full load calculator access remains locked outside this primitive portal surface.",
+    scaffoldKeys: ["mileage"],
   },
   {
     title: "Reports",
+    featureKey: "reports",
     description:
       "Saved reports and exports remain gated until entitlement and launch readiness are confirmed.",
   },
   {
     title: "Maps",
+    featureKey: "maps",
     description:
       "Maps and routing context are not exposed as operational routing authority.",
+    scaffoldKeys: ["maps", "mileage"],
   },
   {
     title: "AI Insights",
+    featureKey: "ai_insights",
     description:
       "Atlas and AI insight surfaces remain governed internal/app features, not public claims.",
+    scaffoldKeys: ["ai"],
   },
   {
     title: "Fleet Tools",
+    featureKey: "fleet_tools",
     description:
       "FleetOS and fleet-management capabilities are not LoadIQ portal features in this task.",
   },

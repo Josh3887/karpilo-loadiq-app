@@ -25,6 +25,12 @@ import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { resolveEntitlements } from "@/domains/billing/entitlement-service";
 import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { useLoadCalculator } from "@/hooks/use-load-calculator";
+import {
+  ANALYTICS_EVENTS,
+  bucketDeadheadMiles,
+  bucketMileage,
+  trackAnalyticsEvent,
+} from "@/lib/analytics";
 import { getPreviewEntitlementState } from "@/lib/preview-data";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getLaneTemplateInput } from "@/services/lane-templates";
@@ -213,6 +219,11 @@ export default function DashboardClientPage({
 
     setGateMessage("");
     calculate(input);
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.CALCULATION_COMPLETED, {
+      route: "/dashboard",
+      deadhead_bucket: bucketDeadheadMiles(input.deadheadMiles),
+      mileage_bucket: bucketMileage(input.loadedMiles + input.deadheadMiles),
+    });
 
     void recordUsageEvent("calculation_created", {
       pickupZip: input.pickupZip,
@@ -390,6 +401,7 @@ export default function DashboardClientPage({
               entitlementState?.entitlements.canCompareScenarios ?? false
             }
             aiDevEnabled={aiDevEnabled}
+            entitlementTier={entitlementState?.entitlements.tier ?? "no_access"}
             onLoadSaved={handleLoadSaved}
             previewMode={previewMode}
           />

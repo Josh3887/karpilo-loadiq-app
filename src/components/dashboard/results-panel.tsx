@@ -14,6 +14,12 @@ import { LoadInput, LoadResult } from "@/types/load";
 import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 import { saveLoad } from "@/services/save-load";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import {
+  ANALYTICS_EVENTS,
+  bucketDeadheadMiles,
+  bucketMileage,
+  trackAnalyticsEvent,
+} from "@/lib/analytics";
 
 import {
   formatCurrency,
@@ -28,6 +34,7 @@ type ResultsPanelProps = {
   canSaveLoad?: boolean;
   canCompareScenarios?: boolean;
   aiDevEnabled?: boolean;
+  entitlementTier?: string | null;
   onLoadSaved?: () => void;
   previewMode?: boolean;
 };
@@ -38,6 +45,7 @@ export function ResultsPanel({
   canSaveLoad = false,
   canCompareScenarios = false,
   aiDevEnabled = false,
+  entitlementTier,
   onLoadSaved,
   previewMode = false,
 }: ResultsPanelProps) {
@@ -74,6 +82,12 @@ export function ResultsPanel({
       });
 
       setSaveStatus("Load saved.");
+      void trackAnalyticsEvent(ANALYTICS_EVENTS.CALCULATION_SAVED, {
+        route: "/dashboard",
+        plan_tier: entitlementTier ?? undefined,
+        deadhead_bucket: bucketDeadheadMiles(input.deadheadMiles),
+        mileage_bucket: bucketMileage(input.loadedMiles + input.deadheadMiles),
+      });
       onLoadSaved?.();
     } catch (error) {
       console.error(error);

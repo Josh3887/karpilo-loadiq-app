@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ANALYTICS_EVENTS, trackAnalyticsEvent } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase-client";
 
 export function LoginForm() {
@@ -30,6 +31,9 @@ export function LoginForm() {
     }
 
     setStatus("Signed in. Opening portal...");
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.USER_SIGNED_IN, {
+      route: "/auth/login",
+    });
     router.push("/portal");
     router.refresh();
   }

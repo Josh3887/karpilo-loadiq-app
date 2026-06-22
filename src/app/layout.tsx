@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { AnalyticsRouteTracker } from "@/components/analytics/analytics-route-tracker";
 import { BRAND } from "@/config/brand";
 
 import "./globals.css";
@@ -47,7 +49,12 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Suspense fallback={null}>
+          <AnalyticsRouteTracker />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }

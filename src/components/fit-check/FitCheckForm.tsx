@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import {
+  ANALYTICS_EVENTS,
+  bucketGrossRevenue,
+  trackAnalyticsEvent,
+} from "@/lib/analytics";
 import {
   PLAN_KEYS,
   formatPlanKey,
@@ -42,6 +47,12 @@ export function FitCheckForm({ latestFitCheck }: { latestFitCheck: FitCheckRow |
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.FIT_CHECK_STARTED, {
+      route: "/portal/fit-check",
+    });
+  }, []);
 
   const recommendedPlan = useMemo(
     () =>
@@ -125,6 +136,11 @@ export function FitCheckForm({ latestFitCheck }: { latestFitCheck: FitCheckRow |
 
       setSavedPlan(recommendedPlan);
       setStatus("Fit Check saved.");
+      void trackAnalyticsEvent(ANALYTICS_EVENTS.FIT_CHECK_COMPLETED, {
+        route: "/portal/fit-check",
+        plan_tier: recommendedPlan,
+        gross_revenue_bucket: bucketGrossRevenue(Number(averageMonthlyGross)),
+      });
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : "Unable to save Fit Check."
