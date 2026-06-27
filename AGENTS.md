@@ -1,5 +1,134 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Karpilo LoadIQ Agent Instructions
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+You are assisting Joshua J. Karpilo in the Karpilo LoadIQ application repository.
+
+This file is tactical and enforceable. Durable doctrine lives in:
+
+- `docs/governance/master-architecture-constitution.md`
+- `docs/governance/loadiq-repository-addendum.md`
+
+Before changing behavior, also read the relevant files under:
+
+- `docs/product/`
+- `docs/architecture/`
+- `docs/api/`
+- `docs/testing/regression-checklist.md`
+- `CHANGELOG.md`
+
+## Required Start Protocol
+
+1. Read this `AGENTS.md` first.
+2. Run `git branch --show-current`.
+3. Run `git status --short`.
+4. Do not work on `main`.
+5. If the worktree is dirty, stop and report the dirty files unless Joshua explicitly approved working with that dirty state.
+6. Create or switch to a dedicated task branch before edits.
+7. Identify whether the task touches product, governance, rollout, commercial tier, entitlement, Supabase, billing, AI, analytics, API integrations, Capacitor/mobile/iOS/Android, or legal/public claims.
+
+## Repository Scope
+
+This repository is the LoadIQ application repo.
+
+- `karpilo-liq.com` is the public website.
+- `app.karpilo-liq.com` is the account-access/application portal surface.
+- `/portal` is an account-side bridge. It must not replace the full app.
+- `/dashboard` and related protected routes are operational app routes.
+
+Website code must not duplicate app business logic. App code must not treat public marketing pages as operational app surfaces.
+
+## Protected Product Pillars
+
+Do not remove, rename, replace, or weaken these pillars without explicit approval:
+
+- Calculator
+- Mileage
+- Fuel
+- Saved loads
+- Fit Check
+- Settings/profile
+- Expense Intelligence
+- Vehicle Intelligence
+- Billing and entitlements
+- Atlas/AI
+- Dashboard
+- Admin/internal diagnostics
+- Capacitor/mobile/iOS/Android surfaces
+
+## Architecture Rules
+
+Always keep these concepts separate:
+
+- Product
+- Governance state
+- Rollout phase
+- Commercial subscription tier
+- Product entitlement
+
+If code or docs mix these concepts, identify the coupling and risk before changing anything.
+
+Do not duplicate billing, entitlement, rollout, governance, AI, analytics, or API adapter systems. Prefer existing architecture over parallel implementations.
+
+## Data, Security, And Integration Rules
+
+- Protect secrets. Never expose server-only keys in client code or `NEXT_PUBLIC_` variables.
+- Protect Supabase auth, RLS, grants, functions, and service-role boundaries.
+- Do not weaken auth, RLS, billing, or entitlement checks to make a UI path work.
+- Protect Stripe checkout, webhook, subscription, and entitlement assumptions.
+- Keep API integrations behind server routes and adapter/normalizer boundaries.
+- Do not let vendor response shapes leak directly into UI.
+- Document cache, fallback, and rate-limit behavior before expanding provider usage.
+- Treat Sentry and PostHog as admin/internal tools, not customer-facing product features.
+- Treat trucking operations, driver records, saved loads, billing records, diagnostics, analytics, and AI events as sensitive operational data.
+- Do not run destructive external commands or push changes to Supabase, Stripe, Vercel, Resend, Redis, Sentry, PostHog, OpenAI, Google, EIA, or other external services unless Joshua explicitly asks.
+
+## Mobile And UI Rules
+
+LoadIQ is mobile-first. Calculator, settings, Fit Check, Expense Intelligence, Vehicle Intelligence, billing, and dashboard surfaces must remain usable on iPhone-sized screens.
+
+Do not claim a UI works unless it was verified in a rendered app.
+
+Capacitor/mobile/iOS/Android support must follow `docs/architecture/mobile-platform-boundaries.md`. Do not imply native iOS or Android support beyond repository evidence and rendered/platform verification.
+
+## Changelog Rules
+
+- Update `CHANGELOG.md` for meaningful code, documentation, architecture, billing, API, security, mobile, or product-boundary changes.
+- Do not record secrets, private tokens, internal credentials, or sensitive operational data.
+- Do not use changelog entries as marketing claims.
+- Keep entries factual and tied to actual repository changes.
+- Documentation-only governance changes belong under `Documentation`.
+- Security hardening belongs under `Security`.
+- Billing/tier changes must not imply public availability unless confirmed.
+- Release/version changes must follow `docs/operations/release-versioning.md`.
+- Do not bump `package.json`, iOS, Android, or Capacitor version metadata unless the task explicitly requests a release/version bump.
+- Do not modify iOS or Android native project files during unrelated docs, API, billing, or UI tasks.
+- Do not create Android scaffold unless explicitly requested.
+- Do not claim App Store or Play Console readiness without platform-specific validation.
+
+## Legal And Public Claim Rules
+
+LoadIQ is a transportation profitability intelligence and decision-support platform. It is not a broker, carrier, dispatcher, ELD, tax advisor, legal advisor, compliance authority, insurance advisor, accounting service, route authority, or guaranteed-profit system.
+
+Do not invent public pricing, tier capabilities, provider support, mobile support, AI capability, compliance status, or future product behavior.
+
+## Validation
+
+Use the smallest validation set that matches the change. For docs-only work, run at least:
+
+```bash
+git diff --check
+```
+
+Inspect `package.json` before running heavier commands. Do not claim lint, typecheck, tests, or build passed unless they were executed.
+
+## Final Report
+
+Final reports must include:
+
+- Branch name
+- Files changed
+- What evidence was used
+- What was intentionally not changed
+- Validation run
+- Validation not run and why
+- Current `git status --short`
+- Risks, unresolved conflicts, or follow-up branches
