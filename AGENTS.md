@@ -25,6 +25,20 @@ Before changing behavior, also read the relevant files under:
 6. Create or switch to a dedicated task branch before edits.
 7. Identify whether the task touches product, governance, rollout, commercial tier, entitlement, Supabase, billing, AI, analytics, API integrations, Capacitor/mobile/iOS/Android, or legal/public claims.
 
+## Markdown Context Requirement
+
+Before starting any task, inspect repository Markdown context:
+
+1. Read this `AGENTS.md` first.
+2. Inventory available Markdown files with a command similar to `find . -type f -name "*.md" -not -path "./node_modules/*" -not -path "./.next/*" -not -path "./out/*" -not -path "./dist/*" | sort`.
+3. Read Markdown files that are relevant to the requested task.
+4. For normal app feature work, read only relevant app/product docs. Do not load every governance or audit document unless needed.
+5. For Supabase, schema, deployment, billing, pricing, or production work, read the relevant operations docs before acting.
+6. Before modifying files, briefly report Markdown files found, Markdown files read, which docs are relevant to the task, and any docs intentionally skipped as irrelevant.
+7. Do not stop normal feature work just because historical audit docs exist.
+8. Do not create new governance docs unless explicitly requested.
+9. If Markdown docs conflict with the user's current instruction, report the conflict and ask before proceeding.
+
 ## Repository Scope
 
 This repository is the LoadIQ application repo.
