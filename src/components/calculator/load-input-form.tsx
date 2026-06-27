@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -14,6 +14,12 @@ import {
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
 import { AccessorialInputItem } from "@/types/accessorial";
+import {
+  GOOGLE_ROUTE_DISCLAIMER,
+  RouteEstimate,
+  RouteEstimateResponse,
+  TRIMBLE_ROUTE_PLACEHOLDER,
+} from "@/types/route-intelligence";
 
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
 
@@ -30,18 +36,34 @@ export function LoadInputForm({
     AccessorialInputItem[]
   >([]);
   const [fuelStatus, setFuelStatus] = useState("");
+  const [routeStatus, setRouteStatus] = useState("");
+  const [routeEstimate, setRouteEstimate] = useState<RouteEstimate | null>(
+    initialValues?.routeEstimate ?? null
+  );
+  const [isEstimatingRoute, setIsEstimatingRoute] = useState(false);
   const userOverrodeFuelPrice = useRef(false);
 
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
     reset,
+    control,
     formState: { errors },
   } = useForm<LoadInputRawValues>({
     resolver: zodResolver(loadInputSchema),
     defaultValues: defaultLoadInputValues,
   });
+  const watchedPaidLoadedMiles = useWatch({
+    control,
+    name: "loadedMiles",
+  });
+  const paidLoadedMiles = Number(watchedPaidLoadedMiles ?? 0);
+  const routeMileageVariance = getRouteMileageVariance(
+    routeEstimate,
+    paidLoadedMiles
+  );
 
   useEffect(() => {
     async function loadDefaults() {
@@ -136,13 +158,25 @@ export function LoadInputForm({
 
     queueMicrotask(() => {
       setAccessorialItems(initialValues.accessorialItems);
+      setRouteEstimate(initialValues.routeEstimate ?? null);
     });
   }, [initialValues, reset]);
 
   function submit(values: LoadInputRawValues) {
+    const paidMiles = Number(values.loadedMiles ?? 0);
+    const submittedRouteEstimate = routeEstimate
+      ? {
+          ...routeEstimate,
+          routeMileageVariance: getRouteMileageVariance(
+            routeEstimate,
+            paidMiles
+          ),
+        }
+      : null;
     const parsedValues = loadInputSchema.parse({
       ...values,
       accessorialItems,
+      routeEstimate: submittedRouteEstimate,
     });
 
     onCalculate(parsedValues);
@@ -153,6 +187,106 @@ export function LoadInputForm({
     setValue("fuelPriceSource", "USER_OVERRIDE");
     setValue("fuelPriceIsEstimate", false);
     setFuelStatus("User override · actual fuel price");
+  }
+
+  function buildRouteAddress(values: LoadInputRawValues, type: "pickup" | "delivery") {
+    const parts =
+      type === "pickup"
+        ? [
+            values.pickupAddress,
+            values.pickupCity,
+            values.pickupState,
+            values.pickupZip,
+          ]
+        : [
+            values.deliveryAddress,
+            values.deliveryCity,
+            values.deliveryState,
+            values.deliveryZip,
+          ];
+
+    return parts
+      .filter((part): part is string => typeof part === "string")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  async function handleRouteEstimate() {
+    const values = getValues();
+    const origin = buildRouteAddress(values, "pickup");
+    const destination = buildRouteAddress(values, "delivery");
+
+    if (origin.length < 3 || destination.length < 3) {
+      setRouteStatus(
+        "Enter pickup and delivery address details before estimating mileage."
+      );
+      return;
+    }
+
+    try {
+      setIsEstimatingRoute(true);
+      setRouteStatus("Estimating route with Google...");
+
+      const response = await fetch("/api/route-intelligence/estimate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          origin,
+          destination,
+          provider: "google_estimate",
+        }),
+      });
+      const payload = (await response.json()) as RouteEstimateResponse;
+      const estimate = payload.estimate;
+
+      setRouteStatus(payload.message);
+      setRouteEstimate(estimate);
+      setValue("routeEstimate", estimate, {
+        shouldDirty: true,
+      });
+
+      if (
+        response.ok &&
+        payload.status === "available" &&
+        estimate?.estimatedMiles !== null &&
+        estimate?.estimatedMiles !== undefined
+      ) {
+        setValue("routeLoadedMiles", estimate.estimatedMiles, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    } catch {
+      setRouteStatus(
+        "Route estimate unavailable. Manual mileage entry remains active."
+      );
+      setRouteEstimate(null);
+      setValue("routeEstimate", null, {
+        shouldDirty: true,
+      });
+    } finally {
+      setIsEstimatingRoute(false);
+    }
+  }
+
+  function handleUseEstimateAsPaidMiles() {
+    if (
+      routeEstimate?.estimatedMiles === null ||
+      routeEstimate?.estimatedMiles === undefined
+    ) {
+      return;
+    }
+
+    setValue("loadedMiles", routeEstimate.estimatedMiles, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setRouteStatus(
+      "Google estimate copied into paid loaded miles by user action."
+    );
   }
 
   const fuelPriceField = register("fuelPrice");
@@ -179,7 +313,21 @@ export function LoadInputForm({
       <section className="space-y-4">
         <SectionTitle title="Route Intelligence" />
 
-        <div className="grid grid-cols-2 gap-4">
+        <InputField
+          label="Pickup Address"
+          placeholder="Street, dock, or facility"
+          error={errors.pickupAddress?.message}
+          {...register("pickupAddress")}
+        />
+
+        <InputField
+          label="Delivery Address"
+          placeholder="Street, dock, or facility"
+          error={errors.deliveryAddress?.message}
+          {...register("deliveryAddress")}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Pickup City"
             error={errors.pickupCity?.message}
@@ -193,7 +341,7 @@ export function LoadInputForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Pickup ZIP"
             error={errors.pickupZip?.message}
@@ -207,7 +355,7 @@ export function LoadInputForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Delivery City"
             error={errors.deliveryCity?.message}
@@ -221,9 +369,9 @@ export function LoadInputForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
-            label="Loaded Miles"
+            label="Paid Loaded Miles"
             type="number"
             error={errors.loadedMiles?.message}
             {...register("loadedMiles")}
@@ -236,6 +384,82 @@ export function LoadInputForm({
             {...register("deadheadMiles")}
           />
         </div>
+
+        <button
+          type="button"
+          onClick={handleRouteEstimate}
+          disabled={isEstimatingRoute}
+          className="w-full rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
+        >
+          {isEstimatingRoute ? "Estimating Route" : "Estimate Route Miles"}
+        </button>
+
+        {(routeStatus || routeEstimate) && (
+          <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-slate-300">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="font-semibold text-sky-200">
+                Google estimate
+              </p>
+              {routeStatus && <p className="text-slate-400">{routeStatus}</p>}
+            </div>
+
+            {routeEstimate && (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <RouteValue
+                    label="Pickup verified"
+                    value={routeEstimate.origin.formattedAddress}
+                  />
+                  <RouteValue
+                    label="Delivery verified"
+                    value={routeEstimate.destination.formattedAddress}
+                  />
+                  <RouteValue
+                    label="Google estimated route miles"
+                    value={
+                      routeEstimate.estimatedMiles === null
+                        ? "Unavailable"
+                        : `${routeEstimate.estimatedMiles.toLocaleString()} mi`
+                    }
+                  />
+                  <RouteValue
+                    label="Estimated drive time"
+                    value={
+                      routeEstimate.estimatedDurationMinutes === null
+                        ? "Unavailable"
+                      : `${routeEstimate.estimatedDurationMinutes.toLocaleString()} min`
+                    }
+                  />
+                  <RouteValue
+                    label="Mileage variance"
+                    value={
+                      routeMileageVariance === null
+                        ? "Enter paid miles"
+                        : formatSignedMiles(routeMileageVariance)
+                    }
+                  />
+                </div>
+
+                {routeEstimate.estimatedMiles !== null && (
+                  <button
+                    type="button"
+                    onClick={handleUseEstimateAsPaidMiles}
+                    className="rounded-xl border border-slate-700 bg-[#060B14] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-300 transition hover:border-sky-400/40 hover:text-sky-200"
+                  >
+                    Use Estimate As Paid Miles
+                  </button>
+                )}
+
+                <RouteWarnings estimate={routeEstimate} />
+              </>
+            )}
+
+            <p className="font-semibold text-slate-300">
+              {routeEstimate?.disclaimer ?? GOOGLE_ROUTE_DISCLAIMER}
+            </p>
+            <p className="text-slate-500">{TRIMBLE_ROUTE_PLACEHOLDER}</p>
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
@@ -353,6 +577,59 @@ function SectionTitle({ title }: { title: string }) {
     <div className="border-b border-slate-800 pb-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
       {title}
     </div>
+  );
+}
+
+function RouteValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500">
+        {label}
+      </div>
+      <div className="mt-1 break-words font-semibold text-slate-200">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function getRouteMileageVariance(
+  estimate: RouteEstimate | null,
+  paidLoadedMiles: number
+) {
+  if (
+    estimate?.estimatedMiles === null ||
+    estimate?.estimatedMiles === undefined ||
+    !Number.isFinite(paidLoadedMiles) ||
+    paidLoadedMiles <= 0
+  ) {
+    return null;
+  }
+
+  return Number((estimate.estimatedMiles - paidLoadedMiles).toFixed(1));
+}
+
+function formatSignedMiles(value: number) {
+  if (value === 0) return "0 mi";
+
+  const prefix = value > 0 ? "+" : "";
+
+  return `${prefix}${value.toLocaleString()} mi`;
+}
+
+function RouteWarnings({ estimate }: { estimate: RouteEstimate }) {
+  const warnings = estimate.warnings
+    .filter((warning) => warning !== estimate.disclaimer)
+    .slice(0, 3);
+
+  if (warnings.length === 0) return null;
+
+  return (
+    <ul className="space-y-1 text-slate-400">
+      {warnings.map((warning) => (
+        <li key={warning}>- {warning}</li>
+      ))}
+    </ul>
   );
 }
 

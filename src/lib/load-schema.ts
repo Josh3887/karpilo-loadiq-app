@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AccessorialInputItem } from "@/types/accessorial";
+import { RouteEstimate } from "@/types/route-intelligence";
 
 const numberField = z.preprocess(
   (value) => {
@@ -20,12 +21,15 @@ export const loadInputSchema = z.object({
   pickupZip: z.string().min(5),
   pickupCity: z.string().optional().default(""),
   pickupState: z.string().optional().default(""),
+  pickupAddress: z.string().optional().default(""),
   deliveryZip: z.string().min(5),
   deliveryCity: z.string().optional().default(""),
   deliveryState: z.string().optional().default(""),
+  deliveryAddress: z.string().optional().default(""),
 
   loadedMiles: numberField.refine((value) => value >= 1),
   deadheadMiles: numberField.refine((value) => value >= 0),
+  routeEstimate: z.custom<RouteEstimate>().nullable().default(null),
 
   routeLoadedMiles: numberField.refine((value) => value >= 0),
   actualLoadedMiles: numberField.refine((value) => value >= 0),
@@ -97,12 +101,15 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   pickupZip: "",
   pickupCity: "",
   pickupState: "",
+  pickupAddress: "",
   deliveryZip: "",
   deliveryCity: "",
   deliveryState: "",
+  deliveryAddress: "",
 
   loadedMiles: 0,
   deadheadMiles: 0,
+  routeEstimate: null,
 
   routeLoadedMiles: 0,
   actualLoadedMiles: 0,

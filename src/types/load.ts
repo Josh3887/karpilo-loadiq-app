@@ -1,5 +1,6 @@
 import { AccessorialInputItem } from "@/types/accessorial";
 import { FuelPriceSource } from "@/types/fuel";
+import { RouteEstimate } from "@/types/route-intelligence";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
 
@@ -22,12 +23,15 @@ export type LoadInput = {
   pickupZip: string;
   pickupCity: string;
   pickupState: string;
+  pickupAddress: string;
   deliveryZip: string;
   deliveryCity: string;
   deliveryState: string;
+  deliveryAddress: string;
 
   loadedMiles: number;
   deadheadMiles: number;
+  routeEstimate: RouteEstimate | null;
 
   routeLoadedMiles: number;
   actualLoadedMiles: number;
