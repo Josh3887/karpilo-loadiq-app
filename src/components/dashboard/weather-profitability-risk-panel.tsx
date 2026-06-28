@@ -87,6 +87,7 @@ export function WeatherProfitabilityRiskPanel({
 
     async function loadWeatherRisk() {
       try {
+        onSnapshotChange?.(null);
         setPanelState({ status: "loading", response: null, error: null });
 
         const response = await fetch("/api/weather/profitability", {
@@ -312,19 +313,27 @@ function buildWeatherProfitabilityRequest(
 function buildWeatherPoints(input: LoadInput): WeatherProfitabilityPointInput[] {
   const source = input as unknown as Record<string, unknown>;
   const points: WeatherProfitabilityPointInput[] = [];
-  const deadhead = coordinateFromRecord(source, [
-    ["deadheadStartLatitude", "deadheadStartLongitude"],
-    ["deadheadOriginLatitude", "deadheadOriginLongitude"],
-    ["deadheadStartLat", "deadheadStartLng"],
-  ]);
-  const pickup = coordinateFromRecord(source, [
-    ["pickupLatitude", "pickupLongitude"],
-    ["pickupLat", "pickupLng"],
-  ]);
-  const delivery = coordinateFromRecord(source, [
-    ["deliveryLatitude", "deliveryLongitude"],
-    ["deliveryLat", "deliveryLng"],
-  ]);
+  const deadhead =
+    coordinateFromRecord(source, [
+      ["deadheadStartLatitude", "deadheadStartLongitude"],
+      ["deadheadOriginLatitude", "deadheadOriginLongitude"],
+      ["deadheadStartLat", "deadheadStartLng"],
+    ]) ??
+    coordinateFromVerifiedAddress(input.routeEstimate?.deadheadEstimate?.origin);
+  const pickup =
+    coordinateFromRecord(source, [
+      ["pickupLatitude", "pickupLongitude"],
+      ["pickupLat", "pickupLng"],
+    ]) ??
+    coordinateFromVerifiedAddress(input.routeEstimate?.loadedEstimate?.pickup) ??
+    coordinateFromVerifiedAddress(input.routeEstimate?.origin);
+  const delivery =
+    coordinateFromRecord(source, [
+      ["deliveryLatitude", "deliveryLongitude"],
+      ["deliveryLat", "deliveryLng"],
+    ]) ??
+    coordinateFromVerifiedAddress(input.routeEstimate?.loadedEstimate?.delivery) ??
+    coordinateFromVerifiedAddress(input.routeEstimate?.destination);
 
   if (deadhead) {
     points.push({
@@ -353,7 +362,10 @@ function buildWeatherPoints(input: LoadInput): WeatherProfitabilityPointInput[] 
         ["latitude", "longitude"],
         ["lat", "lng"],
       ]
-    );
+    ) ??
+      coordinateFromVerifiedAddress(
+        input.routeEstimate?.loadedEstimate?.stops[index]
+      );
 
     if (!coordinates) return;
 
@@ -377,6 +389,20 @@ function buildWeatherPoints(input: LoadInput): WeatherProfitabilityPointInput[] 
   }
 
   return points;
+}
+
+function coordinateFromVerifiedAddress(
+  address: { lat: number | null; lng: number | null } | null | undefined
+) {
+  if (!address) return null;
+
+  return coordinateFromRecord(
+    {
+      lat: address.lat,
+      lng: address.lng,
+    },
+    [["lat", "lng"]]
+  );
 }
 
 function coordinateFromRecord(
@@ -406,6 +432,8 @@ function coordinateFromRecord(
 }
 
 function numberValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }

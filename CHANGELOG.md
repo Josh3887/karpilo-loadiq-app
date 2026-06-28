@@ -51,6 +51,10 @@
 - Restored calculator revenue basis controls for RPM versus load gross,
   FSC-in-gross handling, linehaul derivation, EIA fuel context, and deterministic
   LoadIQ intelligence output while preserving route mileage separation.
+- Wired recovered calculator result intelligence surfaces so ResultsPanel now
+  renders the existing Atlas freight intelligence surface and entitlement-gated
+  weather profitability risk panel, with disabled/unavailable states and no fuel
+  gauge, load weight, provider expansion, or static asset changes.
 - Reconciled package manifests for recovered runtime imports used by Sentry,
   Upstash Redis, OpenAI, Stripe, and server-only module guards.
 

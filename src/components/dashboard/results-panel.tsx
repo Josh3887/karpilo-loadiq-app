@@ -1,14 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
+import { AtlasFreightIntelligenceSurface } from "@/components/ai/atlas-freight-intelligence-surface";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScenarioComparisonPanel } from "@/components/dashboard/scenario-comparison-panel";
+import { WeatherProfitabilityRiskPanel } from "@/components/dashboard/weather-profitability-risk-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
+import { getAtlasEquipmentPackLabel } from "@/lib/equipment-profile";
 import { LoadInput, LoadResult } from "@/types/load";
 import { saveLoad } from "@/services/save-load";
+import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
+import type { WeatherProfitabilityResult } from "@/types/weather-profitability";
 
 import {
   formatCurrency,
@@ -36,9 +41,22 @@ export function ResultsPanel({
   input,
   canSaveLoad = true,
   canCompareScenarios = false,
+  canUseWeatherProfitabilityRisk = false,
+  canSaveWeatherProfitabilitySnapshot = false,
+  aiDevEnabled = false,
+  entitlementTier = "no_access",
+  previewMode = false,
   onLoadSaved,
 }: ResultsPanelProps) {
   const [saveStatus, setSaveStatus] = useState("");
+  const [weatherProfitabilitySnapshotState, setWeatherProfitabilitySnapshotState] =
+    useState<{
+      key: string;
+      snapshot: WeatherProfitabilityResult | null;
+    }>({
+      key: "",
+      snapshot: null,
+    });
   const routeMileageVariance = input ? getRouteMileageVariance(input) : null;
   const routeFuelExposure =
     input && routeMileageVariance !== null
@@ -59,6 +77,21 @@ export function ResultsPanel({
           routeFuelExposure
         )
       : [];
+  const atlasPayload =
+    result && input ? buildAtlasLoadAnalysisPayload(result, input) : null;
+  const weatherSnapshotKey =
+    result && input ? buildWeatherSnapshotKey(result, input) : "";
+  const shouldRenderWeatherRisk =
+    Boolean(input) && canUseWeatherProfitabilityRisk && !previewMode;
+  const handleWeatherSnapshotChange = useCallback(
+    (snapshot: WeatherProfitabilityResult | null) => {
+      setWeatherProfitabilitySnapshotState({
+        key: weatherSnapshotKey,
+        snapshot,
+      });
+    },
+    [weatherSnapshotKey]
+  );
 
   async function handleSaveLoad() {
     if (!result || !input) return;
@@ -73,12 +106,20 @@ export function ResultsPanel({
     try {
       setSaveStatus("Saving load...");
 
-      await saveLoad({
+      const savedLoad = await saveLoad({
         input,
         result,
+        weatherProfitabilitySnapshot: canSaveWeatherProfitabilitySnapshot
+          ? getCurrentWeatherSnapshot(
+              weatherProfitabilitySnapshotState,
+              weatherSnapshotKey
+            )
+          : null,
       });
 
-      setSaveStatus("Load saved.");
+      setSaveStatus(
+        savedLoad.warning ? `Load saved. ${savedLoad.warning}` : "Load saved."
+      );
       onLoadSaved?.();
     } catch (error) {
       console.error(error);
@@ -292,6 +333,26 @@ export function ResultsPanel({
               ))}
             </div>
           </div>
+        )}
+
+        {input && (
+          <AtlasFreightIntelligenceSurface
+            payload={atlasPayload}
+            enabled={aiDevEnabled && !previewMode}
+          />
+        )}
+
+        {shouldRenderWeatherRisk && input && (
+          <WeatherProfitabilityRiskPanel
+            input={input}
+            result={result}
+            entitlementTier={entitlementTier}
+            canUseWeatherProfitabilityRisk={canUseWeatherProfitabilityRisk}
+            canSaveWeatherProfitabilitySnapshot={
+              canSaveWeatherProfitabilitySnapshot
+            }
+            onSnapshotChange={handleWeatherSnapshotChange}
+          />
         )}
 
         {input && (
@@ -513,4 +574,166 @@ function buildLoadIqInsights(
   }
 
   return insights;
+}
+
+function getCurrentWeatherSnapshot(
+  state: {
+    key: string;
+    snapshot: WeatherProfitabilityResult | null;
+  },
+  currentKey: string
+) {
+  return state.key === currentKey ? state.snapshot : null;
+}
+
+function buildWeatherSnapshotKey(result: LoadResult, input: LoadInput) {
+  return JSON.stringify({
+    routeEstimate: input.routeEstimate,
+    loadedMiles: input.loadedMiles,
+    deadheadMiles: input.deadheadMiles,
+    fuelPrice: input.fuelPrice,
+    mpg: input.mpg,
+    grossRevenue: result.grossRevenue,
+    totalMiles: result.totalMiles,
+    targetRpm: result.targetRpm,
+    estimatedNet: result.estimatedNet,
+    profitMarginPercent: result.profitMarginPercent,
+    breakEvenRpm: result.breakEvenRpm,
+  });
+}
+
+function buildAtlasLoadAnalysisPayload(
+  result: LoadResult,
+  input: LoadInput
+): LoadIqAiLoadAnalysisInput {
+  const notes = [
+    getFscTreatment(input),
+    routeContextNote(input),
+    missingInputNote(input),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    grossRevenue: nonNegativeNumber(result.grossRevenue),
+    loadedMiles: nonNegativeNumber(input.loadedMiles),
+    deadheadMiles: nonNegativeNumber(input.deadheadMiles),
+    fuelCost: nonNegativeNumber(result.fuelCost),
+    trueRpm: nonNegativeNumber(result.trueRpm),
+    netProfit: finiteNumber(result.estimatedNet),
+    daysCommitted: nonNegativeNumber(result.dispatchDays + result.deadheadDays),
+    dispatchFee: nonNegativeNumber(result.dispatchCost),
+    factoringFee: nonNegativeNumber(result.factoringCost),
+    tolls: nonNegativeNumber(input.tolls),
+    accessorials: nonNegativeNumber(result.accessorialRevenue),
+    estimatedMaintenanceReserve: nonNegativeNumber(
+      result.costBreakdown.maintenanceReserve
+    ),
+    pickupRegion: formatRegion(
+      input.pickupCity,
+      input.pickupState,
+      input.pickupZip
+    ),
+    deliveryRegion: formatRegion(
+      input.deliveryCity,
+      input.deliveryState,
+      input.deliveryZip
+    ),
+    equipmentType: optionalText(input.equipmentType),
+    atlasEquipmentPack: optionalText(input.atlasEquipmentPack),
+    equipmentPackLabel: getAtlasEquipmentPackLabel(
+      input.atlasEquipmentPack,
+      input.equipmentType || "Equipment context not set"
+    ),
+    combinationType: optionalText(input.combinationType),
+    equipmentDimensions: formatEquipmentDimensions(input),
+    maxPayloadLbs: nonNegativeNumber(input.maxPayloadLbs),
+    grossVehicleWeightRatingLbs: nonNegativeNumber(
+      input.grossVehicleWeightRatingLbs
+    ),
+    axleCount: nonNegativeNumber(input.axleCount),
+    hazmatCapable: input.hazmatCapable,
+    tankerCapable: input.tankerCapable,
+    refrigeratedCapable: input.refrigeratedCapable,
+    specializedCapabilities: formatStringList(input.specializedCapabilities),
+    securementEquipment: formatStringList(input.securementEquipment),
+    routeRestrictionNotes: optionalText(input.routeRestrictionNotes),
+    notes,
+  };
+}
+
+function finiteNumber(value: number) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function nonNegativeNumber(value: number) {
+  return Math.max(finiteNumber(value), 0);
+}
+
+function optionalText(value: string) {
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function formatStringList(values: string[]) {
+  const text = values.map((value) => value.trim()).filter(Boolean).join(", ");
+  return text || undefined;
+}
+
+function formatRegion(city: string, state: string, zip: string) {
+  return (
+    [city, state, zip].map((value) => value.trim()).filter(Boolean).join(", ") ||
+    undefined
+  );
+}
+
+function formatEquipmentDimensions(input: LoadInput) {
+  const dimensions = [
+    input.trailerLengthFeet > 0
+      ? `${formatNumber(input.trailerLengthFeet)} ft`
+      : "",
+    input.trailerWidthInches > 0
+      ? `${formatNumber(input.trailerWidthInches)} in wide`
+      : "",
+    input.trailerHeightInches > 0
+      ? `${formatNumber(input.trailerHeightInches)} in high`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
+  return dimensions || undefined;
+}
+
+function routeContextNote(input: LoadInput) {
+  const estimatedLoaded = getEstimatedRouteMiles(input);
+  const estimatedDeadhead = getEstimatedDeadheadRouteMiles(input);
+  const routeStopCount = input.routeStops.length;
+  const parts = [
+    estimatedLoaded === null
+      ? ""
+      : `Google estimated loaded miles: ${formatNumber(estimatedLoaded)}.`,
+    estimatedDeadhead === null
+      ? ""
+      : `Google estimated deadhead miles: ${formatNumber(estimatedDeadhead)}.`,
+    routeStopCount > 0 ? `${routeStopCount} freight stop(s) entered.` : "",
+  ].filter(Boolean);
+
+  return parts.join(" ");
+}
+
+function missingInputNote(input: LoadInput) {
+  const missing = [
+    input.loadedMiles > 0 ? "" : "paid loaded miles",
+    input.mpg > 0 ? "" : "MPG",
+    input.fuelPrice > 0 ? "" : "fuel price",
+    input.pickupCity || input.pickupState || input.pickupZip ? "" : "pickup",
+    input.deliveryCity || input.deliveryState || input.deliveryZip
+      ? ""
+      : "delivery",
+  ].filter(Boolean);
+
+  return missing.length > 0
+    ? `Missing or incomplete inputs: ${missing.join(", ")}.`
+    : "";
 }

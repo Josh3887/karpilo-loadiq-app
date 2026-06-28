@@ -22,6 +22,7 @@ import type {
 type AtlasFreightIntelligenceSurfaceProps = {
   payload: LoadIqAiLoadAnalysisInput | null;
   variant?: "embedded" | "overlay";
+  enabled?: boolean;
 };
 
 type AiResponse = {
@@ -39,10 +40,17 @@ type AiResponse = {
 
 const ATLAS_FREIGHT_LAYER = ATLAS_INTELLIGENCE_LAYERS.freight;
 const LOAD_ANALYSIS_FEATURE_KEY = "load_analysis";
+const ATLAS_DISABLED_STATUS_INFO = {
+  status: "disabled",
+  reason: "ai_dev_disabled",
+  message:
+    "Atlas analysis support is not enabled in this environment. Deterministic LoadIQ intelligence remains available.",
+} satisfies AtlasAiStatusInfo;
 
 export function AtlasFreightIntelligenceSurface({
   payload,
   variant = "embedded",
+  enabled = true,
 }: AtlasFreightIntelligenceSurfaceProps) {
   const [analysis, setAnalysis] = useState<LoadIqAiLoadAnalysisOutput | null>(
     null
@@ -61,14 +69,22 @@ export function AtlasFreightIntelligenceSurface({
     [payload]
   );
   const visibleAnalysis = analysisPayloadKey === payloadKey ? analysis : null;
+  const effectiveStatusInfo =
+    !enabled && payload ? ATLAS_DISABLED_STATUS_INFO : statusInfo;
   const atlasUnavailable =
-    statusInfo?.status === "disabled" || statusInfo?.reason === "ai_budget_exceeded";
-  const atlasCoolingDown = statusInfo?.reason === "ai_cooldown_active";
+    !enabled ||
+    effectiveStatusInfo?.status === "disabled" ||
+    effectiveStatusInfo?.reason === "ai_budget_exceeded";
+  const atlasCoolingDown = effectiveStatusInfo?.reason === "ai_cooldown_active";
 
   useEffect(() => {
     let active = true;
 
     if (!payload) {
+      return;
+    }
+
+    if (!enabled) {
       return;
     }
 
@@ -111,9 +127,16 @@ export function AtlasFreightIntelligenceSurface({
     return () => {
       active = false;
     };
-  }, [payload, payloadKey]);
+  }, [enabled, payload, payloadKey]);
 
   async function requestIntelligence() {
+    if (!enabled) {
+      setStatus(
+        "Atlas Analysis Assistance is not enabled in this environment. Calculator output remains available."
+      );
+      return;
+    }
+
     if (!payload) {
       setStatus(
         "Atlas Analysis Assistance needs complete calculated load values to generate an educational readout."
@@ -188,7 +211,7 @@ export function AtlasFreightIntelligenceSurface({
         <button
           type="button"
           onClick={requestIntelligence}
-          disabled={loading || atlasUnavailable || atlasCoolingDown}
+          disabled={loading || !enabled || atlasUnavailable || atlasCoolingDown}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--atlas-accent)] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500 lg:w-auto"
         >
           {loading ? (
@@ -239,7 +262,7 @@ export function AtlasFreightIntelligenceSurface({
           </p>
         )}
 
-        <AtlasAiStatusIndicator statusInfo={payload ? statusInfo : null} />
+        <AtlasAiStatusIndicator statusInfo={payload ? effectiveStatusInfo : null} />
 
         {visibleAnalysis && (
           <div className="grid gap-4">
