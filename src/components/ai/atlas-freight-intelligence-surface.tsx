@@ -44,7 +44,7 @@ const ATLAS_DISABLED_STATUS_INFO = {
   status: "disabled",
   reason: "ai_dev_disabled",
   message:
-    "Atlas analysis support is not enabled in this environment. Deterministic LoadIQ intelligence remains available.",
+    "Karpilo Atlas Freight AI-assisted explanation is not enabled in this environment. Deterministic Karpilo LoadIQ planning notes remain available.",
 } satisfies AtlasAiStatusInfo;
 
 export function AtlasFreightIntelligenceSurface({
@@ -108,7 +108,7 @@ export function AtlasFreightIntelligenceSurface({
             status: "disabled",
             message:
               data.message ||
-              "Atlas analysis support is unavailable. Calculator output remains available.",
+              "Karpilo Atlas Freight AI-assisted explanation is unavailable. Karpilo LoadIQ calculation output remains available.",
           });
         }
       } catch {
@@ -116,7 +116,7 @@ export function AtlasFreightIntelligenceSurface({
           setStatusInfo({
             status: "disabled",
             message:
-              "Atlas analysis support is unavailable. Calculator output remains available.",
+              "Karpilo Atlas Freight AI-assisted explanation is unavailable. Karpilo LoadIQ calculation output remains available.",
           });
         }
       }
@@ -132,20 +132,22 @@ export function AtlasFreightIntelligenceSurface({
   async function requestIntelligence() {
     if (!enabled) {
       setStatus(
-        "Atlas Analysis Assistance is not enabled in this environment. Calculator output remains available."
+        "Karpilo Atlas Freight AI-assisted explanation is not enabled in this environment. Karpilo LoadIQ calculation output remains available."
       );
       return;
     }
 
     if (!payload) {
       setStatus(
-        "Atlas Analysis Assistance needs complete calculated load values to generate an educational readout."
+        "Karpilo Atlas Freight explanation needs complete calculated load values before it can be requested."
       );
       return;
     }
 
     setLoading(true);
-    setStatus(`${ATLAS_FREIGHT_LAYER.runtimeId} processing Atlas analysis context...`);
+    setStatus(
+      `${ATLAS_FREIGHT_LAYER.runtimeId} processing Karpilo Atlas Freight context...`
+    );
 
     try {
       const response = await fetch("/api/ai/load-analysis", {
@@ -167,15 +169,15 @@ export function AtlasFreightIntelligenceSurface({
           reason: data.error,
           message:
             data.message ||
-            "Karpilo Atlas AI analysis support is temporarily unavailable.",
+            "Karpilo Atlas Freight AI-assisted explanation is temporarily unavailable.",
           retryAfterSeconds: data.retryAfterSeconds,
           budget: current?.budget,
         }));
         setStatus(
           data.error === "ai_not_configured"
-            ? "Karpilo Atlas AI is not configured on this server."
+            ? "Karpilo Atlas Freight AI-assisted explanation is not configured on this server."
             : data.message ||
-                "Karpilo Atlas AI analysis support is temporarily unavailable."
+                "Karpilo Atlas Freight AI-assisted explanation is temporarily unavailable."
         );
         return;
       }
@@ -190,13 +192,15 @@ export function AtlasFreightIntelligenceSurface({
         status: "available",
         message:
           data.governance?.status === "cache_hit"
-            ? "Atlas returned a cached readout for this matching load context."
-            : "Atlas analysis support is available.",
+            ? "Karpilo Atlas Freight returned a cached AI-assisted explanation for this matching load context."
+            : "Karpilo Atlas Freight AI-assisted explanation is available.",
         budget: data.governance?.budget ?? current?.budget,
       }));
       setStatus("");
     } catch {
-      setStatus("Karpilo Atlas AI analysis support is temporarily unavailable.");
+      setStatus(
+        "Karpilo Atlas Freight AI-assisted explanation is temporarily unavailable."
+      );
     } finally {
       setLoading(false);
     }
@@ -220,10 +224,10 @@ export function AtlasFreightIntelligenceSurface({
             <RadioTower className="h-4 w-4" aria-hidden="true" />
           )}
           {atlasCoolingDown
-            ? "Atlas Cooling Down"
+            ? "Karpilo Atlas Cooling Down"
             : visibleAnalysis
-              ? "Refresh Atlas Insight"
-              : "Update Atlas Insight"}
+              ? "Refresh AI-assisted Explanation"
+              : "Request AI-assisted Explanation"}
         </button>
       }
     >
@@ -331,7 +335,8 @@ function buildFreightBaselineReadout(
   if (!payload) {
     return {
       marginSignal: "Awaiting Output",
-      marginDetail: "Atlas Analysis Assistance activates after calculator output exists.",
+      marginDetail:
+        "Karpilo Atlas Freight explanation can be requested after calculator output exists.",
       deadheadSignal: "Route Pending",
       deadheadDetail: "Deadhead exposure needs completed load values.",
       dispatchSignal: "No Readout",

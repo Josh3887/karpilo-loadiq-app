@@ -12,7 +12,7 @@ import {
 import { formatCurrency, formatRpm } from "@/utils/format";
 
 const LOCKED_WEATHER_MESSAGE =
-  "Weather Profitability Risk is available on Platinum and Pro.";
+  "Advanced Weather Risk context is available in higher tier.";
 
 type WeatherProfitabilityRiskPanelProps = {
   input: LoadInput;
@@ -119,7 +119,7 @@ export function WeatherProfitabilityRiskPanel({
           error:
             error instanceof Error
               ? error.message
-              : "Weather profitability request failed.",
+              : "Weather Risk Context request failed.",
         });
         onSnapshotChange?.(null);
       }
@@ -141,10 +141,12 @@ export function WeatherProfitabilityRiskPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-              {entitlementTier === "gold" ? "Upgrade Teaser" : "Locked"}
+              {entitlementTier === "gold"
+                ? "Available in higher tier"
+                : "Advanced Weather Risk context locked"}
             </p>
             <h3 className="mt-2 text-xl font-black text-slate-100">
-              Weather Profitability Risk
+              Weather Risk Context
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-400">
               {LOCKED_WEATHER_MESSAGE}
@@ -178,10 +180,10 @@ export function WeatherProfitabilityRiskPanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-            Platinum / Pro Intelligence
+            Route Weather Context
           </p>
           <h3 className="mt-2 text-xl font-black text-slate-100">
-            Weather Profitability Risk
+            Weather Risk Context
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-400">
             Deterministic weather-cost pressure using provider weather,
@@ -195,7 +197,7 @@ export function WeatherProfitabilityRiskPanel({
 
       {panelState.status === "loading" && (
         <p className="mt-4 rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-400">
-          Checking weather profitability risk...
+          Checking Weather Risk Context...
         </p>
       )}
 

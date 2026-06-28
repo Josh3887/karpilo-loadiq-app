@@ -83,10 +83,10 @@ export const KARPILO_ATLAS_USER_OWNED_INTELLIGENCE =
   "karpilo_atlas_user_owned_intelligence";
 ```
 
-Current implementation note: existing code still contains older labels such as
-`Karpilo Atlas AI`, `Atlas Analysis Assistance`, `Atlas Operational Context`,
-and `Atlas Educational Support`. This document defines the future public naming
-standard. Renaming implementation surfaces belongs on a separate branch.
+Current implementation note: public Karpilo Atlas layer labels should use the
+full module names. AI/OpenAI language belongs only on AI-assisted explanation
+paths that actually request or return AI output, not on deterministic Karpilo
+LoadIQ calculator output.
 
 ## Product Boundary
 
@@ -977,7 +977,7 @@ separate branch and explicit approval.
 
 ## Single Karpilo Atlas Intelligence Readout Doctrine
 
-Current issue: Karpilo LoadIQ currently risks overloading the user with multiple
+Prior issue: Karpilo LoadIQ risked overloading the user with multiple
 overlapping panels:
 
 - Operational Intelligence
@@ -1041,6 +1041,14 @@ Rules:
 
 - Preserve underlying calculations.
 - Preserve deterministic fallback.
+- Label deterministic Karpilo LoadIQ calculator output as calculation,
+  decision, or planning basis, not AI-generated output.
+- Label Karpilo Atlas modules with full public names: Karpilo Atlas Core,
+  Karpilo Atlas Freight, Karpilo Atlas Route, and Karpilo Atlas Education.
+- Use AI/OpenAI labels only when an actual AI-assisted explanation is requested
+  or returned.
+- Label provider weather output as Weather Risk Context or Route Weather
+  Context, not AI.
 - Preserve tier gates.
 - Preserve Karpilo Atlas/OpenAI gates.
 - Preserve weather gates.
@@ -1171,10 +1179,11 @@ src/components/dashboard/results-panel.tsx
 
 The readout consolidates decision summary, revenue basis, mileage and route
 exposure, fuel and cost exposure, time and schedule pressure, freight fit,
-profit confidence, missing inputs, deterministic details, gated Atlas detail,
-and gated weather risk into one results surface. It does not change
-calculations, route intelligence, weather provider behavior, OpenAI request
-behavior, billing semantics, or premium entitlement gates.
+profit confidence, missing inputs and assumptions, deterministic Karpilo LoadIQ
+details, gated Karpilo Atlas Freight detail, and gated Weather Risk Context into
+one results surface. It does not change calculations, route intelligence,
+weather provider behavior, OpenAI request behavior, billing semantics, or
+premium entitlement gates.
 
 ### Phase 9 - AI/RAG Expansion Later
 

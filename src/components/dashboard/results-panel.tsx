@@ -159,9 +159,10 @@ export function ResultsPanel({
 
   if (!result) {
     return (
-      <DashboardCard title="Load Intelligence">
+      <DashboardCard title="Karpilo LoadIQ Decision Basis">
         <div className="flex min-h-100 items-center justify-center text-center text-slate-500">
-          Run a profitability analysis to generate operational intelligence.
+          Run a profitability analysis to generate deterministic Karpilo LoadIQ
+          planning notes.
         </div>
       </DashboardCard>
     );
@@ -223,7 +224,7 @@ export function ResultsPanel({
           </div>
 
           <div>
-            <PanelTitle>Decision Metrics</PanelTitle>
+            <PanelTitle>Karpilo LoadIQ Decision Basis</PanelTitle>
 
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <KpiCard
@@ -504,8 +505,8 @@ export function ResultsPanel({
           )}
 
           <ReadoutDetail
-            title="Expandable Details"
-            summary="Operational cost basis, deterministic LoadIQ notes, and calculator explanations."
+            title="Missing Inputs & Assumptions"
+            summary="Expandable Karpilo LoadIQ calculation details, planning notes, and assumptions."
           >
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-xl border border-slate-800 bg-[#060B14] p-5">
@@ -553,7 +554,7 @@ export function ResultsPanel({
 
               {loadIqInsights.length > 0 && (
                 <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-5">
-                  <PanelTitle>Deterministic LoadIQ Notes</PanelTitle>
+                  <PanelTitle>Karpilo LoadIQ Planning Notes</PanelTitle>
 
                   <div className="space-y-3 text-sm leading-6 text-slate-300">
                     {loadIqInsights.map((insight) => (
@@ -565,7 +566,7 @@ export function ResultsPanel({
 
               {result.explanations.length > 0 && (
                 <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-5">
-                  <PanelTitle>Calculation Explanations</PanelTitle>
+                  <PanelTitle>Karpilo LoadIQ Calculation Basis</PanelTitle>
 
                   <div className="space-y-3 text-sm leading-6 text-slate-300">
                     {result.explanations.map((explanation) => (
@@ -580,7 +581,7 @@ export function ResultsPanel({
           {input && (
             <ReadoutDetail
               title="Karpilo Atlas Freight Intelligence"
-              summary="Gated Atlas detail remains available through the existing Atlas runtime surface."
+              summary="Advanced Karpilo Atlas Freight detail remains gated through the existing runtime surface. AI-assisted explanation appears only after a successful request."
             >
               <AtlasFreightIntelligenceSurface
                 payload={atlasPayload}
@@ -592,7 +593,7 @@ export function ResultsPanel({
           {shouldRenderWeatherRisk && input && (
             <ReadoutDetail
               title="Weather / External Risk"
-              summary="Weather profitability risk appears only when the current entitlement and provider state allow it."
+              summary="Weather Risk Context appears only when the current entitlement and provider state allow it."
             >
               <WeatherProfitabilityRiskPanel
                 input={input}
@@ -607,36 +608,37 @@ export function ResultsPanel({
             </ReadoutDetail>
           )}
 
-        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-500">
-          LoadIQ outputs are estimates based on the values entered here. They do
-          not guarantee broker payment, carrier settlement, reimbursements,
-          fuel pricing, repair exposure, tax treatment, detention approval, or
-          final net income. Verify assumptions against rate confirmations,
-          settlement statements, receipts, and your operating records.
-        </div>
+          <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-500">
+            Karpilo LoadIQ outputs are estimates based on the values entered
+            here. They do not guarantee broker payment, carrier settlement,
+            reimbursements, fuel pricing, repair exposure, tax treatment,
+            detention approval, or final net income. Verify assumptions against
+            rate confirmations, settlement statements, receipts, and your
+            operating records.
+          </div>
 
-        {result.warnings.length > 0 && (
-          <div className="space-y-3">
-            {result.warnings.map((warning) => (
-              <div
-                key={warning.message}
-                className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4"
-              >
-                <AlertTriangle className="mt-0.5 h-5 w-5 text-red-400" />
+          {result.warnings.length > 0 && (
+            <div className="space-y-3">
+              {result.warnings.map((warning) => (
+                <div
+                  key={warning.message}
+                  className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4"
+                >
+                  <AlertTriangle className="mt-0.5 h-5 w-5 text-red-400" />
 
-                <div>
-                  <div className="text-sm font-semibold text-red-300">
-                    Operational Warning
-                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-red-300">
+                      Operational Warning
+                    </div>
 
-                  <div className="mt-1 text-sm text-slate-300">
-                    {warning.message}
+                    <div className="mt-1 text-sm text-slate-300">
+                      {warning.message}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
         </div>
       </DashboardCard>
 

@@ -34,10 +34,10 @@ export function AtlasAiStatusIndicator({
   const isCooldown = statusInfo.reason === "ai_cooldown_active";
   const Icon = isAvailable ? CheckCircle2 : isCooldown ? TimerReset : OctagonAlert;
   const label = isAvailable
-    ? "Atlas available"
+    ? "AI explanation available"
     : isCooldown
-      ? "Atlas cooling down"
-      : "Atlas limited";
+      ? "AI explanation cooling down"
+      : "AI explanation limited";
 
   return (
     <div

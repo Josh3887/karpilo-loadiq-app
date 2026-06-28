@@ -36,7 +36,7 @@ export const ATLAS_ASSET_ROOT = "/branding/atlas";
 export const ATLAS_INTELLIGENCE_LAYERS = {
   core: {
     key: "core",
-    publicName: "Karpilo Atlas AI",
+    publicName: "Karpilo Atlas Core",
     runtimeId: ATLAS_RUNTIME_IDS.core,
     colorIdentity: {
       name: "purple",
@@ -51,11 +51,11 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-core-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Atlas Core orchestrates module activation, tier and usage gates, equipment context, regulation-reference boundaries, and operational review safeguards.",
+      "Karpilo Atlas Core orchestrates module activation, tier and usage gates, equipment context, regulation-reference boundaries, and operational review safeguards.",
   },
   freight: {
     key: "freight",
-    publicName: "Atlas Analysis Assistance",
+    publicName: "Karpilo Atlas Freight",
     runtimeId: ATLAS_RUNTIME_IDS.freight,
     colorIdentity: {
       name: "green",
@@ -74,7 +74,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
   },
   route: {
     key: "route",
-    publicName: "Atlas Operational Context",
+    publicName: "Karpilo Atlas Route",
     runtimeId: ATLAS_RUNTIME_IDS.route,
     colorIdentity: {
       name: "red",
@@ -93,7 +93,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
   },
   educational: {
     key: "educational",
-    publicName: "Atlas Educational Support",
+    publicName: "Karpilo Atlas Education",
     runtimeId: ATLAS_RUNTIME_IDS.educational,
     colorIdentity: {
       name: "blue",
@@ -120,13 +120,13 @@ export const ATLAS_LAYER_ORDER: AtlasLayerKey[] = [
 ];
 
 export const ATLAS_PROCESSING_DISCLOSURE =
-  "Karpilo Atlas AI provides controlled educational, informational, and analytical support inside Karpilo LoadIQ. Atlas activates from explicit user actions, calculated results, saved snapshots, and server-side governance checks. It remains supplemental to the calculator and does not make operational decisions.";
+  "Karpilo Atlas AI-assisted explanations provide controlled educational, informational, and analytical support inside Karpilo LoadIQ. Karpilo Atlas activates from explicit user actions, calculated results, saved snapshots, and server-side governance checks. It remains supplemental to the calculator and does not make operational decisions.";
 
 export const ATLAS_PROPRIETARY_STATEMENT =
-  "Karpilo Atlas AI, Atlas Insights, Atlas Guidance, Atlas Educational Support, and Atlas Operational Context are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
+  "Karpilo Atlas Core, Karpilo Atlas Freight, Karpilo Atlas Route, Karpilo Atlas Education, and Karpilo Atlas AI-assisted explanations are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
 
 export const ATLAS_EDUCATIONAL_DISCLAIMER =
-  "Karpilo Atlas AI provides contextual educational support for navigating Karpilo LoadIQ features, workflows, and app tools. It explains functionality and calculation context only. It does not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
+  "Karpilo Atlas Education provides contextual support for navigating Karpilo LoadIQ features, workflows, and app tools. AI-assisted explanations, when requested and available, explain functionality and calculation context only. They do not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
 
 export const ATLAS_CORE_CONTROLLED_ORCHESTRATION_NOTE =
-  "Atlas Core owns controlled activation, equipment context, regulation-reference boundaries, and operational review. Hover, focus, route-change, and background navigation events must not open Atlas panels or call AI.";
+  "Karpilo Atlas Core owns controlled activation, equipment context, regulation-reference boundaries, and operational review. Hover, focus, route-change, and background navigation events must not open Karpilo Atlas panels or call AI.";

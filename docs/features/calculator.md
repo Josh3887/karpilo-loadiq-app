@@ -26,7 +26,7 @@ The calculator must preserve:
 - load weight
 - fuel assumptions
 - profitability results
-- LoadIQ Intelligence explanation
+- Karpilo LoadIQ deterministic planning notes
 - saved-load and actuals separation
 
 ## Calculator Workflow Order
@@ -350,7 +350,7 @@ The calculator should use time and mileage assumptions to expose:
 - load revenue spread across time
 - profitability confidence
 
-Future AI/Atlas intelligence may explain:
+Future Karpilo Atlas AI-assisted intelligence may explain:
 
 - "This window is broad, but the route can likely be completed in less time."
 - "Your planning days are conservative compared to estimated route time."
@@ -393,8 +393,9 @@ Inspected code shows:
 - `src/services/route-intelligence/google-provider.ts` returns estimated
   duration minutes for deadhead, loaded, total, and route leg estimates.
 - `src/components/dashboard/results-panel.tsx` renders revenue basis, fuel
-  intelligence, mileage intelligence, Google drive-time/planning-hour rows,
-  50 mph benchmark rows, LoadIQ intelligence, Atlas surface, and
+  cost exposure, mileage and route exposure, Google drive-time/planning-hour
+  rows, 50 mph benchmark rows, Karpilo LoadIQ planning notes, Karpilo Atlas
+  Freight surface, and
   entitlement-gated weather surface.
 - `src/services/save-load.ts` persists estimated load weight to
   `estimated_load_weight_lbs` when present and includes weight context in the
@@ -422,4 +423,4 @@ on a separate approved branch.
 - weather risk integration
 - fuel gauge recovery
 - GPS/location tracking
-- AI/Atlas schedule and window analysis
+- Karpilo Atlas AI-assisted schedule and window analysis
