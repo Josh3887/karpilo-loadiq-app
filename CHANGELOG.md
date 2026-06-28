@@ -30,6 +30,11 @@
 
 ### Fixed
 
+- Made base Route Intelligence an all-tier authenticated app capability for
+  address validation, Google estimated deadhead miles, Google estimated loaded
+  miles, total Google route estimates, P/U and DEL stops, and paid-vs-estimated
+  mileage variance while preserving separate saved-load, report/export,
+  weather, Atlas/AI, and future truck-specific routing gates.
 - Corrected Route Intelligence stop handling so optional stops are freight-only
   P/U or DEL stops, with stop labels and fuel/DEF stop types removed from the
   calculator/API workflow.

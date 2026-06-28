@@ -39,6 +39,7 @@ export type Entitlements = {
   fleetOsProAccess: boolean;
   truckCapacityLimit: number | null;
   canCalculate: boolean;
+  canUseRouteIntelligence: boolean;
   canSaveLoad: boolean;
   canExport: boolean;
   canUseAdvancedAnalytics: boolean;
@@ -207,6 +208,7 @@ export function resolveEntitlements(
       usage.monthlyCalculations,
       limits.monthlyCalculations
     ),
+    canUseRouteIntelligence: true,
     canSaveLoad:
       activeLoadIqAccess && withinLimit(usage.savedLoads, limits.savedLoads),
     canExport: limits.exports && goldAccess,
@@ -217,6 +219,15 @@ export function resolveEntitlements(
     canUseFleetFeatures: limits.advancedAnalytics && fleetAccess,
     canCompareScenarios: limits.comparisons && goldAccess,
     canCreateLaneTemplates: limits.laneTemplates && goldAccess,
+  };
+}
+
+export function resolveUnauthenticatedEntitlements(
+  usage: EntitlementUsage
+): Entitlements {
+  return {
+    ...resolveEntitlements("no_access", usage),
+    canUseRouteIntelligence: false,
   };
 }
 

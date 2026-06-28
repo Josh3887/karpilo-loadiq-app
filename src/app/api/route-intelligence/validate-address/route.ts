@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { validateAddress } from "@/services/route-intelligence/route-intelligence-service";
+import { createClient } from "@/lib/supabase-server";
+
+export const dynamic = "force-dynamic";
 
 const validateAddressRequestSchema = z.object({
   address: z.string().trim().min(3),
@@ -9,6 +12,29 @@ const validateAddressRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      {
+        status: "unavailable",
+        provider: "google_estimate",
+        address: null,
+        message: "Route Intelligence requires an authenticated LoadIQ session.",
+        warnings: ["Sign in before validating route addresses."],
+      },
+      {
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
+
   let body: unknown;
 
   try {

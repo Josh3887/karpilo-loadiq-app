@@ -176,6 +176,7 @@ Product entitlement is permission to use a capability. Entitlements do not defin
 Observed entitlement-sensitive capabilities include:
 
 - core calculator
+- base Route Intelligence
 - saved loads
 - pay templates
 - lane templates
@@ -191,12 +192,18 @@ Current risk:
 
 - Several runtime gates derive capability from tier-like names.
 - Atlas and AI budgets can be tied to payment-tier labels.
-- Fuel gauge and route intelligence gates recognize Platinum, Pro, Pilot, Launch 500, and founder-like values.
+- Fuel gauge, weather, Atlas/AI, and truck-specific routing gates recognize
+  Platinum, Pro, Pilot, Launch 500, and founder-like values in places. Base
+  Google-backed Route Intelligence is now an all-tier authenticated app
+  capability and is not proof of paid tier.
 - This can blur product entitlement, AI governance, rollout cohort, and commercial tier.
 
 Required direction:
 
 - New work should prefer explicit capability grants and product-scoped entitlement records.
+- Keep base Route Intelligence separate from saved-load limits, report/export
+  gates, weather risk, Atlas/AI route explanation, advanced route analytics,
+  and truck-specific routing.
 - Billing status alone should not become the full Atlas, AI, FleetOS, or operational authority model.
 - Stripe plan IDs should map into entitlement records, but not replace entitlement policy.
 

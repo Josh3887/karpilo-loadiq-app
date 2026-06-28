@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { estimateRoute } from "@/services/route-intelligence/route-intelligence-service";
+import { createClient } from "@/lib/supabase-server";
 import { RouteStopKind } from "@/types/route-intelligence";
+
+export const dynamic = "force-dynamic";
 
 const routeStopKindValues: [RouteStopKind, ...RouteStopKind[]] = [
   "pickup",
@@ -46,6 +49,31 @@ const estimateRouteRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      {
+        status: "unavailable",
+        provider: "google_estimate",
+        estimate: null,
+        message: "Route Intelligence requires an authenticated LoadIQ session.",
+        warnings: [
+          "Sign in before requesting Google route mileage estimates.",
+        ],
+      },
+      {
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
+
   let body: unknown;
 
   try {

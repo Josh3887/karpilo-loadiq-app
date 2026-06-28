@@ -95,7 +95,7 @@ export function AtlasRouteIntelligenceSurface({
     <AtlasRuntimeFrame
       layer={ATLAS_ROUTE_LAYER}
       compact={compact}
-      description="Educational context for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, equipment assumptions, and route assumptions. Route and vehicle values remain user-entered context; truck-specific provider routing is Platinum/Pro only."
+      description="Educational context for repositioning distance, pickup-to-delivery flow, stop-off complexity, timing pressure, equipment assumptions, and route assumptions. Base Route Intelligence remains all-tier; truck-specific provider routing is advanced/future only."
       signal={
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -146,8 +146,8 @@ export function AtlasRouteIntelligenceSurface({
             </p>
             <p className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-300">
               {truckRoutingEligible
-                ? "Platinum/Pro truck routing eligible"
-                : "Manual context only"}
+                ? "Truck routing eligible"
+                : "Base route context"}
             </p>
           </div>
         </div>
@@ -178,7 +178,7 @@ export function AtlasRouteIntelligenceSurface({
             body={
               truckRoutingEligible
                 ? "This tier is eligible for future truck-specific provider routing estimates when Google Maps, AWS Geo, and vehicle-parameter routing are wired. Equipment values remain planning assumptions only and do not certify route legality, clearances, bridge limits, permits, hazmat routing, or securement."
-                : "This view shows manual route context only. Truck-specific provider routing, vehicle-constraint routing, and enriched route intelligence are reserved for Platinum/Pro. Equipment values do not certify fit, route legality, permits, hazmat routing, or securement."
+                : "This view includes base Route Intelligence and manual route context. Truck-specific provider routing, vehicle-constraint routing, and enriched AI route analysis remain advanced/future capabilities. Equipment values do not certify fit, route legality, permits, hazmat routing, or securement."
             }
             layer={ATLAS_ROUTE_LAYER}
           />

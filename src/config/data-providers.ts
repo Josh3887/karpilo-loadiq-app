@@ -72,11 +72,11 @@ export const DATA_PROVIDERS: DataProvider[] = [
     name: "Mapping and routing providers",
     shortName: "Mapping",
     category: "mapping",
-    status: "planned",
+    status: "active",
     attribution:
-      "Future Platinum/Pro routing intelligence may include third-party mapping providers.",
+      "Base Route Intelligence uses server-side mapping and routing providers for planning estimates.",
     description:
-      "Future routing inputs may support mileage, route, toll, location, and truck-specific routing estimation for eligible tiers.",
+      "Base routing inputs support address validation and route mileage estimates for authenticated app users. Future toll, traffic, location, and truck-specific routing intelligence remains separate.",
     disclaimer:
       "Routing data can vary by equipment, restrictions, detours, traffic, and local conditions. Truck-specific routing estimates are not route legality, permit, bridge, clearance, hazmat, or compliance certification.",
   },

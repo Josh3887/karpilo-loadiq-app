@@ -89,7 +89,7 @@ export const ATLAS_INTELLIGENCE_LAYERS = {
       backdrop: `${ATLAS_ASSET_ROOT}/backdrops/karpilo-atlas-route-backdrop-vertical-v1.png`,
     },
     shortOperationalDescription:
-      "Provider-backed route intelligence for verified address, mileage, deadhead, terrain, weather, traffic, construction, fuel, and Platinum/Pro truck-specific routing context.",
+      "Base route intelligence for verified address, Google mileage estimates, deadhead, and route context, with weather and truck-specific routing kept as separate advanced/future capabilities.",
   },
   educational: {
     key: "educational",

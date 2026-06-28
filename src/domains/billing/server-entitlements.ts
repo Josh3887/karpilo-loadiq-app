@@ -156,6 +156,7 @@ function resolveOwnerBuildPaymentAccess(
   const entitlements = {
     ...paymentAccess.entitlements,
     canCalculate: true,
+    canUseRouteIntelligence: true,
     canSaveLoad: true,
     canExport: true,
     canUseAdvancedAnalytics: true,

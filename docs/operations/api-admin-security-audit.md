@@ -393,13 +393,16 @@ Repository evidence:
 - Weather provider calls are made with latitude/longitude points and no-store
   fetches.
 - The route reports `cacheStatus: "not_implemented"`.
-- Google Maps/mapping is absent/planned in current provider docs and `.env.example`;
-  no material Google Maps API implementation or key use was found.
+- Base Google-backed Route Intelligence exists through server-side app routes
+  for authenticated planning estimates; truck-specific routing, legal-routing,
+  live navigation, and broader mapping expansion remain separate future work.
 
 Static audit result:
 
 - Weather profitability is not public unauthenticated access.
-- Google Maps should not be claimed as implemented.
+- Google planning estimates may be described only as base Route Intelligence,
+  not truck-legal routing, live navigation, compliance authority, or advanced
+  route intelligence.
 
 Residual risks:
 
@@ -478,7 +481,7 @@ Residual risks:
 | Low | Preview cookie route is public. | Preview API routes. | Could expose non-authoritative dashboard preview state if deployed. | Gate or document preview mode before production. |
 | Low | Webhook processing can return internal error messages. | Stripe webhook route. | Minor information disclosure/noise risk. | Return generic errors and log details server-side. |
 | Follow-up | Redis wrapper exists but is not wired to rate limits. | `src/lib/redis.ts` search evidence. | Current abuse controls are inconsistent by route. | Build shared rate-limit helpers before provider expansion. |
-| Follow-up | Google Maps is absent/planned. | API docs, `.env.example`, code search. | Public claims could outrun implementation if not controlled. | Keep maps/mileage provider work in a separate reviewed branch. |
+| Follow-up | Base Google Route Intelligence exists; expanded mapping remains future. | Route Intelligence API docs, route-intelligence API routes, provider services, `.env.example` gap. | Public claims could outrun the implemented planning-estimate scope if not controlled. | Keep truck-specific routing, live navigation, toll/traffic expansion, and broader maps provider work in separate reviewed branches. |
 
 ## Recommended Next Branches
 

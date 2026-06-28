@@ -9,6 +9,11 @@ route estimates across deadhead origin, pickup, user-ordered stops, and
 delivery. Future truck-specific routing and movement tracking remain separate
 concepts.
 
+Base Route Intelligence is available to all authenticated app tiers. It is not
+a paid-tier proof, does not remove saved-load limits, and does not unlock
+advanced/future route, weather, Atlas/AI, reporting, or truck-specific routing
+capabilities.
+
 API details are documented in
 [Route Intelligence API Contract](../api-contracts/route-intelligence.md).
 
@@ -131,11 +136,18 @@ The implementation keeps Google calls behind server-side routes/services.
 Client components may call the LoadIQ API route but must not call Google
 directly with protected credentials.
 
+Missing `GOOGLE_MAPS_API_KEY` or provider unavailability must surface as a
+provider-unavailable route estimate state. It must not be displayed as a
+subscription-tier lock.
+
 ## Future Trimble Provider
 
 The future provider is `trimble_truck`. V1 returns unavailable/scaffolded
 responses only. Do not mark Trimble as implemented until repo code and
 validated configuration prove a live truck-specific provider exists.
+
+Trimble truck-specific routing is an advanced/future capability and may remain
+gated separately from base Route Intelligence.
 
 Future Trimble routing is expected to require tractor/trailer profile,
 dimensions, gross weight, axle count, HAZMAT/load flags, routing profile, and
@@ -162,6 +174,11 @@ Intelligence does not replace:
 - insurance or accounting review
 - carrier/broker settlement records
 - IFTA filing records
+
+Weather risk intelligence is separate from base Route Intelligence and may
+remain gated. Saved-load limits, reports/exports, advanced route history,
+route trend analysis, and Atlas/AI route explanations are separate
+entitlements.
 
 ## Provider Architecture
 
@@ -197,6 +214,10 @@ Names only:
 - Show that stops are routed in the order entered.
 - Show route stop type only as `P/U` or `DEL`; do not require stop labels.
 - Show Trimble as planned after launch, not active.
+- Do not show base Route Intelligence as tier-locked for authenticated app
+  users.
+- If Google is unavailable or not configured, show provider-unavailable copy,
+  not a plan upgrade requirement.
 - Show fuel/DEF purchase copy as IFTA-style estimate support only, not tax
   filing authority.
 - Display EIA diesel price values to two decimals. Internal calculations may

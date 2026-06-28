@@ -5,6 +5,10 @@
 The Route Intelligence API provides LoadIQ-owned server routes for address
 validation and route mileage estimates. It keeps protected provider credentials
 server-side and returns normalized LoadIQ response shapes to the calculator UI.
+Base Google-backed Route Intelligence is available to all authenticated app
+tiers; paid tier state must not be used to block address validation, Google
+estimated deadhead miles, Google estimated loaded miles, total Google estimated
+route miles, P/U and DEL stops, or paid-vs-estimated mileage variance.
 
 Product behavior is documented in
 [Route Intelligence](../features/route-intelligence.md).
@@ -15,6 +19,11 @@ Product behavior is documented in
 - `POST /api/route-intelligence/estimate`
 
 Both endpoints return `Cache-Control: no-store`.
+
+Both endpoints require an authenticated LoadIQ session. Authentication is the
+base access boundary; commercial tier, saved-load limits, weather gates,
+Atlas/AI gates, report/export gates, and future truck-specific routing gates
+remain separate.
 
 ## POST /api/route-intelligence/validate-address
 
@@ -195,9 +204,17 @@ intelligence. They are not tax filing records.
 `google_estimate` is the active V1 provider. It uses Google Address Validation
 and Google Routes behind LoadIQ server routes.
 
+If the Google provider is not configured or cannot return a usable estimate,
+the API returns an `unavailable` or `error` response shape. UI should treat this
+as provider unavailability, not as a subscription-tier lock.
+
 `trimble_truck` is scaffolded only. It returns unavailable status until a later
 approved integration configures live Trimble routing. Do not require Trimble
 keys in V1.
+
+Trimble truck-specific routing, weather risk intelligence, Atlas/AI route
+profitability explanation, advanced route history/analytics, and route trend
+analysis are outside the all-tier base Route Intelligence contract.
 
 ## Security
 

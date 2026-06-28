@@ -40,6 +40,11 @@ May provide planning context, public data references, fuel estimates, weather ri
 
 Must not certify routing, guarantee ETA, guarantee pump price, guarantee road conditions, or expose provider response shapes directly to UI.
 
+Base Route Intelligence may provide authenticated all-tier address validation
+and Google planning mileage estimates. Weather risk intelligence,
+truck-specific routing, advanced route analytics, Atlas/AI route explanation,
+and saved-load/report capabilities remain separate gates.
+
 ## Billing
 
 May manage checkout, portal links, subscription state, entitlements, launch phase pricing, and internal test harnesses.

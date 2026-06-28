@@ -83,7 +83,7 @@ Priority levels follow the requested P0 through P7 framework.
 | OpenAI / Atlas | User-facing intelligence and integration | Scaffolded but not fully functional | P3 | `src/app/api/ai/*`, `src/lib/ai/*`, `src/lib/atlas/*`, AI docs, API/security audit | AI routes are gated by `ENABLE_LOADIQ_AI_DEV`, auth, budgets, validation, and safety prompts. Live schema lacks AI add-on structures; privacy review remains open. Atlas is architecture, not a tier. | Supabase AI schema, provider privacy, AI governance, entitlement cleanup. | Do not expand until core web app and DB are stable. | Later P3 branch. | Yes, blocked by AI schema gap. | OpenAI. | Yes, AI budgets map to tier-like labels. | Medium. | Post-launch milestone. |
 | EIA fuel / diesel reference | User-facing support integration | Built but incomplete/broken | P0/P1 | `src/app/api/fuel/*`, `src/services/fuel/*`, `src/components/calculator/load-input-form.tsx`, API docs | Fuel lookup is implemented as informational server-side provider support, but public fuel endpoints lack durable rate limits and cache behavior needs launch review. | Rate limits, fuel cache schema, provider env. | Keep informational; add rate limits/cache review. | Later code branch. | Yes for cache writes. | EIA.gov. | Entitlements not primary. | Low. | Supports P0 calculator but not standalone launch blocker if manual fuel works. |
 | Weather profitability | User-facing support integration | Scaffolded but not fully functional | P3 or later | `src/app/api/weather/profitability/route.ts`, `src/services/weather/*`, `src/components/dashboard/weather-profitability-risk-panel.tsx` | Auth/entitlement-gated route exists; cache reports `not_implemented`; no durable rate limit; provider privacy not approved. | Entitlements, provider privacy, rate limits/cache. | Keep gated; do not make launch-critical. | Later branch. | No direct schema blocker found, but saved snapshot depends on saved loads. | OpenWeather. | Yes for feature access. | Medium. | Post-launch milestone unless explicitly scoped. |
-| Google Maps / truck routing | Future milestone | Non-existent / future milestone | P4 | `docs/api/google-maps.md`, API index, code search | Docs mark Maps absent/planned; no material Google Maps implementation or key use found. | Provider decision, privacy, routing authority boundaries. | Do not build during web app stabilization. | Later P4 branch. | No current blocker. | Future Google Maps. | Potentially. | High if added. | Not a launch blocker. |
+| Google Maps / truck routing | User-facing base support plus future milestone | Base Google Route Intelligence exists; truck/legal routing remains future | P1/P4 | Route Intelligence docs, route-intelligence API routes, provider services, API index | Base Google-backed planning estimates support authenticated address validation and route mileage estimates. Truck-specific/legal routing, live navigation, traffic/toll expansion, and broader provider strategy remain future work. | Provider privacy, rate limits, routing authority boundaries, truck-specific provider decision. | Keep base estimates informational; do not expand into truck/legal routing during web app stabilization. | Current route foundation plus later P4 branch. | No current blocker for base estimates. | Google Maps for base estimates; future providers later. | Base route access is all-tier; advanced routing may be gated later. | High if expanded beyond planning estimates. | Base support is launch support; expansion is not a launch blocker. |
 | IFTA / jurisdiction estimates | Future milestone | Non-existent / future milestone, with some Pro copy scaffold | P4 | Dashboard Pro Estimation Readiness card, legal terms, pricing docs | IFTA is described as future Pro estimation support only, not tax filing. No implementation should be inferred. | Routing/mileage provider, saved history, legal/tax disclaimers, billing. | Keep future; do not launch as current. | Later P4 branch. | Future. | Future maps/routing/data providers. | Yes, Pro unresolved. | High if added. | Not a launch blocker. |
 | Pro / multi-truck / FleetOS | Future milestone | Non-existent / future milestone with code scaffolding | P5 | `src/config/pricing.ts`, `src/domains/billing/feature-access.ts`, legal terms, billing docs | Code contains Pro/fleet scaffolding, but governance reserves/undefines Pro and says FleetOS is separate. | Product architecture, legal, billing, entitlement model. | Do not build until billing/product architecture is approved. | Later P5 branch. | Future. | Future. | Yes. | High if exposed. | Not a launch blocker. |
 | Live navigation / real-time variance | Future milestone | Non-existent / future milestone | P6 | Product docs, absence of GPS/live navigation implementation, mobile platform docs | No verified native GPS/background/live navigation implementation. | Native/mobile, maps/routing, privacy, provider contracts. | Do not build during web stabilization. | Later P6 branch. | Future. | Future maps/native providers. | Potentially. | High. | Not a launch blocker. |
@@ -147,7 +147,7 @@ The following exist but should not be treated as launch-ready:
 ## Non-Existent Or Future Milestones
 
 - Android native project.
-- Google Maps/truck routing.
+- Google Maps truck-specific/legal routing beyond base Route Intelligence.
 - Trimble or equivalent truck-specific routing.
 - IFTA worksheet or jurisdiction-mile estimation.
 - Live navigation, actual-vs-planned tracked miles, and real-time variance.
@@ -186,7 +186,8 @@ Post-launch or later milestone work:
 
 - Full Atlas/AI module buildout.
 - Weather profitability expansion.
-- Google Maps, Trimble, or other routing providers.
+- Trimble, truck-specific/legal routing, and provider expansion beyond base
+  Google Route Intelligence.
 - IFTA worksheet or tax-estimation support.
 - Pro/FleetOS/multi-truck workflows.
 - Live navigation and real-time variance.
@@ -269,7 +270,8 @@ Do not build or expand these during current web stabilization:
 - Android scaffold
 - App Store or Play Store release work
 - full Atlas AI module rollout
-- Google Maps or Trimble routing
+- Google Maps routing expansion beyond base Route Intelligence
+- Trimble truck-specific routing
 - IFTA support
 - live navigation
 - Pro/FleetOS/multi-truck systems

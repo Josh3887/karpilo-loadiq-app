@@ -224,7 +224,7 @@ export const ATLAS_HELP_REGISTRY: Record<string, AtlasHelpEntry> = {
     whyItMatters:
       "Equipment class, dimensions, weight, hazmat context, toll class, restrictions, traffic, construction, and route geometry can materially change operating assumptions.",
     howToUseIt:
-      "Use it as planning context once provider routing is wired. Basic manual route context remains separate from truck-specific routing.",
+      "Use it as planning context once provider routing is wired. Base Route Intelligence remains separate from truck-specific routing.",
     operatorReminder:
       "Truck-specific routing estimates are not route legality, permit, clearance, bridge, hazmat, safety, or compliance certification.",
   },

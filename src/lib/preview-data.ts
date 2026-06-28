@@ -1,8 +1,8 @@
 import { getLaunchPhaseSnapshot } from "@/config/launch-phases";
 import {
   type PaymentAccess,
-  resolveEntitlements,
   resolvePaymentAccess,
+  resolveUnauthenticatedEntitlements,
 } from "@/domains/billing/entitlement-service";
 import type { ClientEntitlementState } from "@/domains/billing/client-entitlements";
 import type { OperatorProgramStatus } from "@/types/operator-program";
@@ -39,10 +39,16 @@ export const PREVIEW_OPERATOR_STATUS: OperatorProgramStatus = {
 export const PREVIEW_LAUNCH_SNAPSHOT = getLaunchPhaseSnapshot(new Date(), 551);
 
 export function getPreviewPaymentAccess(): PaymentAccess {
-  return resolvePaymentAccess(null, {
+  const usage = {
     monthlyCalculations: 0,
     savedLoads: 0,
-  });
+  };
+  const entitlements = resolveUnauthenticatedEntitlements(usage);
+
+  return {
+    ...resolvePaymentAccess(null, usage),
+    entitlements,
+  };
 }
 
 export function getPreviewEntitlementState(): ClientEntitlementState {
@@ -50,7 +56,7 @@ export function getPreviewEntitlementState(): ClientEntitlementState {
     monthlyCalculations: 0,
     savedLoads: 0,
   };
-  const entitlements = resolveEntitlements("no_access", usage);
+  const entitlements = resolveUnauthenticatedEntitlements(usage);
 
   return {
     usage,

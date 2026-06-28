@@ -3,6 +3,7 @@ import {
   PaymentAccess,
   resolveEntitlements,
   resolvePaymentAccess,
+  resolveUnauthenticatedEntitlements,
 } from "@/domains/billing/entitlement-service";
 import type { InternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness-types";
 
@@ -27,16 +28,21 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
       monthlyCalculations: 0,
       savedLoads: 0,
     };
+    const entitlements = resolveUnauthenticatedEntitlements(usage);
+    const paymentAccess = {
+      ...resolvePaymentAccess(null, usage),
+      entitlements,
+    };
 
-      return {
-        usage,
-        paymentAccess: resolvePaymentAccess(null, usage),
-        entitlements: resolveEntitlements("no_access", usage),
-        ownerOverride: {
-          ownerOverrideConfigured: false,
-          ownerOverrideMatched: false,
-        },
-      };
+    return {
+      usage,
+      paymentAccess,
+      entitlements,
+      ownerOverride: {
+        ownerOverrideConfigured: false,
+        ownerOverrideMatched: false,
+      },
+    };
   }
 
   return (await response.json()) as ClientEntitlementState;

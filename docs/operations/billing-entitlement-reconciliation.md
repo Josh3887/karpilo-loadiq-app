@@ -88,7 +88,7 @@ Search coverage included billing, tier, plan, entitlement, rollout, launch, beta
    The current resolver combines billing status, subscription tier, feature access, lifetime locks, protected cohorts, FleetOS flags, usage limits, and capability gates. That increases the chance that a tier label becomes a product claim.
 
 5. Atlas and AI access remain coupled to billing-like tier labels in places.
-   `AGENTS.md` says Atlas is not a subscription tier. Code maps payment tiers into AI plan tiers and uses Platinum/Pro/Pilot/Launch values in Atlas and route/fuel feature gates. This should be treated as implementation scaffolding until an approved entitlement model separates AI governance from tier labels.
+   `AGENTS.md` says Atlas is not a subscription tier. Code maps payment tiers into AI plan tiers and uses Platinum/Pro/Pilot/Launch values in Atlas, future truck-specific route, weather, and fuel feature gates. Base Google-backed Route Intelligence is all-tier authenticated app access and should not be treated as a paid-tier feature. Remaining tier-derived gates should be treated as implementation scaffolding until an approved entitlement model separates AI governance from tier labels.
 
 6. Sentry and PostHog are not exposed as customer plan benefits in inspected docs and app surfaces.
    Existing docs and admin pages classify them as internal monitoring and product analytics tools.
@@ -105,7 +105,7 @@ Search coverage included billing, tier, plan, entitlement, rollout, launch, beta
 | Commercial subscription tier | `AGENTS.md` says Silver/Gold current, Platinum/Pro undefined. Code models all four in several places. | Unresolved conflict. |
 | Product entitlement | `feature-access.ts`, `entitlement-service.ts`, and UI gates decide capabilities from subscription data. | Needs future capability-grant separation. |
 | Stripe price/product | `src/config/stripe.ts` maps checkout IDs to Gold, Pilot, and Launch 500. | Payment rail only; not final product authority. |
-| App feature gate | Atlas, fuel, weather, exports, saved loads, and fleet gates reference tier-like strings. | Works as current implementation, but needs governance cleanup before tier expansion. |
+| App feature gate | Atlas, fuel, weather, exports, saved loads, future truck-specific routing, and fleet gates reference tier-like strings. Base Route Intelligence is all-tier authenticated app access. | Works as current implementation, but needs governance cleanup before tier expansion. |
 | Admin/internal harness | Harness simulates tier and rollout combinations for one authorized test account. | Useful internal scaffold, not public product state. |
 
 ## Silver, Gold, Platinum, and Pro Status
@@ -202,7 +202,7 @@ Evidence:
 
 - `src/lib/ai/ai-governance.ts` maps payment tiers to AI plan tiers.
 - `src/lib/atlas/atlas-intelligence-system.ts` includes Platinum and Pro intelligence tier descriptions.
-- `src/lib/fuel-gauge.ts` and `src/lib/atlas/atlas-intelligence-system.ts` recognize Platinum, Pro, Pilot, Launch 500, and founder values in feature gates.
+- `src/lib/fuel-gauge.ts` and `src/lib/atlas/atlas-intelligence-system.ts` recognize Platinum, Pro, Pilot, Launch 500, and founder values in feature gates for advanced/future capabilities. Base Route Intelligence is not gated by those tiers.
 - `src/content/legal/subscription-terms.ts` limits Pro/FleetOS/API/team access to future or separately licensed structures unless checkout or agreement says otherwise.
 
 Risk: medium to high for future work. Atlas capability access should eventually be driven by product-scoped entitlement and AI governance records, not only commercial tier labels.

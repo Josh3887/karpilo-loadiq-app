@@ -60,6 +60,7 @@ Entitlements should be explicit capability permissions.
 Allowed entitlement examples:
 
 - calculator access
+- base Route Intelligence
 - saved loads
 - templates
 - reporting
@@ -76,6 +77,10 @@ Rules:
 - Rollout access can allow checkout or pricing lock eligibility, but should not define capability by itself.
 - Atlas and AI availability must respect AI safety, cost, explainability, product scope, and user entitlement.
 - FleetOS capabilities require separate product approval and must not be inherited automatically from LoadIQ.
+- Base Route Intelligence is available to all authenticated app tiers and must
+  not be used as proof of paid tier. Saved-load limits, reports/exports,
+  weather risk, Atlas/AI route explanation, advanced route analytics, and
+  truck-specific routing remain separate gates.
 
 ## Owner/Admin Build Access
 

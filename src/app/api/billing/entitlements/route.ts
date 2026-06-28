@@ -1,6 +1,6 @@
 import {
-  resolveEntitlements,
   resolvePaymentAccess,
+  resolveUnauthenticatedEntitlements,
 } from "@/domains/billing/entitlement-service";
 import { getServerEntitlementState } from "@/domains/billing/server-entitlements";
 import { createClient } from "@/lib/supabase-server";
@@ -16,13 +16,17 @@ export async function GET() {
       monthlyCalculations: 0,
       savedLoads: 0,
     };
-    const paymentAccess = resolvePaymentAccess(null, usage);
+    const entitlements = resolveUnauthenticatedEntitlements(usage);
+    const paymentAccess = {
+      ...resolvePaymentAccess(null, usage),
+      entitlements,
+    };
 
     return Response.json(
       {
         usage,
         paymentAccess,
-        entitlements: resolveEntitlements("no_access", usage),
+        entitlements,
         billingTestHarness: null,
         ownerOverride: {
           ownerOverrideConfigured: false,

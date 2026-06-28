@@ -39,7 +39,7 @@ It is documentation only and does not approve implementation or deployment.
 | --- | --- | --- | --- |
 | Documentation drift across split branches | Open | Future work may cite stale standalone branch docs instead of consolidated docs. | Use the branch integration map and roadmap before new branches. |
 | Existing lint warnings in marketing scripts | Open | Does not currently block lint, but creates noise in validation output. | Clean up on a separate marketing/tooling branch if needed. |
-| Google Maps/mileage claims | Controlled | Mapping provider is absent/planned, but copy references future route intelligence. | Keep claims future-facing until a reviewed provider implementation exists. |
+| Google Maps/mileage claims | Controlled | Base Google-backed Route Intelligence exists for authenticated app planning estimates, while truck-specific, weather, traffic, toll, legal-routing, and live-navigation claims remain future or gated. | Keep base Google estimates labeled as planning estimates only and keep advanced routing claims future-facing until separately reviewed. |
 
 ## Risk Closure Rules
 

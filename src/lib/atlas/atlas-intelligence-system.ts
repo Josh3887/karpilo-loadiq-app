@@ -214,7 +214,7 @@ export const ATLAS_TIER_INTELLIGENCE_POLICY: AtlasTierIntelligencePolicy[] = [
     tier: "silver",
     education: "Deterministic Atlas Education only.",
     freight: "No generative freight AI.",
-    route: "Deterministic route context only.",
+    route: "Base Route Intelligence and deterministic route context.",
     fitCheck: "Deterministic FitCheck and setup guidance.",
     addOnCredits: "Not eligible.",
   },
@@ -223,7 +223,7 @@ export const ATLAS_TIER_INTELLIGENCE_POLICY: AtlasTierIntelligencePolicy[] = [
     education: "Limited contextual AI where enabled.",
     freight: "Limited Atlas Freight analysis with strict cooldown and call caps.",
     route:
-      "Basic provider-backed summaries without truck-specific routing, enriched route AI, or vehicle-constraint routing.",
+      "Base Route Intelligence and basic provider-backed summaries without truck-specific routing, enriched route AI, or vehicle-constraint routing.",
     fitCheck: "Limited summary where enabled.",
     addOnCredits: "Not eligible by default.",
   },
