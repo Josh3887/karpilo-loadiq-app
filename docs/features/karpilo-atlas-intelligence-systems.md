@@ -416,6 +416,13 @@ Responsibilities:
 - mileage leakage
 - route burden score
 
+Karpilo Weather Intelligence supplies provider weather context for Karpilo
+Atlas Route and the Weather / External Risk readout. It combines Google
+Weather, OpenWeather, and NWS/weather.gov evidence with the load operating
+window and route direction. It is not generated AI output by itself and does
+not create weather, route, legal, safety, dispatch, ELD/HOS, or compliance
+authority.
+
 Tier position:
 
 | Tier | Karpilo Atlas Route behavior |

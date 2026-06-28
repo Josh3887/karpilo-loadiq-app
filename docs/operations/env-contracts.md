@@ -1,6 +1,6 @@
 # Environment Contracts
 
-Last updated: June 24, 2026
+Last updated: June 28, 2026
 
 This document records environment variable usage from repository evidence. It is
 documentation only. It does not approve provider activation, pricing changes,
@@ -85,6 +85,11 @@ unless a later provider-specific review explicitly proves they are safe.
 | `EIA_BASE_URL` | EIA client | Missing from `.env.example` | Optional server-only EIA base URL override. |
 | `LOADIQ_OWNER_EMAILS` | Server entitlement resolver | Missing from `.env.example` | Server-only comma/whitespace-separated owner/admin emails for build-phase unlimited app access. Do not expose values client-side. |
 | `OPENWEATHER_API_KEY` | weather validation and `.env.example` | Documented | Server-only OpenWeather key. |
+| `OPENWEATHER_BASE_URL` | Karpilo Weather Intelligence OpenWeather provider | Missing from `.env.example` | Optional server-only OpenWeather base URL override. Defaults to `https://api.openweathermap.org/data/3.0`. |
+| `GOOGLE_WEATHER_API_KEY` | Karpilo Weather Intelligence Google Weather provider | Missing from `.env.example` | Server-only Google Weather API key. Do not create a `NEXT_PUBLIC_` variant. |
+| `GOOGLE_WEATHER_BASE_URL` | Karpilo Weather Intelligence Google Weather provider | Missing from `.env.example` | Optional server-only Google Weather base URL override. Defaults to `https://weather.googleapis.com`. |
+| `NWS_BASE_URL` | Karpilo Weather Intelligence NWS provider | Missing from `.env.example` | Optional server-side NWS base URL override. Defaults to `https://api.weather.gov`. |
+| `NWS_USER_AGENT` | Karpilo Weather Intelligence NWS provider | Missing from `.env.example` | Required NWS request identification. Not a secret, but keep controlled and server-side. |
 | `POSTHOG_ENABLED` | server analytics and `.env.example` | Documented | Server-side enablement flag. |
 | `POSTHOG_PROJECT_TOKEN` | server analytics and `.env.example` | Documented | Server-side project token where server capture is enabled. |
 | `POSTHOG_HOST` | server analytics and `.env.example` | Documented | Server-side PostHog host override. |
@@ -133,6 +138,9 @@ complete:
 - OpenAI/Atlas: `OPENAI_API_KEY`, `ENABLE_LOADIQ_AI_DEV`,
   `LOADIQ_AI_MODEL`, `LOADIQ_AI_DISABLED`, `ATLAS_AI_DISABLED`
 - EIA: `EIA_API_KEY`, `EIA_BASE_URL`
+- Karpilo Weather Intelligence: `OPENWEATHER_BASE_URL`,
+  `GOOGLE_WEATHER_API_KEY`, `GOOGLE_WEATHER_BASE_URL`, `NWS_BASE_URL`,
+  `NWS_USER_AGENT`
 - Owner/admin build access: `LOADIQ_OWNER_EMAILS`
 - App/runtime flags: `NEXT_PUBLIC_SHOW_APP_COUNTDOWN`,
   `NEXT_PUBLIC_ENABLE_BILLING_TEST_HARNESS`, `NEXT_PUBLIC_APP_ENV`,

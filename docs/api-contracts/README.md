@@ -30,8 +30,11 @@ authentication, error, quota, privacy, and drift controls belong here.
 
 - Google Routes API, through LoadIQ server-side Route Intelligence.
 - Google Address Validation API, through LoadIQ server-side Route Intelligence.
-- OpenWeather Current Weather and 5 day / 3 hour Forecast APIs, through the
-  entitlement-gated Weather Profitability Risk path.
+- Google Weather API, through server-side Karpilo Weather Intelligence.
+- OpenWeather Current Weather, 5 day / 3 hour Forecast, and One Call 3.0 APIs,
+  through weather profitability and server-side Karpilo Weather Intelligence.
+- National Weather Service API, through server-side Karpilo Weather
+  Intelligence validation and alert evidence.
 - U.S. Energy Information Administration Open Data API, for national diesel
   baseline fuel context.
 - Stripe API, for checkout, customer portal, subscriptions, and webhooks.
@@ -54,8 +57,6 @@ These providers are referenced by docs, UI copy, future provider language, or
 expected review scope, but no active LoadIQ implementation or scaffolded
 provider call was found in this audit:
 
-- Google Weather API.
-- National Weather Service API.
 - Google Places API.
 - Google Geocoding API.
 - Google Maps JavaScript API.
@@ -77,3 +78,11 @@ request/response shapes. Provider-specific controls now live in:
 - `google-address-validation.contract.md`
 - `google-routes.contract.md`
 - `trimble-maps.contract.md`
+
+## Weather Contracts
+
+Karpilo Weather Intelligence provider-specific controls live in:
+
+- `google-weather.contract.md`
+- `openweather.contract.md`
+- `nws-weather.contract.md`

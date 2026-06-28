@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Added the server-side Karpilo Weather Intelligence foundation with Google
+  Weather, OpenWeather, and NWS/weather.gov provider clients, normalized
+  weather types, load-window alignment, route-weather risk scaffolding, and
+  provider-aligned API contract updates.
+
 ### Fixed
 
 - Clarified Karpilo Atlas readout labels and AI boundaries so Karpilo Atlas

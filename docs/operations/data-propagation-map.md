@@ -76,6 +76,7 @@ No implementation changes are made by this document.
 | Dashboard summaries | Saved-load history and calculator runtime state | Application UI | Dashboard/history widgets, billing usage counts | `saved_loads`, local store | Supabase auth, entitlements | CONNECTED |
 | Reports | Saved load detail/report page | Authenticated user with export entitlement | Print/export-style report | Reads `saved_loads`, `saved_load_stops`, snapshots | Billing entitlement gate | CONNECTED, gated |
 | Billing gates | Subscription records, usage events, saved load counts, and server-only owner build override when configured | Billing/domain layer | Calculator access, save/load, templates, exports, scenario/weather gates | `subscriptions`, `usage_events`, `saved_loads`; `LOADIQ_OWNER_EMAILS` name only | Stripe/manual records, test harness gate, owner/admin build access | CONNECTED with unresolved tier conflict |
+| Karpilo Weather Intelligence | Load coordinates, route checkpoints, load operating window, Google Weather, OpenWeather, and NWS/weather.gov provider responses | Server-side weather foundation | Future Atlas/readout and weather risk consumers | No first-class persistence in this branch; future snapshots only if separately approved | `GOOGLE_WEATHER_API_KEY`, `OPENWEATHER_API_KEY`, `NWS_USER_AGENT`, provider availability | SERVER-SIDE FOUNDATION with no schema change |
 | Portal profile/access | Portal settings and public Fit Check form | Authenticated user | Portal server bridge, launch/legal access surfaces | `profiles`, `portal_access`, `billing_accounts`, `fit_checks`, `legal_acceptances` | Missing live portal tables | BLOCKED/SEPARATE |
 
 ## Field-Level Propagation Notes
@@ -125,6 +126,7 @@ No implementation changes are made by this document.
 | Saved-load result snapshot | Save service | `saved_loads.result_snapshot` | App engine | Save Load | Detail/report | Report metrics and explanations | CONNECTED |
 | Saved-load actuals | Load detail actuals form | `saved_loads.actuals_snapshot`, `post_trip_actuals` | User | Load detail | Detail/report actuals | Actual net, actual expense total, odometer validation, fuel purchases, DEF purchases, variance | CONNECTED |
 | Weather profitability snapshot | Results panel gated by Pro-like entitlement | `saved_loads.weather_profitability_snapshot` if allowed | App/user | Results panel | Saved load/detail future use | Not central to core circuit | PARTIALLY CONNECTED with tier conflict |
+| Karpilo Weather Intelligence signals | Server-side weather provider routes and route-risk utility | None in this branch; future snapshot/reporting fields only if approved later | App/server | Provider clients and API routes | Future readout/report contexts | Aligns weather to load operating window and route direction; does not use generic current weather for future loads | SERVER-SIDE FOUNDATION |
 | Lane template input | Saved-load detail action | `lane_templates.input_snapshot` | User | Saved load detail | Calculator initial values | Reuses prior load structure | CONNECTED |
 | Billing entitlement | Subscription records and usage events | `subscriptions`, `usage_events`, `saved_loads` count | Billing domain | Stripe/manual/test harness code | Calculate/save/export/template/weather gates | Feature access gates | CONNECTED with unresolved tier semantics |
 | Portal settings/legal access | Portal forms and public Fit Check form | `profiles`, `portal_access`, `fit_checks`, `legal_acceptances` | User/app | Portal settings/public Fit Check | Portal server/access views | Not calculator source | BLOCKED live; separate from operating profile |
@@ -232,6 +234,7 @@ Saved Loads
 | First-class calculator schedule/window analytics columns | Calculator snapshots -> durable query/report fields | No schema columns by design in this branch | Future schema branch only after approval |
 | Pay period fields to reports | Pay template/load input -> report/pay review | Snapshot only, no clear report math | `fix/loadiq-pay-period-report-context` |
 | Weather profitability snapshot reporting | Weather panel -> saved load -> report/detail | Entitlement/tier conflict and consumer thinness | Wait for billing reconciliation |
+| Karpilo Weather Intelligence snapshot/reporting | Weather provider results -> saved load/report/readout | No schema columns by design in this branch | Future schema/reporting branch only after approval |
 | Billing tier semantics to feature gates | Product tiers -> entitlement code -> UI claims | Silver/Gold/Platinum/Pro conflict unresolved | `fix/loadiq-billing-tier-entitlement-alignment` |
 
 ## Circular Dependencies
