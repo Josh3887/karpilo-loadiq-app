@@ -31,6 +31,15 @@ Governance currently says:
 
 This document does not resolve the business model. It records repository evidence and identifies unresolved conflicts that require later product, billing, legal, and engineering decisions.
 
+## Owner/Admin Build Access
+
+The app may grant the Karpilo LoadIQ owner/admin account build-phase unlimited
+feature access through server-side entitlement resolution when the account email
+matches `LOADIQ_OWNER_EMAILS`. This override is intentionally not a commercial
+tier, not a Stripe entitlement, not a public plan benefit, and not a global gate
+removal. Regular users continue to resolve access through the normal
+subscription, usage, and entitlement paths.
+
 ## Current Repository Evidence
 
 The repository code and documentation are not fully reconciled.

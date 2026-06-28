@@ -12,6 +12,7 @@ import { saveLoad } from "@/services/save-load";
 
 import {
   formatCurrency,
+  formatFuelPrice,
   formatNumber,
   formatPercent,
   formatRpm,
@@ -199,7 +200,7 @@ export function ResultsPanel({
                 />
                 <BreakdownRow
                   label="Fuel Price"
-                  value={`${formatCurrency(input.fuelPrice)}/gal`}
+                  value={formatFuelPrice(input.fuelPrice)}
                 />
                 <BreakdownRow
                   label="MPG"
@@ -488,7 +489,7 @@ function buildLoadIqInsights(
 ) {
   const insights = [
     `${getFscTreatment(input)} Linehaul is ${formatCurrency(result.linehaulRevenue)} and FSC is ${formatCurrency(result.fuelSurchargeRevenue)}.`,
-    `Fuel is modeled at ${formatCurrency(input.fuelPrice)}/gal from ${formatFuelSource(input)} across ${formatNumber(input.mpg)} MPG.`,
+    `Fuel is modeled at ${formatFuelPrice(input.fuelPrice)} from ${formatFuelSource(input)} across ${formatNumber(input.mpg)} MPG.`,
   ];
 
   if (routeMileageVariance !== null) {

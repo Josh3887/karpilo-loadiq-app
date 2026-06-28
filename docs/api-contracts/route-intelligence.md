@@ -63,8 +63,7 @@ Preferred request body:
     {
       "id": "stop-1",
       "address": "Little Rock, AR 72201",
-      "label": "Customer stop",
-      "kind": "customer",
+      "kind": "pickup",
       "sequence": 1
     }
   ],
@@ -89,20 +88,12 @@ Legacy `origin` and `destination` request bodies remain supported and map to
 Supported stop `kind` values:
 
 ```ts
-type RouteStopKind =
-  | "pickup"
-  | "delivery"
-  | "intermediate_stop"
-  | "fuel"
-  | "def"
-  | "scale"
-  | "rest"
-  | "customer"
-  | "other";
+type RouteStopKind = "pickup" | "delivery";
 ```
 
 Stops are routed in ascending `sequence` order. The API does not optimize stop
-order.
+order. Stops are freight stops only; fuel and DEF purchases are load actuals,
+not route stops. Stop labels are not part of the primary route contract.
 
 Response body:
 
@@ -188,11 +179,13 @@ Running-load odometer validation and fuel/DEF purchases are not separate API
 routes. They persist through existing saved-load snapshot structures:
 
 - `input_snapshot.originOdometer`
-- `input_snapshot.endOdometer`
 - `input_snapshot.odometerValidation`
 - `actuals_snapshot.odometerValidation`
 - `actuals_snapshot.fuelPurchases`
 - `actuals_snapshot.defPurchases`
+
+Origin odometer may be captured while the load is running. End odometer belongs
+in saved-load post-trip actuals.
 
 Fuel and DEF purchases support better IFTA-style estimates and profitability
 intelligence. They are not tax filing records.

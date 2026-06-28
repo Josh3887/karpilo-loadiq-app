@@ -1,6 +1,8 @@
 import {
   resolveEntitlements,
   resolvePaymentAccess,
+  type EntitlementUsage,
+  type PaymentAccess,
 } from "@/domains/billing/entitlement-service";
 import {
   getInternalBillingTestHarnessSnapshot,
@@ -55,7 +57,9 @@ export async function getServerEntitlementState(
     userId,
     userEmail
   );
-  const paymentAccess = resolvePaymentAccess(subscription, usage);
+  const paymentAccess =
+    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
+    resolvePaymentAccess(subscription, usage);
 
   return {
     usage,
@@ -70,7 +74,10 @@ export async function getServerPaymentAccess(
   userEmail?: string | null
 ) {
   const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
-  return resolvePaymentAccess(subscription, usage);
+  return (
+    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
+    resolvePaymentAccess(subscription, usage)
+  );
 }
 
 export async function getServerEntitlements(
@@ -78,8 +85,75 @@ export async function getServerEntitlements(
   userEmail?: string | null
 ) {
   const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
-  const paymentAccess = resolvePaymentAccess(subscription, usage);
+  const paymentAccess =
+    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
+    resolvePaymentAccess(subscription, usage);
   return paymentAccess.hasActiveAccess
     ? paymentAccess.entitlements
     : resolveEntitlements("no_access", usage);
+}
+
+function resolveOwnerBuildPaymentAccess(
+  userEmail: string | null | undefined,
+  usage: EntitlementUsage
+): PaymentAccess | null {
+  if (!isOwnerBuildAccessEmail(userEmail)) return null;
+
+  const paymentAccess = resolvePaymentAccess(
+    {
+      tier: "beta_test",
+      subscription_tier: "beta_test",
+      status: "active",
+      entitlement_status: "active",
+      provider: "manual",
+      feature_access: "platinum",
+      grandfathered_access: true,
+      lifetime_access: true,
+      full_loadiq_access: true,
+      future_feature_access_scope: "owner_build_access",
+    },
+    usage
+  );
+  const entitlements = {
+    ...paymentAccess.entitlements,
+    canCalculate: true,
+    canSaveLoad: true,
+    canExport: true,
+    canUseAdvancedAnalytics: true,
+    canUsePlatinumIntelligence: true,
+    canUseWeatherProfitabilityRisk: true,
+    canSaveWeatherProfitabilitySnapshot: true,
+    canCompareScenarios: true,
+    canCreateLaneTemplates: true,
+  };
+
+  return {
+    ...paymentAccess,
+    entitlements,
+    hasActiveAccess: true,
+    fullLoadIqAccess: true,
+    grandfatheredAccess: true,
+    lifetimeAccess: true,
+    shouldPromptForBillingSetup: false,
+    futureFeatureAccessScope: "owner_build_access",
+  };
+}
+
+function isOwnerBuildAccessEmail(userEmail: string | null | undefined) {
+  const email = normalizeEmail(userEmail);
+
+  if (!email) return false;
+
+  return getOwnerBuildAccessEmails().includes(email);
+}
+
+function getOwnerBuildAccessEmails() {
+  return (process.env.LOADIQ_OWNER_EMAILS ?? "")
+    .split(/[\s,]+/)
+    .map(normalizeEmail)
+    .filter(Boolean);
+}
+
+function normalizeEmail(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? "";
 }

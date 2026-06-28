@@ -7,20 +7,12 @@ import { RouteStopKind } from "@/types/route-intelligence";
 const routeStopKindValues: [RouteStopKind, ...RouteStopKind[]] = [
   "pickup",
   "delivery",
-  "intermediate_stop",
-  "fuel",
-  "def",
-  "scale",
-  "rest",
-  "customer",
-  "other",
 ];
 
 const routeStopSchema = z.object({
   id: z.string().optional(),
   address: z.string().trim().min(3),
-  label: z.string().trim().optional(),
-  kind: z.enum(routeStopKindValues).default("intermediate_stop"),
+  kind: z.enum(routeStopKindValues).default("pickup"),
   sequence: z.coerce.number().int().positive().optional(),
 });
 

@@ -37,22 +37,14 @@ const loadPulledReasonValues = LOAD_PULLED_REASON_OPTIONS.map(
   (option) => option.value
 ) as [LoadPulledReason, ...LoadPulledReason[]];
 
+const routeStopKindField = z.preprocess(
+  (value) => (value === "delivery" ? "delivery" : "pickup"),
+  z.enum(["pickup", "delivery"])
+);
+
 const routeStopSchema = z.object({
   id: z.string().optional(),
-  stopType: z
-    .enum([
-      "pickup",
-      "delivery",
-      "intermediate_stop",
-      "fuel",
-      "def",
-      "scale",
-      "rest",
-      "customer",
-      "other",
-    ])
-    .default("intermediate_stop"),
-  label: z.string().optional().default(""),
+  stopType: routeStopKindField.default("pickup"),
   address: z.string().optional().default(""),
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
@@ -321,18 +313,6 @@ export const loadInputSchema = z.object({
     });
   }
 
-  if (
-    value.loadRunStatus === "running" &&
-    value.originOdometer > 0 &&
-    value.endOdometer > 0 &&
-    value.endOdometer < value.originOdometer
-  ) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "End odometer must be greater than or equal to origin odometer.",
-      path: ["endOdometer"],
-    });
-  }
 });
 
 export type LoadInputFormValues = z.infer<typeof loadInputSchema>;

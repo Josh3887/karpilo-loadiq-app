@@ -30,6 +30,16 @@
 
 ### Fixed
 
+- Corrected Route Intelligence stop handling so optional stops are freight-only
+  P/U or DEL stops, with stop labels and fuel/DEF stop types removed from the
+  calculator/API workflow.
+- Moved end odometer, accessorials, tolls, and lumpers out of calculator
+  planning inputs and into the saved-load/load-actuals workflow while keeping
+  running-load origin odometer capture.
+- Formatted EIA fuel price entry/display to a two-decimal fuel-price value and
+  kept paid loaded miles separate from Google estimated route miles.
+- Added server-only owner/admin build access through `LOADIQ_OWNER_EMAILS`
+  without removing normal subscription and entitlement gates for regular users.
 - Restored calculator revenue basis controls for RPM versus load gross,
   FSC-in-gross handling, linehaul derivation, EIA fuel context, and deterministic
   LoadIQ intelligence output while preserving route mileage separation.

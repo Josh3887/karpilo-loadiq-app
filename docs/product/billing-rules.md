@@ -77,6 +77,14 @@ Rules:
 - Atlas and AI availability must respect AI safety, cost, explainability, product scope, and user entitlement.
 - FleetOS capabilities require separate product approval and must not be inherited automatically from LoadIQ.
 
+## Owner/Admin Build Access
+
+Server entitlement resolution may grant build-phase unlimited app access to
+owner/admin accounts listed in the server-only `LOADIQ_OWNER_EMAILS` variable.
+This is not a public commercial tier, does not create Platinum or Pro product
+availability, does not remove normal feature gates for regular users, and must
+not expose owner email values client-side.
+
 ## Rollout and Launch Rules
 
 Rollout phases control pacing and operational readiness.

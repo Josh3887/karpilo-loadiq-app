@@ -249,6 +249,27 @@ export function SavedLoadActions({
         <div className="mt-5 rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <div className="mb-3">
             <h3 className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              Settlement Actuals
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Use actual gross revenue for settlement changes and accessorial
+              revenue. Tolls, lumpers, and accessorial expenses are entered as
+              post-trip expense rows.
+            </p>
+          </div>
+
+          <ActualField
+            label="Actual Gross Revenue"
+            value={Number(actuals.actualGrossRevenue ?? grossRevenue)}
+            onChange={(value) =>
+              setActuals((prev) => ({ ...prev, actualGrossRevenue: value }))
+            }
+          />
+        </div>
+
+        <div className="mt-5 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3">
+            <h3 className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
               Odometer Validation
             </h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -350,7 +371,7 @@ export function SavedLoadActions({
           )}
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => addExpense("fuel_fluids", "Diesel")}
@@ -364,6 +385,27 @@ export function SavedLoadActions({
             className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
           >
             + DEF purchase
+          </button>
+          <button
+            type="button"
+            onClick={() => addExpense("road_fees", "Tolls")}
+            className="rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
+          >
+            + Toll
+          </button>
+          <button
+            type="button"
+            onClick={() => addExpense("miscellaneous", "Lumper")}
+            className="rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
+          >
+            + Lumper
+          </button>
+          <button
+            type="button"
+            onClick={() => addExpense("miscellaneous", "Accessorial Expense")}
+            className="rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
+          >
+            + Accessorial
           </button>
           <button
             type="button"

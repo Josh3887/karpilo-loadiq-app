@@ -361,17 +361,6 @@ export function OperationalProfileForm() {
             }
           />
           <InputField
-            label="Odometer"
-            type="number"
-            value={String(profile.truckOdometer)}
-            onChange={(value) =>
-              setProfile((prev) => ({
-                ...prev,
-                truckOdometer: Number(value),
-              }))
-            }
-          />
-          <InputField
             label="Default MPG"
             type="number"
             value={String(profile.defaultMpg)}

@@ -5,7 +5,6 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { AccessorialManager } from "@/components/calculator/accessorial-manager";
 import {
   defaultLoadInputValues,
   loadInputSchema,
@@ -17,8 +16,7 @@ import {
   DeadheadContinuitySuggestion,
   getDeadheadContinuitySuggestion,
 } from "@/services/saved-load-input";
-import { buildOdometerValidation, isRunningLoadStatus } from "@/services/trip-validation";
-import { AccessorialInputItem } from "@/types/accessorial";
+import { isRunningLoadStatus } from "@/services/trip-validation";
 import { LOAD_RUN_STATUS_OPTIONS } from "@/lib/fuel-gauge";
 import {
   GOOGLE_ROUTE_DISCLAIMER,
@@ -42,9 +40,6 @@ export function LoadInputForm({
   initialValues,
   previewMode = false,
 }: LoadInputFormProps) {
-  const [accessorialItems, setAccessorialItems] = useState<
-    AccessorialInputItem[]
-  >([]);
   const [fuelStatus, setFuelStatus] = useState("");
   const [routeStatus, setRouteStatus] = useState("");
   const [routeEstimate, setRouteEstimate] = useState<RouteEstimate | null>(
@@ -81,24 +76,10 @@ export function LoadInputForm({
     []) as RouteStopInput[];
   const loadRunStatus =
     useWatch({ control, name: "loadRunStatus" }) ?? "planned";
-  const deadheadMiles = Number(useWatch({ control, name: "deadheadMiles" }) ?? 0);
-  const originOdometer = Number(
-    useWatch({ control, name: "originOdometer" }) ?? 0
-  );
-  const endOdometer = Number(useWatch({ control, name: "endOdometer" }) ?? 0);
   const routeMileageVariance = getRouteMileageVariance(
     routeEstimate,
     paidLoadedMiles
   );
-  const odometerValidation = buildOdometerValidation({
-    originOdometer,
-    endOdometer,
-    estimatedTotalMiles:
-      routeEstimate?.totalEstimate?.estimatedMiles ??
-      deadheadMiles + paidLoadedMiles,
-    paidLoadedMiles,
-    capturedAtStatus: loadRunStatus,
-  });
   const applyDeadheadSuggestion = useCallback(
     (suggestion: DeadheadContinuitySuggestion) => {
       setValue("deadheadStartAddress", suggestion.address, {
@@ -174,7 +155,7 @@ export function LoadInputForm({
         }
 
         if (fuel.status === "available" && fuel.fuel) {
-          setValue("fuelPrice", fuel.fuel.pricePerGallon, {
+          setValue("fuelPrice", fuel.fuel.pricePerGallon.toFixed(2), {
             shouldDirty: false,
             shouldValidate: true,
           });
@@ -225,7 +206,6 @@ export function LoadInputForm({
     }
 
     queueMicrotask(() => {
-      setAccessorialItems(initialValues.accessorialItems);
       setRouteEstimate(initialValues.routeEstimate ?? null);
     });
   }, [initialValues, reset]);
@@ -268,15 +248,20 @@ export function LoadInputForm({
 
   function submit(values: LoadInputRawValues) {
     const paidMiles = Number(values.loadedMiles ?? 0);
-    const submittedOdometerValidation = buildOdometerValidation({
-      originOdometer: Number(values.originOdometer ?? 0),
-      endOdometer: Number(values.endOdometer ?? 0),
-      estimatedTotalMiles:
-        routeEstimate?.totalEstimate?.estimatedMiles ??
-        Number(values.loadedMiles ?? 0) + Number(values.deadheadMiles ?? 0),
-      paidLoadedMiles: paidMiles,
-      capturedAtStatus: String(values.loadRunStatus ?? "planned"),
-    });
+    const runningStatus = isRunningLoadStatus(
+      String(values.loadRunStatus ?? "planned")
+    );
+    const submittedOriginOdometer = runningStatus
+      ? Number(values.originOdometer ?? 0)
+      : 0;
+    const submittedOdometerValidation =
+      submittedOriginOdometer > 0
+        ? {
+            originOdometer: submittedOriginOdometer,
+            capturedAtStatus: String(values.loadRunStatus ?? "planned"),
+            warnings: [],
+          }
+        : null;
     const submittedRouteEstimate = routeEstimate
       ? {
           ...routeEstimate,
@@ -288,9 +273,13 @@ export function LoadInputForm({
       : null;
     const parsedValues = loadInputSchema.parse({
       ...values,
-      accessorialItems,
+      originOdometer: submittedOriginOdometer,
+      endOdometer: 0,
+      accessorialItems: [],
+      tolls: 0,
+      lumpers: 0,
       routeEstimate: submittedRouteEstimate,
-      actualTotalMiles: submittedOdometerValidation.actualTotalMiles ?? 0,
+      actualTotalMiles: 0,
       odometerValidation: submittedOdometerValidation,
     });
     const derivedLinehaulRevenue =
@@ -377,8 +366,7 @@ export function LoadInputForm({
         ...routeStops,
         {
           id: createRouteStopId(),
-          stopType: "intermediate_stop",
-          label: "",
+          stopType: "pickup",
           address: "",
           city: "",
           state: "",
@@ -450,7 +438,6 @@ export function LoadInputForm({
       .map((stop, index) => ({
         id: stop.id,
         address: buildStopAddress(stop),
-        label: stop.label || `Stop ${index + 1}`,
         kind: stop.stopType,
         sequence: index + 1,
       }))
@@ -709,8 +696,9 @@ export function LoadInputForm({
 
           {routeStops.length === 0 ? (
             <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-500">
-              Add fuel, DEF, scale, rest, customer, or other intermediate stops
-              when they are part of the planned loaded route.
+              Add freight pickup or delivery stops only when they are part of
+              the planned loaded route. Fuel and DEF purchases belong in load
+              actuals.
             </p>
           ) : (
             <div className="space-y-4">
@@ -947,52 +935,12 @@ export function LoadInputForm({
                   error={errors.originOdometer?.message}
                   {...register("originOdometer")}
                 />
-                <InputField
-                  label="End Odometer"
-                  type="number"
-                  step="1"
-                  error={errors.endOdometer?.message}
-                  {...register("endOdometer")}
-                />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <RouteValue
-                  label="Actual odometer miles"
-                  value={formatOptionalMiles(
-                    odometerValidation.actualTotalMiles ?? null
-                  )}
-                />
-                <RouteValue
-                  label="Variance vs estimate"
-                  value={
-                    odometerValidation.odometerVarianceVsEstimated ===
-                    undefined
-                      ? "Unavailable"
-                      : formatSignedMiles(
-                          odometerValidation.odometerVarianceVsEstimated
-                        )
-                  }
-                />
-                <RouteValue
-                  label="Variance vs paid"
-                  value={
-                    odometerValidation.odometerVarianceVsPaid === undefined
-                      ? "Unavailable"
-                      : formatSignedMiles(
-                          odometerValidation.odometerVarianceVsPaid
-                        )
-                  }
-                />
-              </div>
-
-              {odometerValidation.warnings.length > 0 && (
-                <ul className="space-y-1 text-xs text-amber-200">
-                  {odometerValidation.warnings.map((warning) => (
-                    <li key={warning}>- {warning}</li>
-                  ))}
-                </ul>
-              )}
+              <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
+                End odometer and actual mileage validation are captured in the
+                saved-load post-trip actuals workflow.
+              </p>
             </div>
           ) : loadRunStatus === "ran" ? (
             <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
@@ -1081,8 +1029,9 @@ export function LoadInputForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Fuel Price"
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
+            placeholder="4.00"
             error={errors.fuelPrice?.message}
             {...fuelPriceField}
             onChange={(event) => {
@@ -1104,32 +1053,10 @@ export function LoadInputForm({
           </div>
         )}
 
-        <AccessorialManager
-          items={accessorialItems}
-          onChange={setAccessorialItems}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <InputField
-            label="Tolls"
-            type="number"
-            step="0.01"
-            error={errors.tolls?.message}
-            {...register("tolls")}
-          />
-
-          <InputField
-            label="Lumpers"
-            type="number"
-            step="0.01"
-            error={errors.lumpers?.message}
-            {...register("lumpers")}
-          />
-        </div>
-
         <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
           Operational overhead, pay template, MPG, reserves, dispatch, factoring,
-          and target profitability come from Settings.
+          and target profitability come from Settings. Accessorials, tolls, and
+          lumpers are captured as saved-load actuals after the trip.
         </p>
       </section>
 
@@ -1181,13 +1108,8 @@ const ROUTE_STOP_KIND_OPTIONS: Array<{
   value: RouteStopKind;
   label: string;
 }> = [
-  { value: "intermediate_stop", label: "Intermediate stop" },
-  { value: "fuel", label: "Fuel" },
-  { value: "def", label: "DEF" },
-  { value: "scale", label: "Scale" },
-  { value: "rest", label: "Rest" },
-  { value: "customer", label: "Customer" },
-  { value: "other", label: "Other" },
+  { value: "pickup", label: "P/U" },
+  { value: "delivery", label: "DEL" },
 ];
 
 function RouteStopEditor({
@@ -1240,12 +1162,6 @@ function RouteStopEditor({
             ))}
           </select>
         </label>
-
-        <ControlledTextField
-          label="Stop Label"
-          value={stop.label ?? ""}
-          onChange={(value) => onChange({ label: value })}
-        />
 
         <ControlledTextField
           label="Stop Address"

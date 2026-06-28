@@ -86,6 +86,20 @@ export default async function LoadDetailPage({
       ? null
       : actualNet - Number(load.estimated_net);
   const actuals = load.actuals_snapshot as Partial<SavedLoadActuals> | null;
+  const originOdometerFromInput = Number(inputSnapshot?.originOdometer ?? 0);
+  const actualsForForm: Partial<SavedLoadActuals> | null =
+    originOdometerFromInput > 0 && !actuals?.originOdometer
+      ? {
+          ...(actuals ?? {}),
+          originOdometer: originOdometerFromInput,
+          odometerValidation: {
+            originOdometer: originOdometerFromInput,
+            capturedAtStatus:
+              load.load_run_status ?? load.was_run_status ?? undefined,
+            warnings: [],
+          },
+        }
+      : actuals;
   const estimatedTripCost = Number(
     resultSnapshot?.totalTripCost ?? load.operational_cost ?? 0
   );
@@ -421,7 +435,7 @@ export default async function LoadDetailPage({
 
         <SavedLoadActions
           loadId={id}
-          initialActuals={actuals}
+          initialActuals={actualsForForm}
           grossRevenue={Number(load.gross_revenue)}
           estimatedTripCost={estimatedTripCost}
           totalTripMiles={Number(load.total_miles)}

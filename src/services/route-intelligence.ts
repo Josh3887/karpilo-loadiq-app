@@ -25,8 +25,7 @@ export type SavedLoadStopRecord = SavedLoadStopInsert & {
 export function createRouteStopInput(): RouteStopInput {
   return {
     id: createRouteStopId(),
-    stopType: "intermediate_stop",
-    label: "",
+    stopType: "pickup",
     address: "",
     city: "",
     state: "",
@@ -44,8 +43,7 @@ export function normalizeRouteStops(
   return (stops ?? [])
     .map((stop) => ({
       id: stop.id || createRouteStopId(),
-      stopType: stop.stopType ?? "intermediate_stop",
-      label: stop.label?.trim() ?? "",
+      stopType: normalizeStopKind(stop.stopType),
       address: stop.address?.trim() ?? "",
       city: stop.city?.trim() ?? "",
       state: stop.state?.trim().toUpperCase() ?? "",
@@ -64,8 +62,7 @@ export function normalizeRouteStops(
           stop.milesFromPrevious ||
           stop.stopRevenue ||
           stop.stopExpense ||
-          stop.notes ||
-          stop.label
+          stop.notes
       );
     });
 }
@@ -108,7 +105,6 @@ export function buildSavedLoadStopRows(
       notes: emptyToNull(
         [
           `Stop Type: ${formatStopKind(stop.stopType)}`,
-          stop.label ? `Label: ${stop.label}` : "",
           stop.address ? `Address: ${stop.address}` : "",
           stop.notes,
         ]
@@ -196,16 +192,11 @@ function positiveNumber(value: unknown) {
 }
 
 function formatStopKind(kind: string | undefined) {
-  if (kind === "def") return "DEF";
-  if (kind === "fuel") return "Fuel";
-  if (kind === "scale") return "Scale";
-  if (kind === "rest") return "Rest";
-  if (kind === "customer") return "Customer";
-  if (kind === "delivery") return "Delivery";
-  if (kind === "pickup") return "Pickup";
-  if (kind === "intermediate_stop") return "Intermediate stop";
+  return kind === "delivery" ? "DEL" : "P/U";
+}
 
-  return "Other";
+function normalizeStopKind(kind: string | undefined): RouteStopInput["stopType"] {
+  return kind === "delivery" ? "delivery" : "pickup";
 }
 
 function createRouteStopId() {

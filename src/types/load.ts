@@ -26,7 +26,6 @@ export type ReserveAllocationMode = "flat" | "cpm" | "percent";
 export type RouteStopInput = {
   id?: string;
   stopType: RouteStopKind;
-  label?: string;
   address: string;
   city: string;
   state: string;

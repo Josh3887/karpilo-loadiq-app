@@ -119,6 +119,7 @@ export const POST_TRIP_EXPENSE_GROUPS: Array<{
       "Washout",
       "Trailer Wash",
       "Truck Wash",
+      "Accessorial Expense",
       "Broker Fee",
       "Factoring Fee",
       "Dispatch Fee",

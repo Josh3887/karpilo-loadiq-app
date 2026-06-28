@@ -45,7 +45,7 @@ export default async function VehicleSettingsPage() {
     supabase
       .from("truck_profiles")
       .select(
-        "make, model, year, engine, odometer, default_mpg, fuel_tank_count, fuel_tank_capacity_gallons, trailer_division_type, trailer_type, vehicle_tare_weight_lbs, estimated_max_gross_lbs, operational_classification"
+        "make, model, year, engine, default_mpg, fuel_tank_count, fuel_tank_capacity_gallons, trailer_division_type, trailer_type, vehicle_tare_weight_lbs, estimated_max_gross_lbs, operational_classification"
       )
       .eq("user_id", user.id)
       .maybeSingle(),

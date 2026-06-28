@@ -12,20 +12,10 @@ export type VerifiedAddress = {
   warnings: string[];
 };
 
-export type RouteStopKind =
-  | "pickup"
-  | "delivery"
-  | "intermediate_stop"
-  | "fuel"
-  | "def"
-  | "scale"
-  | "rest"
-  | "customer"
-  | "other";
+export type RouteStopKind = "pickup" | "delivery";
 
 export type RouteStopInput = {
   id?: string;
-  label?: string;
   address: string;
   kind: RouteStopKind;
   sequence: number;

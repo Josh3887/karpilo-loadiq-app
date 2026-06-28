@@ -2,6 +2,12 @@
 
 This audit documents current LoadIQ billing and entitlement evidence. It is docs-only. No billing logic, Stripe code, Supabase migrations, app code, pricing values, `.env.local`, package files, native files, or remote services were changed.
 
+Update note for the route/load-actuals recovery branch: server entitlement
+resolution may now grant build-phase unlimited app access only to emails listed
+in the server-only `LOADIQ_OWNER_EMAILS` variable. This is owner/admin build
+access, not public tier policy, not a Stripe mapping, and not a global removal
+of regular user gates.
+
 ## Branch and Scope
 
 - Branch: `docs/loadiq-billing-entitlement-reconciliation`

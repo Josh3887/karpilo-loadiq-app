@@ -83,6 +83,7 @@ unless a later provider-specific review explicitly proves they are safe.
 | `ATLAS_AI_DISABLED` | AI governance | Missing from `.env.example` | Server-side Atlas AI kill switch. |
 | `EIA_API_KEY` | EIA client | Missing from `.env.example` | Server-only EIA key. |
 | `EIA_BASE_URL` | EIA client | Missing from `.env.example` | Optional server-only EIA base URL override. |
+| `LOADIQ_OWNER_EMAILS` | Server entitlement resolver | Missing from `.env.example` | Server-only comma/whitespace-separated owner/admin emails for build-phase unlimited app access. Do not expose values client-side. |
 | `OPENWEATHER_API_KEY` | weather validation and `.env.example` | Documented | Server-only OpenWeather key. |
 | `POSTHOG_ENABLED` | server analytics and `.env.example` | Documented | Server-side enablement flag. |
 | `POSTHOG_PROJECT_TOKEN` | server analytics and `.env.example` | Documented | Server-side project token where server capture is enabled. |
@@ -132,6 +133,7 @@ complete:
 - OpenAI/Atlas: `OPENAI_API_KEY`, `ENABLE_LOADIQ_AI_DEV`,
   `LOADIQ_AI_MODEL`, `LOADIQ_AI_DISABLED`, `ATLAS_AI_DISABLED`
 - EIA: `EIA_API_KEY`, `EIA_BASE_URL`
+- Owner/admin build access: `LOADIQ_OWNER_EMAILS`
 - App/runtime flags: `NEXT_PUBLIC_SHOW_APP_COUNTDOWN`,
   `NEXT_PUBLIC_ENABLE_BILLING_TEST_HARNESS`, `NEXT_PUBLIC_APP_ENV`,
   `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_SENTRY_RELEASE`, `APP_ENV`

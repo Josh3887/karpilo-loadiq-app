@@ -284,7 +284,7 @@ function normalizeStops(stops: RouteStopInput[] | undefined) {
     .map((stop, index) => ({
       ...stop,
       id: stop.id,
-      label: stop.label?.trim() || `Stop ${index + 1}`,
+      label: formatStopLabel(stop.kind, index),
       address: stop.address.trim(),
       sequence: Number.isFinite(Number(stop.sequence))
         ? Number(stop.sequence)
@@ -633,7 +633,7 @@ export async function estimateGoogleRoutePlan(
     validateLabeledAddress("Pickup", plan.pickupAddress),
     validateLabeledAddress("Delivery", plan.deliveryAddress),
     ...plan.stops.map((stop) =>
-      validateLabeledAddress(stop.label || "Stop", stop.address)
+      validateLabeledAddress(stop.label, stop.address)
     ),
     ...(plan.deadheadOrigin
       ? [validateLabeledAddress("Deadhead origin", plan.deadheadOrigin)]
@@ -754,4 +754,8 @@ export async function estimateGoogleRoutePlan(
         : "Route estimate unavailable.",
     warnings,
   };
+}
+
+function formatStopLabel(kind: RouteStopInput["kind"], index: number) {
+  return `${kind === "delivery" ? "DEL" : "P/U"} stop ${index + 1}`;
 }

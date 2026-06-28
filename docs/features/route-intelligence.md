@@ -29,8 +29,9 @@ LoadIQ keeps these mileage concepts separate:
   mileage.
 - Future tracked movement miles: movement-based estimates from browser,
   native mobile, ELD, telematics, or later integrations.
-- Running-load odometer validation: user-entered origin and end odometer
-  readings captured in the running load workflow.
+- Running-load odometer context: origin odometer captured only while a load is
+  running, with end odometer and actual mileage validation captured later in
+  saved-load post-trip actuals.
 
 ## Paid Loaded Miles
 
@@ -56,18 +57,22 @@ The route model supports:
   destination when existing saved-load data is available.
 - Deadhead origin to pickup estimate when the user provides a deadhead origin.
 - Pickup to optional stops to delivery estimate.
+- Optional stops are freight stops only. Each stop is typed as `P/U` or `DEL`;
+  user-facing stop labels are not required or stored as primary route input.
 - Stop routing in the exact order entered by the user. Route Intelligence does
   not optimize stop order because freight stop order matters.
 - Total Google estimated route miles and drive time from deadhead plus loaded
   legs when a complete deadhead estimate exists.
+- Fuel and DEF purchases are not route stops. They belong in saved/running load
+  actuals.
 
 Suggested previous-delivery deadhead origin is a default only. Users can edit
 or clear it, and LoadIQ must not overwrite user-entered deadhead origin values.
 
 ## Running-Load Odometer Validation
 
-Odometer validation is a user-entered truth source for active load workflows.
-It supports:
+Odometer validation is a user-entered truth source for active and post-trip
+load workflows. It supports:
 
 - `originOdometer`
 - `endOdometer`
@@ -75,9 +80,11 @@ It supports:
 - `odometerVarianceVsEstimated`
 - `odometerVarianceVsPaid`
 
-Odometer entry is allowed only when the load status is `running`. Planned,
-booked, and dispatched loads do not allow odometer input. Completed/ran loads
-may show locked odometer summary values if values were captured previously.
+Origin odometer entry is allowed only when the load status is `running`.
+Planned, booked, and dispatched loads do not allow odometer input. End
+odometer belongs in the saved-load detail/post-trip actuals workflow. Completed
+or ran loads may show locked odometer summary values if values were captured
+previously.
 
 The end odometer from a previous running/completed load may be suggested as the
 next origin odometer, but it must never be forced.
@@ -97,6 +104,9 @@ diesel MPG calculations.
 
 Fuel and DEF purchases support better IFTA-style estimates and profitability
 intelligence. They are not tax filing records.
+
+Accessorials, tolls, and lumpers are saved-load/load-actuals values. They are
+not calculator planning inputs.
 
 ## Variance Rules
 
@@ -185,9 +195,12 @@ Names only:
 - Keep manual mileage entry usable when route estimates are unavailable.
 - Show that Google is not truck-legal routing.
 - Show that stops are routed in the order entered.
+- Show route stop type only as `P/U` or `DEL`; do not require stop labels.
 - Show Trimble as planned after launch, not active.
 - Show fuel/DEF purchase copy as IFTA-style estimate support only, not tax
   filing authority.
+- Display EIA diesel price values to two decimals. Internal calculations may
+  use normalized numeric values as defined by the calculator engine.
 
 ## Persistence Rules
 
@@ -195,8 +208,9 @@ V1 does not require schema changes. Existing direct saved-load mileage columns
 continue to store paid loaded miles and user-entered deadhead miles. Route
 estimate context is persisted through `input_snapshot` via `routeLoadedMiles`,
 `routeDeadheadMiles`, `routeEstimate`, ordered route stops, deadhead suggestion
-metadata, and odometer validation fields. Saved/running load fuel and DEF
-purchase entries are persisted through `actuals_snapshot`.
+metadata, and running origin odometer where applicable. Saved/running load fuel
+and DEF purchase entries, end odometer, tolls, lumpers, and accessorial actuals
+are persisted through `actuals_snapshot`.
 
 Do not add Supabase migrations for this V1 route-intelligence foundation.
 

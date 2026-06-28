@@ -412,7 +412,7 @@ export async function getOperationalProfile() {
     truckModel: truckResult.data?.model ?? "",
     truckYear: Number(truckResult.data?.year ?? 0),
     truckEngine: truckResult.data?.engine ?? "",
-    truckOdometer: Number(truckResult.data?.odometer ?? 0),
+    truckOdometer: 0,
     fuelTankCount: Number(truckResult.data?.fuel_tank_count ?? 0),
     fuelTankCapacityGallons: Number(
       truckResult.data?.fuel_tank_capacity_gallons ?? 0
@@ -571,7 +571,6 @@ export async function saveOperationalProfile(profile: OperationalProfile) {
     model: profile.truckModel,
     year: profile.truckYear || null,
     engine: profile.truckEngine,
-    odometer: profile.truckOdometer || null,
     default_mpg: profile.defaultMpg,
     fuel_tank_count: profile.fuelTankCount || null,
     fuel_tank_capacity_gallons: profile.fuelTankCapacityGallons || null,
