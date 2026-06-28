@@ -1154,7 +1154,7 @@ Karpilo LoadIQ result screen
 
 ### Phase 8 - Single Readout UI Consolidation
 
-Future branch:
+Implementation branch:
 
 ```text
 fix/loadiq-atlas-single-read-analysis
@@ -1162,6 +1162,19 @@ fix/loadiq-atlas-single-read-analysis
 
 Goal: compress existing analysis panels into one governed Karpilo Atlas
 Intelligence Readout.
+
+Implemented UI surface:
+
+```text
+src/components/dashboard/results-panel.tsx
+```
+
+The readout consolidates decision summary, revenue basis, mileage and route
+exposure, fuel and cost exposure, time and schedule pressure, freight fit,
+profit confidence, missing inputs, deterministic details, gated Atlas detail,
+and gated weather risk into one results surface. It does not change
+calculations, route intelligence, weather provider behavior, OpenAI request
+behavior, billing semantics, or premium entitlement gates.
 
 ### Phase 9 - AI/RAG Expansion Later
 

@@ -7,6 +7,9 @@
 - Reordered the calculator workflow around EIA fuel baseline, deadhead, pickup,
   stops, delivery, load weight, financial inputs, and the operational
   disclaimer while enforcing 24-hour schedule times.
+- Consolidated overlapping load-analysis panels into a single Karpilo Atlas
+  Intelligence Readout while preserving detailed calculation and gated
+  intelligence sections.
 - Fixed calculator appointment-window time inputs to use valid 24-hour values
   and clarified open-ended windows as start/end date context.
 
