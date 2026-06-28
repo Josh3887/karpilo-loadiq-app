@@ -1,56 +1,229 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { OperationalProfileForm } from "@/components/dashboard/operational-profile-form";
-import { OverheadManager } from "@/components/dashboard/overhead-manager";
+import { AtlasIntelligenceSettingsCard } from "@/components/ai/atlas-intelligence-settings-card";
+import {
+  LOADIQ_SETTINGS_LINKS,
+  SettingsMetric,
+  SettingsNavCard,
+  SettingsPageShell,
+  SettingsPanel,
+  StatusPill,
+} from "@/components/settings/settings-shell";
+import { getOperatorProgramStatus } from "@/domains/billing/operator-program";
+import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
+import { isLoadIqAiDevEnabled } from "@/lib/ai/openai-client";
+import {
+  getPreviewPaymentAccess,
+  PREVIEW_OPERATOR_STATUS,
+} from "@/lib/preview-data";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 
 export default async function SettingsPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (previewMode && !user) {
+    return (
+      <SettingsContent
+        paymentAccess={getPreviewPaymentAccess()}
+        operatorLabel="Preview Operator / Karpilo LoadIQ"
+        operationType="Preview only"
+        vehicleLabel="Preview truck"
+        vehicleMpg="6.5 MPG default"
+        overheadCount={2}
+        templateCount={1}
+        operatorStatus={PREVIEW_OPERATOR_STATUS}
+        aiDevEnabled={false}
+      />
+    );
+  }
+
   if (!user) {
     redirect("/auth/login");
   }
 
+  const [
+    { data: profile },
+    { data: truckProfile },
+    { data: operatorProfile },
+    overheadCount,
+    templateCount,
+    operatorStatus,
+    paymentAccess,
+  ] = await Promise.all([
+    supabase
+      .from("users")
+      .select("profile_name, company_name, operation_type")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("truck_profiles")
+      .select("make, model, year, default_mpg")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("operator_profiles")
+      .select("display_name, company_name")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("user_overhead_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("pay_structure_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    getOperatorProgramStatus(user.id),
+    getServerPaymentAccess(user.id, user.email),
+  ]);
+
+  const vehicleLabel =
+    [truckProfile?.year, truckProfile?.make, truckProfile?.model]
+      .filter(Boolean)
+      .join(" ") || "Not set";
+  const operatorName =
+    profile?.profile_name || operatorProfile?.display_name || user.email || "Operator";
+  const companyName = profile?.company_name || operatorProfile?.company_name;
+  const operatorLabel = companyName
+    ? `${operatorName} / ${companyName}`
+    : operatorName;
+
   return (
-    <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
-              Karpilo LoadIQ
-            </p>
-
-            <h1 className="text-3xl font-black tracking-tight md:text-5xl">
-              Operational Profile
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
-              Centralize your driver profile, target profitability, truck
-              assumptions, pay templates, and recurring overhead.
-            </p>
-          </div>
-
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
-          >
-            Dashboard
-          </Link>
-        </header>
-
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          <OperationalProfileForm />
-        </section>
-
-        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-6 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          <OverheadManager />
-        </section>
-      </div>
-    </main>
+    <SettingsContent
+      paymentAccess={paymentAccess}
+      operatorLabel={operatorLabel}
+      operationType={profile?.operation_type ?? "Operation profile pending"}
+      vehicleLabel={vehicleLabel}
+      vehicleMpg={
+        truckProfile?.default_mpg
+          ? `${truckProfile.default_mpg} MPG default`
+          : "MPG default pending"
+      }
+      overheadCount={overheadCount.count ?? 0}
+      templateCount={templateCount.count ?? 0}
+      operatorStatus={operatorStatus}
+      aiDevEnabled={isLoadIqAiDevEnabled()}
+    />
   );
+}
+
+function SettingsContent({
+  paymentAccess,
+  operatorLabel,
+  operationType,
+  vehicleLabel,
+  vehicleMpg,
+  overheadCount,
+  templateCount,
+  operatorStatus,
+  aiDevEnabled,
+}: {
+  paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
+  operatorLabel: string;
+  operationType: string;
+  vehicleLabel: string;
+  vehicleMpg: string;
+  overheadCount: number;
+  templateCount: number;
+  operatorStatus: Awaited<ReturnType<typeof getOperatorProgramStatus>>;
+  aiDevEnabled: boolean;
+}) {
+  return (
+    <SettingsPageShell
+      title="LoadIQ Operating Profile Settings"
+      description="The protected Settings area is the app source of truth for operating profile, account access, billing status, expense intelligence, vehicle assumptions, FitCheck review, pay templates, and calculator defaults."
+      actions={
+        <StatusPill tone={paymentAccess.hasActiveAccess ? "green" : "red"}>
+          {formatStatus(paymentAccess.entitlementStatus)}
+        </StatusPill>
+      }
+    >
+      <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <SettingsMetric
+          label="Name / Company"
+          value={operatorLabel}
+          detail={operationType}
+          tone="blue"
+        />
+        <SettingsMetric
+          label="Entitlement"
+          value={formatStatus(paymentAccess.entitlementStatus)}
+          detail={`${formatPlanTierLabel(paymentAccess.tier)} via ${paymentAccess.billingProvider}`}
+          tone={paymentAccess.hasActiveAccess ? "green" : "red"}
+        />
+        <SettingsMetric
+          label="Expense Controls"
+          value={String(overheadCount)}
+          detail={`${templateCount} pay templates`}
+        />
+        <SettingsMetric
+          label="Vehicle"
+          value={vehicleLabel}
+          detail={vehicleMpg}
+        />
+      </section>
+
+      <SettingsPanel
+        title="Command Stations"
+        description="APP owns protected Settings/Profile state. These stations use the current Supabase auth session and existing LoadIQ operating-profile tables instead of creating disconnected profile models."
+      >
+        <div className="grid gap-5 md:grid-cols-2">
+          {LOADIQ_SETTINGS_LINKS.slice(1).map((item) => (
+            <SettingsNavCard
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              description={item.description}
+              icon={item.icon}
+              accent={item.accent}
+            />
+          ))}
+        </div>
+      </SettingsPanel>
+
+      {aiDevEnabled && (
+        <SettingsPanel
+          title="Atlas Intelligence Systems"
+          description="Review embedded operational intelligence layers and control the optional compatibility overlay while Atlas surfaces move into native workflows."
+          kicker="Signal Control"
+        >
+          <AtlasIntelligenceSettingsCard enabled={aiDevEnabled} />
+        </SettingsPanel>
+      )}
+
+      {operatorStatus.badges.length > 0 && (
+        <SettingsPanel
+          title="Operator Access Badges"
+          description={operatorStatus.statusMessage}
+          kicker="Program State"
+        >
+          <div className="flex flex-wrap gap-3">
+            {operatorStatus.badges.map((badge) => (
+              <StatusPill
+                key={badge.label}
+                tone={badge.tone === "red" ? "red" : "green"}
+              >
+                {badge.label}
+              </StatusPill>
+            ))}
+          </div>
+        </SettingsPanel>
+      )}
+    </SettingsPageShell>
+  );
+}
+
+function formatStatus(value: string) {
+  return value.replace(/_/g, " ");
 }

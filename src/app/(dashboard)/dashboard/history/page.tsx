@@ -1,13 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { PreviewActionButton } from "@/components/preview/preview-mode-provider";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
 import { createClient } from "@/lib/supabase-server";
 import { formatCurrency, formatRpm } from "@/utils/format";
 
 type SavedLoad = {
   id: string;
   pickup_zip: string;
+  deadhead_start_city?: string | null;
+  deadhead_start_state?: string | null;
+  deadhead_start_zip?: string | null;
+  pickup_city: string | null;
+  pickup_state: string | null;
   delivery_zip: string;
+  delivery_city: string | null;
+  delivery_state: string | null;
   gross_revenue: number;
   estimated_net: number;
   true_rpm: number;
@@ -15,15 +25,88 @@ type SavedLoad = {
   profitability_score: number;
   profitability_band: string;
   status: string;
+  load_id?: number | null;
+  trip_number?: string | null;
+  loadiq_load_number: string | null;
+  driver_load_number: string | null;
+  load_outcome: string | null;
+  route_stop_count?: number | null;
+  estimated_load_weight_lbs?: number | null;
   created_at: string;
 };
 
+const previewLoads: SavedLoad[] = [
+  {
+    id: "preview-load-10482",
+    pickup_zip: "",
+    deadhead_start_city: "Fort Worth",
+    deadhead_start_state: "TX",
+    deadhead_start_zip: "76102",
+    pickup_city: "Dallas",
+    pickup_state: "TX",
+    delivery_zip: "",
+    delivery_city: "Atlanta",
+    delivery_state: "GA",
+    gross_revenue: 2450,
+    estimated_net: 780,
+    true_rpm: 2.38,
+    actual_net: null,
+    profitability_score: 82,
+    profitability_band: "strong",
+    status: "saved",
+    load_id: 10482,
+    trip_number: "R45672",
+    loadiq_load_number: null,
+    driver_load_number: null,
+    load_outcome: "planned",
+    route_stop_count: 3,
+    estimated_load_weight_lbs: 38000,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "preview-load-10483",
+    pickup_zip: "",
+    deadhead_start_city: null,
+    deadhead_start_state: null,
+    deadhead_start_zip: null,
+    pickup_city: "Memphis",
+    pickup_state: "TN",
+    delivery_zip: "",
+    delivery_city: "Charlotte",
+    delivery_state: "NC",
+    gross_revenue: 1850,
+    estimated_net: 415,
+    true_rpm: 2.08,
+    actual_net: null,
+    profitability_score: 68,
+    profitability_band: "watch",
+    status: "saved",
+    load_id: 10483,
+    trip_number: null,
+    loadiq_load_number: null,
+    driver_load_number: null,
+    load_outcome: "planned",
+    route_stop_count: 2,
+    estimated_load_weight_lbs: null,
+    created_at: new Date(Date.now() - 86_400_000).toISOString(),
+  },
+];
+
 export default async function LoadHistoryPage() {
+  const previewMode = await isPreviewModeEnabled();
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (!user && previewMode) {
+    return <LoadHistoryContent loads={previewLoads} previewMode />;
+  }
 
   if (!user) {
     redirect("/auth/login");
@@ -31,15 +114,33 @@ export default async function LoadHistoryPage() {
 
   const { data: loads, error } = await supabase
     .from("saved_loads")
-    .select(
-      "id, pickup_zip, delivery_zip, gross_revenue, estimated_net, actual_net, true_rpm, profitability_score, profitability_band, status, created_at"
-    )
+    .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
+
+  return <LoadHistoryContent loads={(loads ?? []) as SavedLoad[]} />;
+}
+
+function LoadHistoryContent({
+  loads,
+  previewMode = false,
+}: {
+  loads: SavedLoad[];
+  previewMode?: boolean;
+}) {
+  const typedLoads = loads;
+  const completedOrSavedLoads = typedLoads.filter((load) =>
+    ["saved", "accepted", "completed"].includes(load.status ?? "saved")
+  );
+  const averageTrueRpm =
+    completedOrSavedLoads.length > 0
+      ? completedOrSavedLoads.reduce(
+          (total, load) => total + Number(load.true_rpm),
+          0
+        ) / completedOrSavedLoads.length
+      : 0;
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -59,16 +160,26 @@ export default async function LoadHistoryPage() {
             </p>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-300 hover:bg-sky-400/20"
-          >
-            Dashboard
-          </Link>
+          <DashboardNav />
         </header>
 
-        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 shadow-[0_0_25px_rgba(56,189,248,0.08)]">
-          {!loads || loads.length === 0 ? (
+        <section className="rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-5 pb-24 shadow-[0_0_25px_rgba(56,189,248,0.08)] md:pb-5">
+          <div className="mb-5 grid gap-4 md:grid-cols-3">
+            <HistoryMetric
+              label="Saved/Accepted Loads"
+              value={String(completedOrSavedLoads.length)}
+            />
+            <HistoryMetric
+              label="Avg True RPM"
+              value={averageTrueRpm > 0 ? formatRpm(averageTrueRpm) : "Pending"}
+            />
+            <HistoryMetric
+              label="Completed"
+              value={String(typedLoads.filter((load) => load.status === "completed").length)}
+            />
+          </div>
+
+          {loads.length === 0 ? (
             <div className="py-20 text-center text-slate-500">
               No saved loads yet.
             </div>
@@ -77,6 +188,7 @@ export default async function LoadHistoryPage() {
               <table className="w-full min-w-190 text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-800 text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <th className="py-3">Load</th>
                     <th className="py-3">Lane</th>
                     <th className="py-3">Gross</th>
                     <th className="py-3">Est. Net</th>
@@ -91,15 +203,43 @@ export default async function LoadHistoryPage() {
                 </thead>
 
                 <tbody>
-                  {(loads as SavedLoad[]).map((load) => (
+                  {typedLoads.map((load) => {
+                    const rpmDelta =
+                      averageTrueRpm > 0
+                        ? Number(load.true_rpm) - averageTrueRpm
+                        : 0;
+
+                    return (
                     <tr
                       key={load.id}
+                      data-preview-explain="load-history"
                       className="border-b border-slate-800/80 text-slate-300 transition hover:bg-sky-400/5"
                     >
                       <td className="py-4 font-semibold text-slate-100">
-                        <Link href={`/dashboard/history/${load.id}`} className="text-sky-300 hover:text-sky-200">
-                          {load.pickup_zip} → {load.delivery_zip}
-                        </Link>
+                        {previewMode ? (
+                          <PreviewActionButton
+                            explanation="load-id"
+                            className="text-left text-sky-300 hover:text-sky-200"
+                          >
+                            Load #{formatLoadId(load)}
+                          </PreviewActionButton>
+                        ) : (
+                          <Link
+                            href={`/dashboard/history/${load.id}`}
+                            className="text-sky-300 hover:text-sky-200"
+                          >
+                            Load #{formatLoadId(load)}
+                          </Link>
+                        )}
+                        <div className="mt-1 text-xs text-slate-500">
+                          Trip #{formatTripNumber(load)}
+                        </div>
+                      </td>
+                      <td className="py-4 font-semibold text-slate-100">
+                        {formatLane(load)}
+                        <div className="mt-1 text-xs font-normal text-slate-500">
+                          {formatRouteContext(load)}
+                        </div>
                       </td>
                       <td className="py-4">
                         {formatCurrency(Number(load.gross_revenue))}
@@ -114,6 +254,18 @@ export default async function LoadHistoryPage() {
                       </td>
                       <td className="py-4">
                         {formatRpm(Number(load.true_rpm))}
+                        {averageTrueRpm > 0 && (
+                          <div
+                            className={
+                              rpmDelta < 0
+                                ? "mt-1 text-xs text-red-300"
+                                : "mt-1 text-xs text-sky-300"
+                            }
+                          >
+                            {rpmDelta >= 0 ? "+" : ""}
+                            {formatRpm(rpmDelta)} vs avg
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
                         {load.profitability_score}/100
@@ -123,20 +275,35 @@ export default async function LoadHistoryPage() {
                       </td>
                       <td className="py-4 capitalize text-slate-400">
                         {load.status ?? "estimated"}
+                        {load.load_outcome && load.load_outcome !== "unknown" && (
+                          <div className="mt-1 text-xs text-slate-500">
+                            {load.load_outcome.replaceAll("_", " ")}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
-                        <Link
-                          href={`/dashboard/history/${load.id}/report`}
-                          className="text-sky-300 hover:text-sky-200"
-                        >
-                          Print
-                        </Link>
+                        {previewMode ? (
+                          <PreviewActionButton
+                            explanation="history-report"
+                            className="text-left text-sky-300 hover:text-sky-200"
+                          >
+                            Print
+                          </PreviewActionButton>
+                        ) : (
+                          <Link
+                            href={`/dashboard/history/${load.id}/report`}
+                            className="text-sky-300 hover:text-sky-200"
+                          >
+                            Print
+                          </Link>
+                        )}
                       </td>
                       <td className="py-4 text-slate-500">
                         {new Date(load.created_at).toLocaleDateString()}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -145,4 +312,63 @@ export default async function LoadHistoryPage() {
       </div>
     </main>
   );
+}
+
+function HistoryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      data-preview-explain="load-history"
+      className="rounded-xl border border-slate-800 bg-[#060B14] p-4"
+    >
+      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </div>
+      <div className="mt-2 text-xl font-black text-slate-100">{value}</div>
+    </div>
+  );
+}
+
+function formatLoadId(load: SavedLoad) {
+  if (typeof load.load_id === "number") {
+    return String(load.load_id);
+  }
+
+  const legacyNumber = load.loadiq_load_number?.match(/\d+/)?.[0];
+  return legacyNumber ? String(Number(legacyNumber)) : "pending";
+}
+
+function formatTripNumber(load: SavedLoad) {
+  if (load.trip_number) return load.trip_number;
+  if (load.driver_load_number) return load.driver_load_number;
+  return `AUTO-${formatLoadId(load)}`;
+}
+
+function formatLane(load: SavedLoad) {
+  const pickup = formatCityState(load.pickup_city, load.pickup_state);
+  const delivery = formatCityState(load.delivery_city, load.delivery_state);
+
+  if (pickup && delivery) return `${pickup} -> ${delivery}`;
+  return "Lane pending";
+}
+
+function formatRouteContext(load: SavedLoad) {
+  const deadheadOrigin = [
+    formatCityState(load.deadhead_start_city, load.deadhead_start_state),
+    load.deadhead_start_zip,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const parts = [
+    deadheadOrigin ? `DH from ${deadheadOrigin}` : null,
+    load.route_stop_count ? `${load.route_stop_count} modeled stops` : null,
+    load.estimated_load_weight_lbs
+      ? `${Number(load.estimated_load_weight_lbs).toLocaleString()} lbs est.`
+      : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : "Route context pending";
+}
+
+function formatCityState(city?: string | null, state?: string | null) {
+  return [city, state].filter(Boolean).join(", ");
 }

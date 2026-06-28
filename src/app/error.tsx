@@ -1,16 +1,96 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { captureSentryRouteError } from "@/components/observability/sentry-route-error";
+import { APP_VERSION } from "@/config/app-policies";
+
 type AppErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
+const DIAGNOSTICS_SESSION_KEY = "loadiq_diagnostics_session_id";
+const DIAGNOSTICS_EVENT_PREFIX = "loadiq_diagnostics_event";
+const CRASH_LOOP_WINDOW_MS = 5 * 60 * 1000;
+
+function getDiagnosticsSessionId() {
+  try {
+    const existing = window.sessionStorage.getItem(DIAGNOSTICS_SESSION_KEY);
+    if (existing) return existing;
+
+    const next =
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    window.sessionStorage.setItem(DIAGNOSTICS_SESSION_KEY, next);
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+function shouldReportDiagnosticEvent(key: string) {
+  try {
+    const storageKey = `${DIAGNOSTICS_EVENT_PREFIX}:${key.slice(0, 300)}`;
+    const lastReportedAt = Number(window.sessionStorage.getItem(storageKey));
+    const now = Date.now();
+
+    if (lastReportedAt && now - lastReportedAt < CRASH_LOOP_WINDOW_MS) {
+      return false;
+    }
+
+    window.sessionStorage.setItem(storageKey, String(now));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export default function AppError({ error, reset }: AppErrorProps) {
+  useEffect(() => {
+    captureSentryRouteError({ error, boundary: "app" });
+
+    const route =
+      typeof window === "undefined"
+        ? null
+        : window.location.pathname;
+    const sessionId = getDiagnosticsSessionId();
+    const eventKey = [
+      "app",
+      route ?? "unknown-route",
+      error.digest ?? error.name,
+      error.message,
+    ].join(":");
+
+    if (!shouldReportDiagnosticEvent(eventKey)) return;
+
+    void fetch("/api/diagnostics/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        severity: "error",
+        source: "app",
+        route,
+        sessionId,
+        releaseVersion: APP_VERSION,
+        message: error.message || "Application error boundary triggered.",
+        stack: error.stack,
+        digest: error.digest,
+        metadata: {
+          boundary: "app",
+          errorName: error.name,
+        },
+      }),
+    }).catch(() => undefined);
+  }, [error]);
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#060B14] px-4 text-slate-100">
       <div className="w-full max-w-xl rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-red-300">
-          LoadIQ Fault
+          Karpilo LoadIQ Fault
         </p>
 
         <h1 className="text-3xl font-black">Something stalled.</h1>

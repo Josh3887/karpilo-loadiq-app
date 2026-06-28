@@ -11,7 +11,7 @@ type EiaResponse = {
 };
 
 const EIA_ULSD_PATH =
-  "/petroleum/pri/gnd/data/?frequency=weekly&data[0]=value&facets[product][]=EPD2DXL0&facets[process][]=PTE&facets[duoarea][]=NUS&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1";
+  "/petroleum/pri/gnd/data/?frequency=weekly&data[0]=value&facets[product][]=EPD2DXL0&facets[duoarea][]=NUS&facets[series][]=EMD_EPD2DXL0_PTE_NUS_DPG&facets[process][]=PTE&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=5000";
 
 export type EiaFuelFetchResult =
   | {
@@ -23,49 +23,63 @@ export type EiaFuelFetchResult =
       failureReason: string;
     };
 
+function eiaFailure(failureReason: string): EiaFuelFetchResult {
+  console.error("EIA_DIESEL_FETCH_ERROR:", failureReason);
+
+  return {
+    fuel: null,
+    failureReason,
+  };
+}
+
+function latestDieselRow(data: EiaFuelDataPoint[] | undefined) {
+  return [...(data ?? [])]
+    .filter((row) => row.period)
+    .sort((a, b) => String(b.period).localeCompare(String(a.period)))[0];
+}
+
 export async function fetchLatestEiaDieselPrice(): Promise<EiaFuelFetchResult> {
   const apiKey = process.env.EIA_API_KEY;
 
   if (!apiKey) {
-    return {
-      fuel: null,
-      failureReason: "EIA_API_KEY is not configured.",
-    };
+    return eiaFailure("EIA_API_KEY is not configured.");
   }
 
   const baseUrl = process.env.EIA_BASE_URL ?? "https://api.eia.gov/v2";
   const url = new URL(`${baseUrl}${EIA_ULSD_PATH}`);
   url.searchParams.set("api_key", apiKey);
 
-  const response = await fetch(url, {
-    cache: "no-store",
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+    });
+  } catch (error) {
+    return eiaFailure(
+      error instanceof Error
+        ? `EIA request failed: ${error.message}`
+        : "EIA request failed."
+    );
+  }
 
   if (!response.ok) {
-    return {
-      fuel: null,
-      failureReason: `EIA returned HTTP ${response.status}.`,
-    };
+    return eiaFailure(`EIA returned HTTP ${response.status}.`);
   }
 
   const payload = (await response.json()) as EiaResponse;
-  const latest = payload.response?.data?.[0];
+  const latest = latestDieselRow(payload.response?.data);
 
   if (!latest) {
-    return {
-      fuel: null,
-      failureReason: "EIA response did not include a latest diesel row.",
-    };
+    return eiaFailure("EIA response did not include a latest diesel row.");
   }
 
   const fuel = normalizeEiaDieselPrice(latest);
 
   if (!fuel) {
-    return {
-      fuel: null,
-      failureReason:
-        "EIA response did not include a usable diesel price or period.",
-    };
+    return eiaFailure(
+      "EIA response did not include a usable diesel price or period."
+    );
   }
 
   return {

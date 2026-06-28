@@ -35,7 +35,7 @@ export function ScenarioComparisonPanel({
             href="/dashboard/billing"
             className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
           >
-            Unlock Pro
+            Unlock Gold
           </Link>
         )}
       </div>
@@ -96,7 +96,7 @@ export function ScenarioComparisonPanel({
 
       {!canCompareScenarios && (
         <p className="mt-4 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm leading-6 text-sky-100">
-          Free plan shows a preview only. Pro unlocks the full scenario table,
+          Active Gold or grandfathered access unlocks the full scenario table,
           including lease split and independent authority assumptions.
         </p>
       )}

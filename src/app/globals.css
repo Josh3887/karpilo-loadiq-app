@@ -24,3 +24,94 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.atlas-runtime-surface {
+  isolation: isolate;
+  position: relative;
+}
+
+.atlas-runtime-surface::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--atlas-primary) 9%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--atlas-accent) 14%, transparent),
+      transparent 36%
+    );
+  content: "";
+  opacity: 0.68;
+}
+
+.atlas-runtime-node {
+  border-color: color-mix(in srgb, var(--atlas-accent) 34%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--atlas-primary) 18%, transparent);
+}
+
+.atlas-signal-shell {
+  isolation: isolate;
+}
+
+.atlas-signal-shell::after {
+  position: absolute;
+  inset: 0.28rem;
+  z-index: -1;
+  border-radius: 1rem;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(56, 189, 248, 0.24),
+    rgba(14, 165, 233, 0.04) 42%,
+    transparent 72%
+  );
+  content: "";
+  filter: blur(10px);
+  opacity: 0.78;
+  animation: atlas-telemetry-glow 3.6s ease-in-out infinite;
+}
+
+.atlas-scan-ring {
+  pointer-events: none;
+  opacity: 0.65;
+  animation: atlas-scan-ring 4.8s ease-in-out infinite;
+}
+
+@keyframes atlas-telemetry-glow {
+  0%,
+  100% {
+    opacity: 0.46;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes atlas-scan-ring {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.985);
+  }
+  45% {
+    opacity: 0.72;
+    transform: scale(1.018);
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-signal-shell::after,
+  .atlas-scan-ring {
+    animation: none;
+  }
+}

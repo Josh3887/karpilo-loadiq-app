@@ -1,43 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/logout-button";
+import { LoadIqMark } from "@/components/brand/loadiq-mark";
+import { InternalBillingTestHarnessPanel } from "@/components/billing/internal-billing-test-harness-panel";
 import { LoadInputForm } from "@/components/calculator/load-input-form";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { DisclaimerModal } from "@/components/legal/disclaimer-modal";
+import { FounderWelcomeModal } from "@/components/dashboard/founder-welcome-modal";
+import { OperatorBadges } from "@/components/dashboard/operator-badges";
+import { PilotStatusCard } from "@/components/dashboard/pilot-status-card";
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
+import { ReviewPrompt } from "@/components/dashboard/review-prompt";
 import { ResultsPanel } from "@/components/dashboard/results-panel";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 
+import { BRAND } from "@/config/brand";
 import {
   ClientEntitlementState,
   getClientEntitlementState,
 } from "@/domains/billing/client-entitlements";
 import { recordUsageEvent } from "@/domains/billing/usage-service";
 import { resolveEntitlements } from "@/domains/billing/entitlement-service";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
 import { useLoadCalculator } from "@/hooks/use-load-calculator";
+import {
+  ANALYTICS_EVENTS,
+  bucketDeadheadMiles,
+  bucketMileage,
+  trackAnalyticsEvent,
+} from "@/lib/analytics";
+import { getPreviewEntitlementState } from "@/lib/preview-data";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
-import { acceptLoadIqDisclaimer } from "@/services/disclaimer-acceptance";
 import { getLaneTemplateInput } from "@/services/lane-templates";
 import { getSavedLoadInput } from "@/services/saved-load-input";
 import { LoadInputFormValues } from "@/lib/load-schema";
-import { createClient } from "@/lib/supabase-client";
 import { LoadInput } from "@/types/load";
+import { OperatorProgramStatus } from "@/types/operator-program";
+import { LaunchPhaseSnapshot } from "@/config/launch-phases";
 
 type DashboardClientPageProps = {
   editLoadId?: string;
   templateId?: string;
-  requiresDisclaimer?: boolean;
+  operatorStatus: OperatorProgramStatus;
+  launchSnapshot: LaunchPhaseSnapshot;
+  pilotSlotsRemaining: number;
+  launchSlotsRemaining: number;
+  claimedOperatorCount: number;
+  previewMode?: boolean;
+  adminControlPlaneAccess?: {
+    highestRole: "owner" | "admin" | "developer";
+  } | null;
+  aiDevEnabled?: boolean;
 };
 
 export default function DashboardClientPage({
   editLoadId,
   templateId,
-  requiresDisclaimer = false,
+  operatorStatus,
+  launchSnapshot,
+  pilotSlotsRemaining,
+  launchSlotsRemaining,
+  claimedOperatorCount,
+  previewMode = false,
+  adminControlPlaneAccess = null,
+  aiDevEnabled = false,
 }: DashboardClientPageProps) {
-  const router = useRouter();
+  const preview = usePreviewMode();
   const {
     result,
     lastInput,
@@ -46,24 +76,35 @@ export default function DashboardClientPage({
   } = useLoadCalculator();
 
   const [entitlementState, setEntitlementState] =
-    useState<ClientEntitlementState | null>(null);
+    useState<ClientEntitlementState | null>(() =>
+      previewMode ? getPreviewEntitlementState() : null
+    );
   const [gateMessage, setGateMessage] = useState("");
   const [initialInput, setInitialInput] =
     useState<LoadInputFormValues | null>(null);
-  const [showDisclaimer, setShowDisclaimer] =
-    useState(requiresDisclaimer);
 
   useEffect(() => {
+    if (previewMode) return;
+
     async function loadDefaults() {
       try {
         const defaults =
           await getCalculatorDefaults();
 
         setDefaults({
-          overhead: defaults.weeklyOverhead,
+          overhead: defaults.dailyOverhead,
+          operatingDaysPerWeek: defaults.operatingDaysPerWeek,
+          operatingDaysPerMonth: defaults.operatingDaysPerMonth,
+          incomeTargetDaily: defaults.incomeTargetDaily,
+          incomeTargetWeekly: defaults.incomeTargetWeekly,
+          minimumHourlyProfitability: defaults.minimumHourlyProfitability,
           targetTrueRpm: defaults.targetTrueRpm,
           defaultMpg: defaults.defaultMpg,
+          fuelTankCount: defaults.fuelTankCount,
+          fuelTankCapacityGallons: defaults.fuelTankCapacityGallons,
+          equipmentProfile: defaults.equipmentProfile,
           defaultPayStructure: defaults.defaultPayStructure,
+          reserveAllocation: defaults.reserveAllocation,
           maintenanceReserve: defaults.maintenanceReserve,
           tireReserve: defaults.tireReserve,
           trailerFee: defaults.trailerFee,
@@ -79,21 +120,51 @@ export default function DashboardClientPage({
     }
 
     loadDefaults();
-  }, [setDefaults]);
+  }, [previewMode, setDefaults]);
+
+  const refreshEntitlements = useCallback(async () => {
+    if (previewMode) return;
+
+    try {
+      setEntitlementState(await getClientEntitlementState());
+    } catch (error) {
+      console.error(error);
+    }
+  }, [previewMode]);
 
   useEffect(() => {
-    async function loadEntitlements() {
+    if (previewMode) return;
+
+    let cancelled = false;
+
+    async function loadInitialEntitlements() {
       try {
-        setEntitlementState(await getClientEntitlementState());
+        const nextState = await getClientEntitlementState();
+        if (!cancelled) {
+          setEntitlementState(nextState);
+        }
       } catch (error) {
         console.error(error);
       }
     }
 
-    loadEntitlements();
-  }, []);
+    void loadInitialEntitlements();
+    window.addEventListener(
+      "billing-test-harness-updated",
+      refreshEntitlements
+    );
+
+    return () => {
+      window.removeEventListener(
+        "billing-test-harness-updated",
+        refreshEntitlements
+      );
+      cancelled = true;
+    };
+  }, [previewMode, refreshEntitlements]);
 
   useEffect(() => {
+    if (previewMode) return;
     if (!editLoadId) return;
     const savedLoadId = editLoadId;
 
@@ -112,9 +183,10 @@ export default function DashboardClientPage({
     }
 
     loadSavedInput();
-  }, [editLoadId]);
+  }, [editLoadId, previewMode]);
 
   useEffect(() => {
+    if (previewMode) return;
     if (!templateId) return;
     const laneTemplateId = templateId;
 
@@ -133,23 +205,28 @@ export default function DashboardClientPage({
     }
 
     loadTemplateInput();
-  }, [templateId]);
+  }, [previewMode, templateId]);
 
   function handleCalculate(input: LoadInput) {
-    if (showDisclaimer) {
-      setGateMessage("Accept the LoadIQ disclaimer before analyzing freight.");
+    if (previewMode || preview.enabled) {
+      preview.explain("analyze-load");
       return;
     }
 
     if (entitlementState && !entitlementState.entitlements.canCalculate) {
       setGateMessage(
-        "Free plan calculation limit reached. Upgrade to Pro for unlimited load analysis."
+        "An active Karpilo LoadIQ subscription is required before analyzing freight."
       );
       return;
     }
 
     setGateMessage("");
     calculate(input);
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.CALCULATION_COMPLETED, {
+      route: "/dashboard",
+      deadhead_bucket: bucketDeadheadMiles(input.deadheadMiles),
+      mileage_bucket: bucketMileage(input.loadedMiles + input.deadheadMiles),
+    });
 
     void recordUsageEvent("calculation_created", {
       pickupZip: input.pickupZip,
@@ -167,10 +244,28 @@ export default function DashboardClientPage({
         ...state.usage,
         monthlyCalculations: state.usage.monthlyCalculations + 1,
       };
+      const entitlements = state.paymentAccess.ownerBuildAccess
+        ? state.entitlements
+        : resolveEntitlements(state.paymentAccess.tier, usage, {
+            planTier: state.paymentAccess.tier,
+            subscriptionTier: state.paymentAccess.subscriptionTier,
+            featureAccess: state.paymentAccess.featureAccess,
+            grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
+            lifetimeAccess: state.paymentAccess.lifetimeAccess,
+            fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
+            fleetEnabled: state.paymentAccess.fleetEnabled,
+            fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
+            truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
+            futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
+          });
 
       return {
         usage,
-        entitlements: resolveEntitlements(state.entitlements.tier, usage),
+        entitlements,
+        paymentAccess: {
+          ...state.paymentAccess,
+          entitlements,
+        },
       };
     });
   }
@@ -183,58 +278,57 @@ export default function DashboardClientPage({
         ...state.usage,
         savedLoads: state.usage.savedLoads + 1,
       };
+      const entitlements = state.paymentAccess.ownerBuildAccess
+        ? state.entitlements
+        : resolveEntitlements(state.paymentAccess.tier, usage, {
+            planTier: state.paymentAccess.tier,
+            subscriptionTier: state.paymentAccess.subscriptionTier,
+            featureAccess: state.paymentAccess.featureAccess,
+            grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
+            lifetimeAccess: state.paymentAccess.lifetimeAccess,
+            fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
+            fleetEnabled: state.paymentAccess.fleetEnabled,
+            fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
+            truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
+            futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
+          });
 
       return {
         usage,
-        entitlements: resolveEntitlements(state.entitlements.tier, usage),
+        entitlements,
+        paymentAccess: {
+          ...state.paymentAccess,
+          entitlements,
+        },
       };
     });
   }
 
-  async function handleDisclaimerAccept() {
-    await acceptLoadIqDisclaimer();
-    setShowDisclaimer(false);
-    router.refresh();
-  }
-
-  async function handleDisclaimerDecline() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/");
-    router.refresh();
-  }
-
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
-      {showDisclaimer && (
-        <DisclaimerModal
-          onAccept={handleDisclaimerAccept}
-          onDecline={handleDisclaimerDecline}
-        />
+      {operatorStatus.shouldShowFounderWelcome && (
+        <FounderWelcomeModal status={operatorStatus} />
       )}
 
-      <div
-        className={
-          showDisclaimer
-            ? "mx-auto max-w-7xl pointer-events-none select-none blur-sm"
-            : "mx-auto max-w-7xl"
-        }
-        aria-hidden={showDisclaimer}
-      >
+      <div className="mx-auto max-w-7xl">
         <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
+          <div className="flex items-start gap-4">
+            <LoadIqMark />
+            <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-sky-400">
-              Karpilo LoadIQ
+              {BRAND.productName}
             </p>
 
             <h1 className="text-3xl font-black tracking-tight text-slate-100 md:text-5xl">
               Freight Profitability Command Center
             </h1>
+            <OperatorBadges badges={operatorStatus.badges} />
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
               Analyze load viability, deadhead exposure, fuel pressure,
               margin compression, and true RPM before accepting freight.
             </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
@@ -243,8 +337,59 @@ export default function DashboardClientPage({
           </div>
         </header>
 
+        <PilotStatusCard
+          status={operatorStatus}
+          initialSnapshot={launchSnapshot}
+          pilotSlotsRemaining={pilotSlotsRemaining}
+          launchSlotsRemaining={launchSlotsRemaining}
+          claimedOperatorCount={claimedOperatorCount}
+        />
+
+        <InternalBillingTestHarnessPanel
+          harness={entitlementState?.billingTestHarness}
+        />
+
+        {adminControlPlaneAccess && (
+          <section className="mb-6">
+            <Link
+              href="/admin"
+              className="group block rounded-2xl border border-sky-400/30 bg-sky-400/10 p-5 shadow-[0_20px_80px_rgba(14,165,233,0.12)] transition hover:border-sky-300/60 hover:bg-sky-400/15 focus:outline-none focus:ring-2 focus:ring-sky-300/70"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                    Founder-grade access
+                  </p>
+                  <h2 className="mt-2 text-xl font-black text-slate-50">
+                    Admin Control Plane
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    Review control-plane status, audit visibility, and
+                    founder/admin operations without leaving the app dashboard.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="rounded-full border border-sky-300/30 bg-[#060B14] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-sky-100">
+                    {formatAdminRole(adminControlPlaneAccess.highestRole)}
+                  </span>
+                  <span className="rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-200 transition group-hover:border-sky-400/50 group-hover:text-sky-100">
+                    Open /admin
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </section>
+        )}
+
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <DashboardCard title="Load Input">
+          <div className="lg:col-span-2">
+            <ReviewPrompt
+              calculationCount={entitlementState?.usage.monthlyCalculations ?? 0}
+            />
+          </div>
+
+          <DashboardCard title="Load Input" previewExplanation="calculator-field">
             {gateMessage && (
               <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
                 {gateMessage}
@@ -254,17 +399,17 @@ export default function DashboardClientPage({
             {entitlementState && (
               <div className="mb-4 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs uppercase tracking-[0.16em] text-sky-200">
                 <div>
-                  {entitlementState.entitlements.tier} plan ·{" "}
+                  {formatPlanTierLabel(entitlementState.entitlements.tier)} ·{" "}
                   {entitlementState.usage.monthlyCalculations} calculations this
                   month · {entitlementState.usage.savedLoads} saved loads
                 </div>
 
-                {entitlementState.entitlements.tier === "free" && (
+                {entitlementState.entitlements.tier === "no_access" && (
                   <Link
                     href="/dashboard/billing"
                     className="mt-3 inline-flex text-sky-300 underline decoration-sky-400/40 underline-offset-4"
                   >
-                    Upgrade for unlimited analysis
+                    Activate subscription access
                   </Link>
                 )}
               </div>
@@ -273,20 +418,82 @@ export default function DashboardClientPage({
             <LoadInputForm
               onCalculate={handleCalculate}
               initialValues={initialInput}
+              previewMode={previewMode}
             />
           </DashboardCard>
 
           <ResultsPanel
             result={result}
             input={lastInput}
-            canSaveLoad={entitlementState?.entitlements.canSaveLoad ?? true}
+            canSaveLoad={entitlementState?.entitlements.canSaveLoad ?? false}
             canCompareScenarios={
               entitlementState?.entitlements.canCompareScenarios ?? false
             }
+            canUseWeatherProfitabilityRisk={
+              entitlementState?.entitlements.canUseWeatherProfitabilityRisk ??
+              false
+            }
+            canSaveWeatherProfitabilitySnapshot={
+              entitlementState?.entitlements
+                .canSaveWeatherProfitabilitySnapshot ?? false
+            }
+            aiDevEnabled={aiDevEnabled}
+            entitlementTier={entitlementState?.entitlements.tier ?? "no_access"}
             onLoadSaved={handleLoadSaved}
+            previewMode={previewMode}
           />
+
+          <div className="lg:col-span-2">
+            <ProEstimationReadinessCard
+              enabled={
+                entitlementState?.entitlements
+                  .canSaveWeatherProfitabilitySnapshot ?? false
+              }
+            />
+          </div>
         </section>
       </div>
     </main>
   );
+}
+
+function ProEstimationReadinessCard({ enabled }: { enabled: boolean }) {
+  return (
+    <DashboardCard title="Pro Estimation Readiness" previewExplanation="ifta-estimate">
+      <div className="space-y-4 text-sm leading-6 text-slate-300">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              IFTA Estimation Support
+            </p>
+            <p className="mt-2 text-slate-400">
+              Pro will use jurisdiction miles, fuel purchases, gallons,
+              vehicle MPG, and load history to support planning estimates only.
+            </p>
+          </div>
+          <span
+            className={
+              enabled
+                ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-200"
+                : "rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
+            }
+          >
+            {enabled ? "Enabled" : "Pro"}
+          </span>
+        </div>
+
+        <p className="rounded-xl border border-red-400/20 bg-red-500/10 p-4 text-xs leading-5 text-red-100">
+          IFTA support is estimation and planning assistance only. It is not tax
+          filing, legal certification, or a replacement for verified
+          jurisdictional reporting.
+        </p>
+      </div>
+    </DashboardCard>
+  );
+}
+
+function formatAdminRole(role: "owner" | "admin" | "developer") {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  return "Developer";
 }
