@@ -11,6 +11,10 @@ export type ClientEntitlementState = {
   paymentAccess: PaymentAccess;
   usage: EntitlementUsage;
   billingTestHarness?: InternalBillingTestHarnessSnapshot | null;
+  ownerOverride?: {
+    ownerOverrideConfigured: boolean;
+    ownerOverrideMatched: boolean;
+  };
 };
 
 export async function getClientEntitlementState(): Promise<ClientEntitlementState> {
@@ -24,11 +28,15 @@ export async function getClientEntitlementState(): Promise<ClientEntitlementStat
       savedLoads: 0,
     };
 
-    return {
-      usage,
-      paymentAccess: resolvePaymentAccess(null, usage),
-      entitlements: resolveEntitlements("no_access", usage),
-    };
+      return {
+        usage,
+        paymentAccess: resolvePaymentAccess(null, usage),
+        entitlements: resolveEntitlements("no_access", usage),
+        ownerOverride: {
+          ownerOverrideConfigured: false,
+          ownerOverrideMatched: false,
+        },
+      };
   }
 
   return (await response.json()) as ClientEntitlementState;

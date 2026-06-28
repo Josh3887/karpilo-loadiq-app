@@ -24,15 +24,9 @@ import {
   PLAN_LIMITS,
   formatPlanTierLabel,
 } from "@/domains/billing/plan-limits";
-import {
-  type PaymentAccess,
-  resolvePaymentAccess,
-} from "@/domains/billing/entitlement-service";
-import {
-  getInternalBillingTestHarnessSnapshot,
-  resolveInternalBillingTestSubscription,
-} from "@/domains/billing/internal-test-harness";
+import type { PaymentAccess } from "@/domains/billing/entitlement-service";
 import type { InternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness-types";
+import { getServerEntitlementState } from "@/domains/billing/server-entitlements";
 import { StripeCheckoutPlanId } from "@/config/stripe";
 import {
   getPreviewPaymentAccess,
@@ -78,23 +72,13 @@ export default async function BillingPage() {
   }
 
   const [
-    { data: subscription },
     { data: founderAccess },
     founderClaimCount,
-    calculationCount,
-    savedLoadCount,
     operatorStatus,
     reservationState,
-    billingTestHarness,
+    entitlementState,
   ] =
     await Promise.all([
-      supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
       supabase
         .from("founder_pricing_access")
         .select("id, code, is_active, redeemed_at")
@@ -105,26 +89,12 @@ export default async function BillingPage() {
         .from("founder_pricing_access")
         .select("id", { count: "exact", head: true })
         .not("redeemed_at", "is", null),
-      supabase
-        .from("usage_events")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("event_name", "calculation_created"),
-      supabase
-        .from("saved_loads")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
       getOperatorProgramStatus(user.id),
       getUserReservationAndLockState(user.id),
-      getInternalBillingTestHarnessSnapshot(user.email),
+      getServerEntitlementState(user.id, user.email),
     ]);
 
-  const effectiveSubscription =
-    resolveInternalBillingTestSubscription(billingTestHarness) ?? subscription;
-  const paymentAccess = resolvePaymentAccess(effectiveSubscription, {
-    monthlyCalculations: calculationCount.count ?? 0,
-    savedLoads: savedLoadCount.count ?? 0,
-  });
+  const paymentAccess = entitlementState.paymentAccess;
   const activeTier = paymentAccess.tier;
   const canSeeFounderPricing =
     activeTier === "launch500" || Boolean(founderAccess);
@@ -148,9 +118,9 @@ export default async function BillingPage() {
       canSeeFounderPricing={canSeeFounderPricing}
       canClaimFounder={canClaimFounder}
       canSeePilotPricing={canSeePilotPricing}
-      calculationCount={calculationCount.count ?? 0}
-      savedLoadCount={savedLoadCount.count ?? 0}
-      billingTestHarness={billingTestHarness}
+      calculationCount={entitlementState.usage.monthlyCalculations}
+      savedLoadCount={entitlementState.usage.savedLoads}
+      billingTestHarness={entitlementState.billingTestHarness}
     />
   );
 }

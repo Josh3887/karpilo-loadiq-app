@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { AtlasRouteIntelligenceSurface } from "@/components/ai/atlas-route-intelligence-surface";
 import { SavedLoadActions } from "@/components/dashboard/saved-load-actions";
 import { EntityNoteForm } from "@/components/dashboard/entity-note-form";
+import { getServerEntitlements } from "@/domains/billing/server-entitlements";
 import { createClient } from "@/lib/supabase-server";
 import {
   formatRoutePoint,
@@ -126,6 +127,7 @@ export default async function LoadDetailPage({
     .eq("user_id", user.id)
     .order("stop_sequence", { ascending: true });
   const routeStops = (stops ?? []) as SavedLoadStopRecord[];
+  const entitlements = await getServerEntitlements(user.id, user.email);
 
   return (
     <main className="min-h-screen bg-[#060B14] px-4 py-6 text-slate-100 md:px-8">
@@ -365,6 +367,10 @@ export default async function LoadDetailPage({
             routeModelVersion={load.route_model_version ?? "Legacy load"}
             reserveMode={formatReserveMode(load.reserve_allocation_mode)}
             targetRpmSnapshot={formatRpm(Number(load.target_true_rpm_snapshot ?? load.true_rpm))}
+            canUseTruckSpecificRouting={
+              entitlements.canUsePlatinumIntelligence ||
+              entitlements.canUseFleetFeatures
+            }
           />
 
           {routeStops.length > 0 && (

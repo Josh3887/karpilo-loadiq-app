@@ -85,6 +85,7 @@ export type PaymentAccess = {
   featureAccess: FeatureAccessLevel;
   billingProvider: BillingProvider;
   entitlementStatus: EntitlementStatus;
+  ownerBuildAccess: boolean;
   hasActiveAccess: boolean;
   grandfatheredAccess: boolean;
   lifetimeAccess: boolean;
@@ -284,6 +285,7 @@ export function resolvePaymentAccess(
     featureAccess: entitlements.featureAccess,
     billingProvider,
     entitlementStatus,
+    ownerBuildAccess: false,
     hasActiveAccess,
     grandfatheredAccess: entitlements.grandfatheredAccess,
     lifetimeAccess: entitlements.lifetimeAccess,

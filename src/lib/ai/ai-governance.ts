@@ -253,6 +253,13 @@ export async function evaluateTokenBudgetGuard({
   featureKey: string;
 }) {
   const paymentAccess = await getServerPaymentAccess(userId, userEmail);
+  if (paymentAccess.ownerBuildAccess) {
+    return {
+      allowed: true,
+      budget: buildOwnerAiBudgetSnapshot(),
+    };
+  }
+
   const planTier = mapPaymentTierToAiPlan(
     paymentAccess.entitlements.tier
   );
@@ -734,6 +741,26 @@ function mapPaymentTierToAiPlan(tier: PaymentAccessTier): AiPlanTier {
   if (tier === "launch500") return "launch500";
   if (tier === "pro") return "pro";
   return "no_access";
+}
+
+function buildOwnerAiBudgetSnapshot(): AiBudgetSnapshot {
+  return {
+    planTier: "admin",
+    dailyLimit: 1000,
+    monthlyLimit: 10000,
+    cooldownSeconds: 0,
+    monthlyTokenCap: 10_000_000,
+    usedTokensMonth: 0,
+    addonTokensAvailable: 0,
+    usedToday: 0,
+    usedMonth: 0,
+    remainingToday: 1000,
+    remainingMonth: 10000,
+    remainingTokensMonth: 10_000_000,
+    premiumAddOnEligible: false,
+    modelTier: "premium",
+    enabled: true,
+  };
 }
 
 function normalizeModelTier(value: string | null): AiModelTier {

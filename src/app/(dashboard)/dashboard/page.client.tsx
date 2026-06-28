@@ -244,22 +244,20 @@ export default function DashboardClientPage({
         ...state.usage,
         monthlyCalculations: state.usage.monthlyCalculations + 1,
       };
-      const entitlements = resolveEntitlements(
-        state.paymentAccess.tier,
-        usage,
-        {
-          planTier: state.paymentAccess.tier,
-          subscriptionTier: state.paymentAccess.subscriptionTier,
-          featureAccess: state.paymentAccess.featureAccess,
-          grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
-          lifetimeAccess: state.paymentAccess.lifetimeAccess,
-          fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
-          fleetEnabled: state.paymentAccess.fleetEnabled,
-          fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
-          truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
-          futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
-        }
-      );
+      const entitlements = state.paymentAccess.ownerBuildAccess
+        ? state.entitlements
+        : resolveEntitlements(state.paymentAccess.tier, usage, {
+            planTier: state.paymentAccess.tier,
+            subscriptionTier: state.paymentAccess.subscriptionTier,
+            featureAccess: state.paymentAccess.featureAccess,
+            grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
+            lifetimeAccess: state.paymentAccess.lifetimeAccess,
+            fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
+            fleetEnabled: state.paymentAccess.fleetEnabled,
+            fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
+            truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
+            futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
+          });
 
       return {
         usage,
@@ -280,22 +278,20 @@ export default function DashboardClientPage({
         ...state.usage,
         savedLoads: state.usage.savedLoads + 1,
       };
-      const entitlements = resolveEntitlements(
-        state.paymentAccess.tier,
-        usage,
-        {
-          planTier: state.paymentAccess.tier,
-          subscriptionTier: state.paymentAccess.subscriptionTier,
-          featureAccess: state.paymentAccess.featureAccess,
-          grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
-          lifetimeAccess: state.paymentAccess.lifetimeAccess,
-          fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
-          fleetEnabled: state.paymentAccess.fleetEnabled,
-          fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
-          truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
-          futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
-        }
-      );
+      const entitlements = state.paymentAccess.ownerBuildAccess
+        ? state.entitlements
+        : resolveEntitlements(state.paymentAccess.tier, usage, {
+            planTier: state.paymentAccess.tier,
+            subscriptionTier: state.paymentAccess.subscriptionTier,
+            featureAccess: state.paymentAccess.featureAccess,
+            grandfatheredAccess: state.paymentAccess.grandfatheredAccess,
+            lifetimeAccess: state.paymentAccess.lifetimeAccess,
+            fullLoadIqAccess: state.paymentAccess.fullLoadIqAccess,
+            fleetEnabled: state.paymentAccess.fleetEnabled,
+            fleetOsProAccess: state.paymentAccess.fleetOsProAccess,
+            truckCapacityLimit: state.paymentAccess.truckCapacityLimit,
+            futureFeatureAccessScope: state.paymentAccess.futureFeatureAccessScope,
+          });
 
       return {
         usage,
@@ -449,7 +445,10 @@ export default function DashboardClientPage({
 
           <div className="lg:col-span-2">
             <ProEstimationReadinessCard
-              tier={entitlementState?.entitlements.tier ?? "no_access"}
+              enabled={
+                entitlementState?.entitlements
+                  .canSaveWeatherProfitabilitySnapshot ?? false
+              }
             />
           </div>
         </section>
@@ -458,9 +457,7 @@ export default function DashboardClientPage({
   );
 }
 
-function ProEstimationReadinessCard({ tier }: { tier: string }) {
-  const hasPro = tier === "pro";
-
+function ProEstimationReadinessCard({ enabled }: { enabled: boolean }) {
   return (
     <DashboardCard title="Pro Estimation Readiness" previewExplanation="ifta-estimate">
       <div className="space-y-4 text-sm leading-6 text-slate-300">
@@ -476,12 +473,12 @@ function ProEstimationReadinessCard({ tier }: { tier: string }) {
           </div>
           <span
             className={
-              hasPro
+              enabled
                 ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-200"
                 : "rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-400"
             }
           >
-            {hasPro ? "Enabled" : "Pro"}
+            {enabled ? "Enabled" : "Pro"}
           </span>
         </div>
 

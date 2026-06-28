@@ -8,6 +8,12 @@ import {
   getInternalBillingTestHarnessSnapshot,
   resolveInternalBillingTestSubscription,
 } from "@/domains/billing/internal-test-harness";
+import {
+  OWNER_BUILD_ACCESS_SCOPE,
+  getOwnerOverrideDiagnostics,
+  logOwnerOverrideDiagnostics,
+  type OwnerOverrideDiagnostics,
+} from "@/domains/billing/owner-access";
 import { createClient } from "@/lib/supabase-server";
 
 async function getSubscriptionUsage(userId: string, userEmail?: string | null) {
@@ -57,15 +63,19 @@ export async function getServerEntitlementState(
     userId,
     userEmail
   );
-  const paymentAccess =
-    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
-    resolvePaymentAccess(subscription, usage);
+  const { paymentAccess, ownerOverride } = resolveServerPaymentAccess({
+    subscription,
+    usage,
+    userEmail,
+    diagnosticsContext: "entitlement_state",
+  });
 
   return {
     usage,
     paymentAccess,
     entitlements: paymentAccess.entitlements,
     billingTestHarness,
+    ownerOverride,
   };
 }
 
@@ -74,10 +84,12 @@ export async function getServerPaymentAccess(
   userEmail?: string | null
 ) {
   const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
-  return (
-    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
-    resolvePaymentAccess(subscription, usage)
-  );
+  return resolveServerPaymentAccess({
+    subscription,
+    usage,
+    userEmail,
+    diagnosticsContext: "payment_access",
+  }).paymentAccess;
 }
 
 export async function getServerEntitlements(
@@ -85,20 +97,44 @@ export async function getServerEntitlements(
   userEmail?: string | null
 ) {
   const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
-  const paymentAccess =
-    resolveOwnerBuildPaymentAccess(userEmail, usage) ??
-    resolvePaymentAccess(subscription, usage);
+  const { paymentAccess } = resolveServerPaymentAccess({
+    subscription,
+    usage,
+    userEmail,
+    diagnosticsContext: "entitlements",
+  });
   return paymentAccess.hasActiveAccess
     ? paymentAccess.entitlements
     : resolveEntitlements("no_access", usage);
 }
 
-function resolveOwnerBuildPaymentAccess(
-  userEmail: string | null | undefined,
-  usage: EntitlementUsage
-): PaymentAccess | null {
-  if (!isOwnerBuildAccessEmail(userEmail)) return null;
+function resolveServerPaymentAccess({
+  subscription,
+  usage,
+  userEmail,
+  diagnosticsContext,
+}: {
+  subscription: Parameters<typeof resolvePaymentAccess>[0];
+  usage: EntitlementUsage;
+  userEmail: string | null | undefined;
+  diagnosticsContext: string;
+}) {
+  const ownerOverride = getOwnerOverrideDiagnostics(userEmail);
 
+  logOwnerOverrideDiagnostics(ownerOverride, diagnosticsContext);
+
+  return {
+    ownerOverride,
+    paymentAccess: ownerOverride.ownerOverrideMatched
+      ? resolveOwnerBuildPaymentAccess(usage, ownerOverride)
+      : resolvePaymentAccess(subscription, usage),
+  };
+}
+
+function resolveOwnerBuildPaymentAccess(
+  usage: EntitlementUsage,
+  ownerOverride: OwnerOverrideDiagnostics
+): PaymentAccess {
   const paymentAccess = resolvePaymentAccess(
     {
       tier: "beta_test",
@@ -106,11 +142,14 @@ function resolveOwnerBuildPaymentAccess(
       status: "active",
       entitlement_status: "active",
       provider: "manual",
-      feature_access: "platinum",
+      feature_access: "fleet",
       grandfathered_access: true,
       lifetime_access: true,
       full_loadiq_access: true,
-      future_feature_access_scope: "owner_build_access",
+      fleet_enabled: true,
+      fleetos_pro_access: true,
+      truck_capacity_limit: null,
+      future_feature_access_scope: OWNER_BUILD_ACCESS_SCOPE,
     },
     usage
   );
@@ -123,6 +162,7 @@ function resolveOwnerBuildPaymentAccess(
     canUsePlatinumIntelligence: true,
     canUseWeatherProfitabilityRisk: true,
     canSaveWeatherProfitabilitySnapshot: true,
+    canUseFleetFeatures: true,
     canCompareScenarios: true,
     canCreateLaneTemplates: true,
   };
@@ -130,30 +170,15 @@ function resolveOwnerBuildPaymentAccess(
   return {
     ...paymentAccess,
     entitlements,
+    ownerBuildAccess: ownerOverride.ownerOverrideMatched,
     hasActiveAccess: true,
     fullLoadIqAccess: true,
+    fleetEnabled: true,
+    fleetOsProAccess: true,
+    truckCapacityLimit: null,
     grandfatheredAccess: true,
     lifetimeAccess: true,
     shouldPromptForBillingSetup: false,
-    futureFeatureAccessScope: "owner_build_access",
+    futureFeatureAccessScope: OWNER_BUILD_ACCESS_SCOPE,
   };
-}
-
-function isOwnerBuildAccessEmail(userEmail: string | null | undefined) {
-  const email = normalizeEmail(userEmail);
-
-  if (!email) return false;
-
-  return getOwnerBuildAccessEmails().includes(email);
-}
-
-function getOwnerBuildAccessEmails() {
-  return (process.env.LOADIQ_OWNER_EMAILS ?? "")
-    .split(/[\s,]+/)
-    .map(normalizeEmail)
-    .filter(Boolean);
-}
-
-function normalizeEmail(value: string | null | undefined) {
-  return value?.trim().toLowerCase() ?? "";
 }

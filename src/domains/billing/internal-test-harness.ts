@@ -14,10 +14,13 @@ import {
   evaluateSubscriptionLaunchPhase,
   type SubscriptionLaunchPhaseId,
 } from "@/domains/billing/subscription-launch-phases";
+import {
+  isOwnerBuildAccessEmail,
+  normalizeOwnerEmail,
+} from "@/domains/billing/owner-access";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
-const AUTHORIZED_TEST_EMAIL = "karpilotrucking@outlook.com";
-const DISPLAY_TEST_EMAIL = "Karpilotrucking@outlook.com";
+const DISPLAY_TEST_EMAIL = "Owner/admin test account";
 const FUTURE_FEATURE_SCOPE_SLUG =
   "lifetime_access_to_future_released_karpilo_loadiq_platform_features";
 
@@ -61,10 +64,6 @@ type HarnessSimulationFields = Pick<
   | "notes"
 >;
 
-function normalizeEmail(email: string | null | undefined) {
-  return email?.trim().toLowerCase() ?? "";
-}
-
 export function isBillingTestHarnessRuntimeAllowed() {
   return (
     process.env.NODE_ENV !== "production" &&
@@ -75,7 +74,7 @@ export function isBillingTestHarnessRuntimeAllowed() {
 export function canUseBillingTestHarness(email: string | null | undefined) {
   return (
     isBillingTestHarnessRuntimeAllowed() &&
-    normalizeEmail(email) === AUTHORIZED_TEST_EMAIL
+    isOwnerBuildAccessEmail(email)
   );
 }
 
@@ -521,7 +520,7 @@ async function readHarnessRow(email: string) {
   const { data, error } = await supabase
     .from("internal_billing_test_accounts")
     .select("*")
-    .ilike("email", normalizeEmail(email))
+    .ilike("email", normalizeOwnerEmail(email))
     .maybeSingle();
 
   if (error) throw error;
@@ -532,9 +531,10 @@ export async function getInternalBillingTestHarnessSnapshot(
   email: string | null | undefined
 ) {
   if (!canUseBillingTestHarness(email)) return null;
+  const normalizedEmail = normalizeOwnerEmail(email);
 
   try {
-    return toSnapshot(await readHarnessRow(AUTHORIZED_TEST_EMAIL));
+    return toSnapshot(await readHarnessRow(normalizedEmail));
   } catch (error) {
     console.error("Unable to read internal billing test account.", error);
     return toSnapshot(
@@ -679,13 +679,14 @@ export async function updateInternalBillingTestHarness({
       harness: null,
     };
   }
+  const normalizedEmail = normalizeOwnerEmail(email);
 
   try {
     const supabase = createSupabaseAdminClient();
-    const existing = await readHarnessRow(AUTHORIZED_TEST_EMAIL);
+    const existing = await readHarnessRow(normalizedEmail);
     const fields = simulationFieldsForState(simulatedState);
     const payload = {
-      email: DISPLAY_TEST_EMAIL,
+      email: normalizedEmail,
       enabled,
       ...fields,
       updated_at: new Date().toISOString(),

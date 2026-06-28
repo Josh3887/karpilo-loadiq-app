@@ -38,7 +38,7 @@ export default async function LoadReportPage({ params }: LoadReportPageProps) {
     redirect("/auth/login");
   }
 
-  const entitlements = await getServerEntitlements(user.id);
+  const entitlements = await getServerEntitlements(user.id, user.email);
 
   if (!entitlements.canExport) {
     return (

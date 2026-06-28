@@ -40,6 +40,9 @@
   kept paid loaded miles separate from Google estimated route miles.
 - Added server-only owner/admin build access through `LOADIQ_OWNER_EMAILS`
   without removing normal subscription and entitlement gates for regular users.
+- Centralized the owner/admin build-access override across billing, report,
+  admin, internal harness, AI/Atlas, and route-intelligence gate paths while
+  keeping normal subscription gates intact for regular users.
 - Restored calculator revenue basis controls for RPM versus load gross,
   FSC-in-gross handling, linehaul derivation, EIA fuel context, and deterministic
   LoadIQ intelligence output while preserving route mileage separation.

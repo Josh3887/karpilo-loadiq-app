@@ -7,7 +7,6 @@ import {
   AtlasMetricTile,
   AtlasRuntimeFrame,
 } from "@/components/ai/atlas-runtime-frame";
-import { isTruckSpecificRoutingTier } from "@/lib/atlas/atlas-intelligence-system";
 import { ATLAS_INTELLIGENCE_LAYERS } from "@/lib/atlas/atlas-registry";
 import { formatNumber, formatPercent } from "@/utils/format";
 
@@ -42,7 +41,7 @@ type AtlasRouteIntelligenceSurfaceProps = {
   routeModelVersion?: string | null;
   reserveMode?: string | null;
   targetRpmSnapshot?: string | null;
-  entitlementTier?: string | null;
+  canUseTruckSpecificRouting?: boolean;
   compact?: boolean;
 };
 
@@ -79,7 +78,7 @@ export function AtlasRouteIntelligenceSurface({
   routeModelVersion,
   reserveMode,
   targetRpmSnapshot,
-  entitlementTier,
+  canUseTruckSpecificRouting = false,
   compact = false,
 }: AtlasRouteIntelligenceSurfaceProps) {
   const routeSignal = getRouteSignal({
@@ -90,7 +89,7 @@ export function AtlasRouteIntelligenceSurface({
     deadheadMiles,
     dispatchDays,
   });
-  const truckRoutingEligible = isTruckSpecificRoutingTier(entitlementTier);
+  const truckRoutingEligible = canUseTruckSpecificRouting;
 
   return (
     <AtlasRuntimeFrame

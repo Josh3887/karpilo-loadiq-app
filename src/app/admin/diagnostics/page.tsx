@@ -10,6 +10,7 @@ import {
   type AdminDiagnosticEvent,
   type DiagnosticEventFilters,
 } from "@/lib/admin/diagnostic-events";
+import { getOwnerOverrideDiagnostics } from "@/domains/billing/owner-access";
 import { getElevatedSessionStatus } from "@/lib/admin/elevated-auth";
 import { requireAdminAccess } from "@/lib/admin/roles";
 
@@ -93,6 +94,7 @@ export default async function AdminDiagnosticsPage({
     status: "success",
     metadata: { filters },
   });
+  const ownerDiagnostics = getOwnerOverrideDiagnostics(result.user.email);
 
   let events: AdminDiagnosticEvent[] = [];
   let readError: string | null = null;
@@ -209,6 +211,17 @@ export default async function AdminDiagnosticsPage({
           </div>
         </form>
 
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
+          <DiagnosticMetric
+            label="Owner override configured"
+            value={ownerDiagnostics.ownerOverrideConfigured ? "true" : "false"}
+          />
+          <DiagnosticMetric
+            label="Owner override matched"
+            value={ownerDiagnostics.ownerOverrideMatched ? "true" : "false"}
+          />
+        </section>
+
         {readError && (
           <p className="mt-6 rounded-xl border border-red-400/25 bg-red-500/10 p-4 text-sm text-red-100">
             {readError}
@@ -269,5 +282,16 @@ export default async function AdminDiagnosticsPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function DiagnosticMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#0B1220] p-4">
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </div>
+      <div className="mt-2 text-lg font-black text-slate-100">{value}</div>
+    </div>
   );
 }

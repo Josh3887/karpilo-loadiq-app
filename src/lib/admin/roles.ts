@@ -2,6 +2,7 @@ import "server-only";
 
 import type { User } from "@supabase/supabase-js";
 
+import { isOwnerBuildAccessEmail } from "@/domains/billing/owner-access";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 
@@ -61,6 +62,23 @@ export async function getAuthenticatedUser() {
 }
 
 export async function getAdminAccessForUser(user: User) {
+  if (isOwnerBuildAccessEmail(user.email)) {
+    const ownerRole = {
+      id: `owner-env:${user.id}`,
+      user_id: user.id,
+      role: "owner",
+      scope: "global",
+      status: "active",
+      expires_at: null,
+    } satisfies AdminRoleRecord;
+
+    return {
+      user,
+      roles: [ownerRole],
+      highestRole: "owner",
+    } satisfies AdminAccess;
+  }
+
   const supabaseAdmin = createSupabaseAdminClient();
   const { data, error } = await supabaseAdmin
     .from("user_roles")

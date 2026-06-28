@@ -24,6 +24,10 @@ export async function GET() {
         paymentAccess,
         entitlements: resolveEntitlements("no_access", usage),
         billingTestHarness: null,
+        ownerOverride: {
+          ownerOverrideConfigured: false,
+          ownerOverrideMatched: false,
+        },
       },
       {
         headers: {
