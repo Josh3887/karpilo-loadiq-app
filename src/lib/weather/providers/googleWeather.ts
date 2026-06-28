@@ -26,6 +26,19 @@ type GoogleAlertOptions = {
   includeRawProviderData?: boolean;
 };
 
+type GoogleWeatherOperation =
+  | "currentConditions.lookup"
+  | "forecast.hours.lookup"
+  | "forecast.days.lookup"
+  | "publicAlerts.lookup";
+
+type GoogleWeatherErrorMetadata = {
+  operation?: GoogleWeatherOperation;
+  endpointPath?: string;
+  httpStatus?: number | null;
+  retryable?: boolean;
+};
+
 function getGoogleWeatherApiKey() {
   return process.env.GOOGLE_WEATHER_API_KEY?.trim();
 }
@@ -34,14 +47,29 @@ function getGoogleWeatherBaseUrl() {
   return (
     process.env.GOOGLE_WEATHER_BASE_URL?.trim() ||
     DEFAULT_GOOGLE_WEATHER_BASE_URL
-  ).replace(/\/$/, "");
+  )
+    .replace(/\/+$/, "")
+    .replace(/\/v1$/i, "");
+}
+
+function buildGoogleWeatherUrl(
+  path: string,
+  params: Record<string, string | number | undefined>
+) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(`${getGoogleWeatherBaseUrl()}${normalizedPath}`);
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) url.searchParams.set(key, String(value));
+  });
+
+  return url;
 }
 
 function providerFailure<TData>(
   code: string,
   message: string,
-  httpStatus: number | null = null,
-  retryable = false
+  metadata: GoogleWeatherErrorMetadata = {}
 ): WeatherProviderResult<TData> {
   return {
     ok: false,
@@ -49,14 +77,60 @@ function providerFailure<TData>(
     error: {
       code,
       message,
-      httpStatus,
-      retryable,
+      httpStatus: metadata.httpStatus ?? null,
+      retryable: metadata.retryable ?? false,
+      provider: "google",
+      operation: metadata.operation,
+      endpointPath: metadata.endpointPath,
     },
     fetchedAt: new Date().toISOString(),
   };
 }
 
+function classifyGoogleWeatherHttpError(status: number) {
+  if (status === 404) {
+    return {
+      code: "google_weather_endpoint_not_found",
+      message:
+        "Google Weather endpoint was not found. Verify endpoint path, API availability, and project access.",
+      retryable: false,
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      code: "google_weather_access_error",
+      message:
+        "Google Weather rejected the request. Verify API key, billing, API enablement, and key restrictions.",
+      retryable: false,
+    };
+  }
+
+  if (status === 429) {
+    return {
+      code: "google_weather_rate_limited",
+      message: "Google Weather rate limit or quota was reached.",
+      retryable: true,
+    };
+  }
+
+  if (status >= 500) {
+    return {
+      code: "google_weather_provider_unavailable",
+      message: `Google Weather returned HTTP ${status}.`,
+      retryable: true,
+    };
+  }
+
+  return {
+    code: "google_weather_http_error",
+    message: `Google Weather returned HTTP ${status}.`,
+    retryable: false,
+  };
+}
+
 async function fetchGoogleWeatherJson<TData>(
+  operation: GoogleWeatherOperation,
   path: string,
   latitude: number,
   longitude: number,
@@ -68,18 +142,21 @@ async function fetchGoogleWeatherJson<TData>(
   if (!apiKey) {
     return providerFailure(
       "missing_google_weather_api_key",
-      "GOOGLE_WEATHER_API_KEY is not configured."
+      "GOOGLE_WEATHER_API_KEY is not configured.",
+      {
+        operation,
+        endpointPath: path,
+      }
     );
   }
 
-  const url = new URL(`${getGoogleWeatherBaseUrl()}${path}`);
-  url.searchParams.set("key", apiKey);
-  url.searchParams.set("location.latitude", String(latitude));
-  url.searchParams.set("location.longitude", String(longitude));
-
-  Object.entries(extraParams).forEach(([key, value]) => {
-    if (value !== undefined) url.searchParams.set(key, String(value));
+  const url = buildGoogleWeatherUrl(path, {
+    key: apiKey,
+    "location.latitude": latitude,
+    "location.longitude": longitude,
+    ...extraParams,
   });
+  const endpointPath = url.pathname;
 
   let response: Response;
 
@@ -94,17 +171,26 @@ async function fetchGoogleWeatherJson<TData>(
     return providerFailure(
       "google_weather_network_error",
       "Google Weather request failed.",
-      null,
-      true
+      {
+        operation,
+        endpointPath,
+        retryable: true,
+      }
     );
   }
 
   if (!response.ok) {
+    const classified = classifyGoogleWeatherHttpError(response.status);
+
     return providerFailure(
-      "google_weather_http_error",
-      `Google Weather returned HTTP ${response.status}.`,
-      response.status,
-      response.status >= 500 || response.status === 429
+      classified.code,
+      classified.message,
+      {
+        operation,
+        endpointPath,
+        httpStatus: response.status,
+        retryable: classified.retryable,
+      }
     );
   }
 
@@ -118,7 +204,11 @@ async function fetchGoogleWeatherJson<TData>(
   } catch {
     return providerFailure(
       "google_weather_payload_error",
-      "Google Weather response was not valid JSON."
+      "Google Weather response was not valid JSON.",
+      {
+        operation,
+        endpointPath,
+      }
     );
   }
 }
@@ -129,6 +219,7 @@ export async function getGoogleCurrentWeather(
   options: { units?: WeatherUnits; includeRawProviderData?: boolean } = {}
 ) {
   const result = await fetchGoogleWeatherJson<unknown>(
+    "currentConditions.lookup",
     "/v1/currentConditions:lookup",
     latitude,
     longitude,
@@ -148,7 +239,11 @@ export async function getGoogleCurrentWeather(
   if (!normalized) {
     return providerFailure<NormalizedCurrentWeather>(
       "google_weather_payload_error",
-      "Google Weather current response was unusable."
+      "Google Weather current response was unusable.",
+      {
+        operation: "currentConditions.lookup",
+        endpointPath: "/v1/currentConditions:lookup",
+      }
     );
   }
 
@@ -167,6 +262,7 @@ export async function getGoogleHourlyForecast(
 ) {
   const hours = Math.min(Math.max(Math.round(options.hours ?? 24), 1), 240);
   const result = await fetchGoogleWeatherJson<unknown>(
+    "forecast.hours.lookup",
     "/v1/forecast/hours:lookup",
     latitude,
     longitude,
@@ -199,6 +295,7 @@ export async function getGoogleDailyForecast(
 ) {
   const days = Math.min(Math.max(Math.round(options.days ?? 10), 1), 10);
   const result = await fetchGoogleWeatherJson<unknown>(
+    "forecast.days.lookup",
     "/v1/forecast/days:lookup",
     latitude,
     longitude,
@@ -230,6 +327,7 @@ export async function getGooglePublicAlerts(
   options: GoogleAlertOptions = {}
 ) {
   const result = await fetchGoogleWeatherJson<unknown>(
+    "publicAlerts.lookup",
     "/v1/publicAlerts:lookup",
     latitude,
     longitude,

@@ -30,6 +30,9 @@ or truck-legal route certification.
 - Endpoint path or SDK method: `/v1/currentConditions:lookup`,
   `/v1/forecast/hours:lookup`, `/v1/forecast/days:lookup`,
   `/v1/publicAlerts:lookup`
+- App URL construction: `GOOGLE_WEATHER_BASE_URL` is normalized by removing
+  trailing slashes and a trailing `/v1` if present. Endpoint constants include
+  `/v1/...` so the final request path does not become `/v1/v1/...`.
 - HTTP method: `GET`
 - Required headers: none.
 - Content type: JSON response.
@@ -56,19 +59,24 @@ Document only the response fields Karpilo LoadIQ actually consumes.
 | public alert event/headline/severity/urgency/certainty/effective/expires/area/description/instruction fields | mixed | Alert context. | yes | `normalizeGoogleAlerts` | Unknown fields become null or `UNKNOWN_ALERT`. |
 ## Error contract
 Include:
-- documented provider error shape: app currently uses HTTP status and JSON
-  parse usability, not raw provider error bodies.
-- HTTP status codes used by provider: non-2xx returns a safe provider error.
+- documented provider error shape: app uses HTTP status and JSON parse
+  usability, not raw provider error bodies.
+- HTTP status codes used by provider: non-2xx returns a safe provider error
+  with provider name, operation name, HTTP status, and endpoint path only.
 - auth failures: missing key returns `missing_google_weather_api_key`; provider
-  rejection returns HTTP error.
+  `401`/`403` returns `google_weather_access_error`.
 - validation failures: API routes validate coordinates and range limits before
   provider calls.
-- quota/rate-limit failures: 429/non-2xx returns provider unavailable.
+- malformed endpoint or unavailable endpoint: `404` returns
+  `google_weather_endpoint_not_found`.
+- quota/rate-limit failures: `429` returns `google_weather_rate_limited`.
+- provider failures: `5xx` returns `google_weather_provider_unavailable`.
 - timeout/network failure behavior: caught as retryable network failure.
 - app fallback behavior: auto provider falls back to OpenWeather where allowed.
 - user-safe error message: provider configuration/access message without secret
   values.
-- internal logging behavior: no raw provider body or API key logging.
+- internal logging behavior: no raw provider body, full URL, query string,
+  headers, or API key logging.
 ## Rate limits / quotas / cost controls
 Include:
 - provider quota or billing behavior when known: Google Maps Platform project
@@ -97,6 +105,9 @@ Include:
 | `src/app/api/weather/*` | route handlers | Karpilo Weather Intelligence API. | Google Weather env vars | Returns normalized app-safe shapes. |
 ## Tests / validation
 List existing or needed tests:
+- manual endpoint validation on 2026-06-28: current, hourly forecast, daily
+  forecast, and public alerts returned `ok: true` through app routes after
+  endpoint base/path normalization.
 - unit tests: needed for Google response normalization.
 - mock response tests: needed for current/hourly/daily/alerts success and errors.
 - schema validation tests: needed for consumed response fields.
@@ -113,6 +124,9 @@ List anything likely to break:
   forecast periods, and alerts.
 - undocumented assumptions: normalizers are tolerant because provider examples
   and fields may vary by endpoint.
+- endpoint construction risk: `GOOGLE_WEATHER_BASE_URL` must remain the service
+  base URL; the app strips a trailing `/v1` defensively because endpoint
+  constants already include the version path.
 ## Required follow-up
 - [x] Confirm provider docs URL
 - [x] Confirm endpoint/method
@@ -122,4 +136,3 @@ List anything likely to break:
 - [x] Confirm error handling
 - [ ] Confirm tests/mocks
 - [x] Confirm no secrets are exposed
-

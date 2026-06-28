@@ -45,6 +45,9 @@ export type WeatherProviderError = {
   message: string;
   httpStatus: number | null;
   retryable: boolean;
+  provider?: ActiveWeatherProvider;
+  operation?: string;
+  endpointPath?: string;
 };
 
 export type WeatherProviderResult<TData> =

@@ -92,6 +92,23 @@ The routes return normalized Karpilo Weather Intelligence response shapes and
 safe provider configuration/access errors. They do not return raw provider data
 by default.
 
+## Google Weather Endpoint Validation
+
+Google Weather calls use these documented endpoint paths:
+
+- `/v1/currentConditions:lookup`
+- `/v1/forecast/hours:lookup`
+- `/v1/forecast/days:lookup`
+- `/v1/publicAlerts:lookup`
+
+The server adapter strips a trailing `/v1` from `GOOGLE_WEATHER_BASE_URL` before
+joining endpoint constants so a deployment override cannot accidentally produce
+double-version paths such as `/v1/v1/currentConditions:lookup`.
+
+Manual app-route validation on 2026-06-28 returned `ok: true` for current,
+hourly forecast, daily forecast, and public alerts without printing or exposing
+secret values.
+
 ## Risk Categories
 
 Karpilo Weather Intelligence recognizes these trucking weather risk categories:
@@ -127,4 +144,3 @@ Provider contract details live under `docs/api-contracts/`:
 - `google-weather.contract.md`
 - `openweather.contract.md`
 - `nws-weather.contract.md`
-

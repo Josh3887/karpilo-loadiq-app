@@ -11,6 +11,9 @@
 
 ### Fixed
 
+- Hardened Google Weather endpoint construction so a base URL configured with a
+  trailing `/v1` does not produce double-version request paths, and classified
+  Google Weather provider errors with safe operation/path metadata.
 - Clarified Karpilo Atlas readout labels and AI boundaries so Karpilo Atlas
   keeps its AI/intelligence identity while deterministic LoadIQ outputs,
   provider context, and generated AI-assisted explanations are labeled
