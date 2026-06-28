@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Documentation
+
+- Added the Karpilo Atlas Intelligence Systems feature contract covering
+  architecture, naming, tier gating, source libraries, user-owned intelligence,
+  DAT/load-board exclusion, and the future single-readout doctrine.
+
 ## 2026-06-28
 
 ### Added
