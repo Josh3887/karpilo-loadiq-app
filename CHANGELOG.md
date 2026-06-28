@@ -7,6 +7,10 @@
 - Added the Karpilo Atlas Intelligence Systems feature contract covering
   architecture, naming, tier gating, source libraries, user-owned intelligence,
   DAT/load-board exclusion, and the future single-readout doctrine.
+- Added the first Karpilo Atlas Libraries source registry scaffold covering
+  source authority, allowed/prohibited use, source-library categories,
+  DAT/load-board exclusion, and industry association perspective
+  classification.
 
 ## 2026-06-28
 

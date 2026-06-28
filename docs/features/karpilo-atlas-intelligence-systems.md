@@ -52,7 +52,7 @@ Correct public names include:
 - Karpilo Atlas Customs & Border Library
 - Karpilo Atlas Maritime & Intermodal Library
 - Karpilo Atlas Industry Association Library
-- Karpilo Atlas Public Market & Economic Library
+- Karpilo Atlas Freight Flow & Economic Library
 - Karpilo Atlas Fuel, Cost & Tax Reference Library
 - Karpilo Atlas Route, Weather & Hazard Library
 - Karpilo Atlas Geospatial & Freight Infrastructure Library
@@ -824,7 +824,7 @@ export function getKarpiloAtlasEntitlements(
 
 ## Source Registry Scaffold
 
-Future source registry concepts:
+Initial source registry scaffold:
 
 - source authority levels
 - source access types
@@ -834,7 +834,19 @@ Future source registry concepts:
 - OOIDA/ATA industry-perspective entries
 - official/public library entries
 
-Future source registry types:
+Implemented scaffold files:
+
+```text
+src/lib/karpilo-atlas/constants.ts
+src/lib/karpilo-atlas/types.ts
+src/lib/karpilo-atlas/sources/index.ts
+src/lib/karpilo-atlas/sources/library-catalog.ts
+src/lib/karpilo-atlas/sources/library-types.ts
+src/lib/karpilo-atlas/sources/source-registry.ts
+src/lib/karpilo-atlas/sources/source-types.ts
+```
+
+Implemented source registry types:
 
 ```ts
 export type KarpiloAtlasAuthorityLevel = 1 | 2 | 3 | 4 | 5 | 6;
@@ -846,18 +858,31 @@ export type KarpiloAtlasSourceAccess =
   | "internal"
   | "excluded";
 
+export type KarpiloAtlasSourceIntegrationStatus =
+  | "registry_only"
+  | "manual_reference"
+  | "dataset_later"
+  | "api_later"
+  | "licensed_later"
+  | "excluded";
+
 export type KarpiloAtlasSourceRegistryEntry = {
   id: string;
   publicName: string;
-  library:
-    | "karpilo_atlas_regulatory_library"
-    | "karpilo_atlas_industry_association_library"
-    | "karpilo_atlas_public_news_library"
-    | "karpilo_atlas_user_owned_intelligence";
-  authorityLevel: KarpiloAtlasAuthorityLevel | "excluded";
+  internalName: string;
+  library: KarpiloAtlasReferenceLibrary | KarpiloAtlasPrivateTruthLayer;
+  authorityLevel: KarpiloAtlasAuthorityLevel;
   access: KarpiloAtlasSourceAccess;
-  treatment: string;
-  guardrails: string[];
+  integrationStatus: KarpiloAtlasSourceIntegrationStatus;
+  allowedUse: string[];
+  prohibitedUse: string[];
+  relatedSystems: KarpiloAtlasSystemId[];
+  tierAvailability: KarpiloLoadIQTier[];
+  requiresCitation: boolean;
+  requiresDisclaimer: boolean;
+  refreshCadence: KarpiloAtlasRefreshCadence;
+  lastReviewedAt?: string;
+  notes?: string;
 };
 ```
 
@@ -866,21 +891,44 @@ DAT excluded source example:
 ```ts
 export const DAT_EXCLUDED_SOURCE: KarpiloAtlasSourceRegistryEntry = {
   id: "dat_load_board_excluded",
-  publicName: "DAT/load-board source excluded",
+  publicName: "DAT/load-board data excluded",
+  internalName: "DAT and commercial load-board data",
   library: "karpilo_atlas_public_news_library",
-  authorityLevel: "excluded",
+  authorityLevel: 6,
   access: "excluded",
-  treatment:
-    "Excluded by default. Karpilo LoadIQ must not scrape, parse, display, or act as a DAT/load-board/rate-board replacement.",
-  guardrails: [
-    "no scraping",
-    "no load-board display",
-    "no freight matching",
-    "no rate-board behavior",
-    "no dispatch or broker behavior",
+  integrationStatus: "excluded",
+  allowedUse: [
+    "User may manually enter their own load-offer details for private Karpilo LoadIQ decision analysis.",
   ],
+  prohibitedUse: [
+    "Do not scrape DAT.",
+    "Do not integrate DAT without explicit licensed approval.",
+    "Do not show DAT loads.",
+    "Do not parse DAT screenshots as a product feature.",
+    "Do not build rate-board behavior.",
+    "Do not build load-board behavior.",
+    "Do not perform freight matching.",
+    "Do not dispatch freight.",
+    "Do not broker freight.",
+    "Do not tender freight.",
+    "Do not assign loads.",
+    "Do not allocate traffic among carriers.",
+    "Do not accept compensation tied to arranging freight.",
+  ],
+  relatedSystems: ["karpilo_atlas_core", "karpilo_atlas_education"],
+  tierAvailability: [],
+  requiresCitation: false,
+  requiresDisclaimer: true,
+  refreshCadence: "not_applicable",
+  notes:
+    "Excluded by default. Karpilo LoadIQ must not scrape, parse, display, or act as a DAT/load-board/rate-board replacement.",
 };
 ```
+
+DAT/load-board sources remain excluded from all tiers. The numeric authority
+level on the excluded entry is not an availability grant; exclusion is governed
+by `access: "excluded"`, `integrationStatus: "excluded"`, and empty
+`tierAvailability`.
 
 ## Data Persistence and Audit Concepts
 
@@ -1018,12 +1066,16 @@ src/lib/karpilo-atlas/entitlements.ts
 
 ### Phase 3 - Source Registry Scaffold
 
-Potential future files:
+Initial implemented files:
 
 ```text
+src/lib/karpilo-atlas/constants.ts
+src/lib/karpilo-atlas/types.ts
+src/lib/karpilo-atlas/sources/index.ts
+src/lib/karpilo-atlas/sources/library-catalog.ts
+src/lib/karpilo-atlas/sources/library-types.ts
 src/lib/karpilo-atlas/sources/source-types.ts
 src/lib/karpilo-atlas/sources/source-registry.ts
-src/lib/karpilo-atlas/sources/library-types.ts
 ```
 
 ### Phase 4 - User-Owned Intelligence Scaffold
@@ -1121,6 +1173,9 @@ Types and scaffolds later:
 src/lib/karpilo-atlas/constants.ts
 src/lib/karpilo-atlas/types.ts
 src/lib/karpilo-atlas/entitlements.ts
+src/lib/karpilo-atlas/sources/index.ts
+src/lib/karpilo-atlas/sources/library-catalog.ts
+src/lib/karpilo-atlas/sources/library-types.ts
 src/lib/karpilo-atlas/sources/source-types.ts
 src/lib/karpilo-atlas/sources/source-registry.ts
 src/lib/karpilo-atlas/user-owned-intelligence/types.ts
