@@ -26,63 +26,47 @@ authentication, error, quota, privacy, and drift controls belong here.
 - Contracts are documentation and governance only; they do not implement runtime
   behavior.
 
-## Implemented Providers Found
+## Governance Checks
 
-- Google Routes API, through LoadIQ server-side Route Intelligence.
-- Google Address Validation API, through LoadIQ server-side Route Intelligence.
-- Google Weather API, through server-side Karpilo Weather Intelligence.
-- OpenWeather Current Weather, 5 day / 3 hour Forecast, and One Call 3.0 APIs,
-  through weather profitability and server-side Karpilo Weather Intelligence.
-- National Weather Service API, through server-side Karpilo Weather
-  Intelligence validation and alert evidence.
-- U.S. Energy Information Administration Open Data API, for national diesel
-  baseline fuel context.
-- Stripe API, for checkout, customer portal, subscriptions, and webhooks.
-- OpenAI Chat Completions API, for gated/dev Karpilo Atlas AI load analysis.
-- Supabase JavaScript clients and REST-backed table/auth operations.
-- Sentry Next.js SDK capture surfaces, with no root Sentry init file found in
-  this audit.
-- PostHog capture API, through internal analytics routing.
-- Resend email API, for elevated-admin email delivery.
-- Upstash Redis SDK/REST endpoint, for server-side cache helpers.
+Run these local checks before merging provider contract or fixture changes:
 
-## Scaffolded Providers Found
+```bash
+npm run api-contracts:check
+npm run api-contracts:docs
+npm run api-contracts:env
+npm run api-contracts:fixtures
+```
 
-- Trimble Maps / PC*Miler truck routing is scaffolded only and returns
-  unavailable. No live Trimble API call is wired.
+The checks are static repository checks. They do not call live providers and do
+not require real provider credentials.
 
-## Planned/Future Providers Only
+## Provider Index
 
-These providers are referenced by docs, UI copy, future provider language, or
-expected review scope, but no active LoadIQ implementation or scaffolded
-provider call was found in this audit:
+| Provider | Category | Contract file | Karpilo module owner | Required env vars | Test file | Fixture directory | Last verified |
+|---|---|---|---|---|---|---|---|
+| Google Weather API | Weather | `weather/google-weather.contract.md` | Karpilo Weather Intelligence | `GOOGLE_WEATHER_API_KEY`, `GOOGLE_WEATHER_BASE_URL` | `tests/api-contracts/weather/google-weather.contract.test.ts` | `test-fixtures/api/weather/google-weather/` | 2026-06-28 |
+| OpenWeather Current / Forecast / One Call | Weather | `weather/openweather.contract.md` | Karpilo Weather Intelligence; Weather Profitability Risk | `OPENWEATHER_API_KEY`, `OPENWEATHER_BASE_URL` | `tests/api-contracts/weather/openweather.contract.test.ts` | `test-fixtures/api/weather/openweather/` | 2026-06-28 |
+| NWS / weather.gov API | Weather | `weather/nws.contract.md` | Karpilo Weather Intelligence | `NWS_USER_AGENT`, `NWS_BASE_URL` | `tests/api-contracts/weather/nws.contract.test.ts` | `test-fixtures/api/weather/nws/` | 2026-06-28 |
+| Google Maps Platform | Maps | `maps/google-maps.contract.md` | Route Intelligence; future browser map surfaces | `GOOGLE_MAPS_API_KEY`; future `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` only if documented browser-safe | `tests/api-contracts/maps/google-maps.contract.test.ts` | `test-fixtures/api/maps/google-maps/` | 2026-06-28 |
+| AWS Location Service | Maps | `maps/aws-location.contract.md` | Future map/geospatial fallback only | none active | `tests/api-contracts/maps/aws-location.contract.test.ts` | `test-fixtures/api/maps/aws-location/` | 2026-06-28 |
+| Trimble Maps / PC*Miler | Maps | `maps/trimble-maps.contract.md` | Future truck-specific Route Intelligence | none active | `tests/api-contracts/maps/trimble-maps.contract.test.ts` | `test-fixtures/api/maps/trimble-maps/` | 2026-06-28 |
+| OpenAI API | AI | `ai/openai.contract.md` | Karpilo Atlas AI | `OPENAI_API_KEY`, `LOADIQ_AI_MODEL`, `ENABLE_LOADIQ_AI_DEV`, `LOADIQ_AI_DISABLED`, `ATLAS_AI_DISABLED` | `tests/api-contracts/ai/openai.contract.test.ts` | `test-fixtures/api/ai/openai/` | 2026-06-28 |
+| Stripe API | Payments | `payments/stripe.contract.md` | Billing and entitlements | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, Stripe price ID vars | `tests/api-contracts/payments/stripe.contract.test.ts` | `test-fixtures/api/payments/stripe/` | 2026-06-28 |
+| Resend API | Email | `email/resend.contract.md` | Admin/elevated email delivery | `RESEND_API_KEY`, `NO_REPLY_EMAIL` | `tests/api-contracts/email/resend.contract.test.ts` | `test-fixtures/api/email/resend/` | 2026-06-28 |
+| PostHog API | Analytics | `analytics/posthog.contract.md` | Internal analytics | `POSTHOG_ENABLED`, `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST` and documented public PostHog vars | `tests/api-contracts/analytics/posthog.contract.test.ts` | `test-fixtures/api/analytics/posthog/` | 2026-06-28 |
+| Sentry SDK/API | Analytics | `analytics/sentry.contract.md` | Internal monitoring | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, Sentry release/env/sample vars and documented public Sentry vars | `tests/api-contracts/analytics/sentry.contract.test.ts` | `test-fixtures/api/analytics/sentry/` | 2026-06-28 |
+| Supabase JavaScript clients | Database | `database/supabase.contract.md` | Auth, app data, admin data access | `NEXT_PUBLIC_SUPABASE_URL`, publishable/anon key vars, `SUPABASE_SERVICE_ROLE_KEY` | `tests/api-contracts/database/supabase.contract.test.ts` | `test-fixtures/api/database/supabase/` | 2026-06-28 |
+| Upstash Redis | Database/cache | `database/redis.contract.md` | Server-side cache helpers | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | `tests/api-contracts/database/redis.contract.test.ts` | `test-fixtures/api/database/redis/` | 2026-06-28 |
 
-- Google Places API.
-- Google Geocoding API.
-- Google Maps JavaScript API.
-- AWS Location Service.
+Legacy flat contract files remain in this folder for continuity during the
+transition to category-scoped contracts. New governance work should update the
+category-scoped contract files first, then reconcile legacy flat files or remove
+them in a separate cleanup branch after references are updated.
 
-## Not Currently Implemented / Future Contract Required
+## Future Contract Requirements
 
-Before wiring any future provider above, create a provider contract with the
-same headings used by the implemented/scaffolded contracts in this folder,
-verify every request and consumed response field against official provider
-documentation, and map the new usage to source files. Do not treat planned
-provider names as active capabilities.
-
-## Existing Route Contract
-
-`route-intelligence.md` documents LoadIQ-owned route endpoints and app-level
-request/response shapes. Provider-specific controls now live in:
-
-- `google-address-validation.contract.md`
-- `google-routes.contract.md`
-- `trimble-maps.contract.md`
-
-## Weather Contracts
-
-Karpilo Weather Intelligence provider-specific controls live in:
-
-- `google-weather.contract.md`
-- `openweather.contract.md`
-- `nws-weather.contract.md`
+Before wiring any future provider, create or update the category-scoped
+provider contract, verify every request and consumed response field against
+official provider documentation, add mock fixture coverage, and map the new
+usage to source files. Do not treat planned provider names as active
+capabilities.

@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "api-contracts:check": "node scripts/api-contracts/check-api-contracts.mjs all",
+    "api-contracts:env": "node scripts/api-contracts/check-api-contracts.mjs env",
+    "api-contracts:fixtures": "node scripts/api-contracts/check-api-contracts.mjs fixtures",
+    "api-contracts:docs": "node scripts/api-contracts/check-api-contracts.mjs docs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

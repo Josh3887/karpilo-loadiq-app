@@ -29,6 +29,10 @@
 
 ### Documentation
 
+- Added API contract governance scaffolding and static checks for provider
+  contract maps, future contract tests, mock fixture directories, drift checks,
+  env safety checks, secret-exposure checks, and provider failure
+  classification coverage.
 - Added provider-aligned API contract documentation and governance for external
   integrations, including official documentation links, request/response
   boundaries, auth, privacy/security, error handling, cost controls, and
