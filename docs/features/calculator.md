@@ -342,64 +342,43 @@ Inspected code shows:
 
 - `src/types/load.ts` and `src/lib/load-schema.ts` already define pickup,
   delivery, deadhead origin, route stops, paid loaded miles, deadhead miles,
-  route estimate snapshots, dispatch days, deadhead days, date-only fields, and
-  `estimatedLoadWeightLbs`.
+  route estimate snapshots, dispatch days, deadhead days, date/time fields,
+  appointment windows, dwell fields, planning-hour fields, user-override flags,
+  benchmark fields, and `estimatedLoadWeightLbs`.
 - `src/components/calculator/load-input-form.tsx` renders route addresses,
-  ordered P/U and DEL stops, paid loaded miles, deadhead miles, Google mileage
-  estimates, raw estimated drive-time minutes, load status, dispatch days, and
-  deadhead days.
+  ordered P/U and DEL stops, endpoint schedule/window cards, stop window
+  fields, load weight, paid loaded miles, deadhead miles, Google mileage
+  estimates, human-readable drive time, load status, planning hours, dispatch
+  days, and deadhead days.
+- `src/services/trip-dates.ts` exposes quarter-hour duration helpers, Google
+  minutes-to-human formatting, 50 mph benchmark conversion, and 10-hour
+  planning-day conversion.
 - `src/services/route-intelligence/google-provider.ts` returns estimated
   duration minutes for deadhead, loaded, total, and route leg estimates.
 - `src/components/dashboard/results-panel.tsx` renders revenue basis, fuel
-  intelligence, mileage intelligence, LoadIQ intelligence, Atlas surface, and
+  intelligence, mileage intelligence, Google drive-time/planning-hour rows,
+  50 mph benchmark rows, LoadIQ intelligence, Atlas surface, and
   entitlement-gated weather surface.
 - `src/services/save-load.ts` persists estimated load weight to
   `estimated_load_weight_lbs` when present and includes weight context in the
-  equipment snapshot.
+  equipment snapshot. Expanded planning inputs are snapshot-backed through
+  `input_snapshot`.
 - Saved-load detail and report surfaces read saved date fields and estimated
   weight from snapshots/columns.
 
 ## Current Implementation Gaps
 
-The current implementation does not yet expose or fully model:
+The current implementation still does not add first-class database columns for
+time/window/load-weight analytics. V1 persistence relies on snapshots except for
+the existing `estimated_load_weight_lbs` saved-load column.
 
-- deadhead origin time of day
-- pickup time of day
-- delivery time of day
-- stop date/time fields in the calculator UI
-- stop appointment window start/end fields
-- open-ended stop window flags
-- pickup/loading dwell time
-- delivery/unloading dwell time
-- stop dwell time
-- loaded planning hours
-- deadhead planning hours
-- explicit user override state for generated planning hours/days
-- 50 mph benchmark-generated deadhead and loaded presets
-- Google duration displayed as `11h 59m` instead of raw minutes
-- visible calculator input for load weight, despite existing type/schema/save
-  support
-
-Existing snapshots appear sufficient for a V1 implementation pass because
-`input_snapshot` and `result_snapshot` can carry the expanded planning model,
-and `estimated_load_weight_lbs` already exists as a saved-load column in the
-current app contract. First-class schema columns may be useful later for
-analytics, filtering, reporting, or durable query performance, but schema work
-should stay on a separate approved branch.
+Existing snapshots carry the V1 expanded planning model, and
+`estimated_load_weight_lbs` already exists as a saved-load column in the current
+app contract. First-class schema columns may be useful later for analytics,
+filtering, reporting, or durable query performance, but schema work should stay
+on a separate approved branch.
 
 ## Future Work
-
-Recommended next implementation branch:
-
-```text
-fix/loadiq-calculator-time-weight-inputs
-```
-
-That branch should add the calculator UI/model support for date, time,
-appointment windows, dwell defaults, load weight, 50 mph benchmark presets,
-Google duration display formatting, and user override behavior.
-
-Other separate future branches:
 
 - first-class schema for time/window/load-weight analytics if needed
 - Trimble truck-specific routing

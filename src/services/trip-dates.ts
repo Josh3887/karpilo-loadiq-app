@@ -22,6 +22,57 @@ export function snapToQuarterDay(value: number) {
   return Number((Math.round(value * 4) / 4).toFixed(2));
 }
 
+export function roundHoursToQuarter(hours: number): number {
+  if (!Number.isFinite(hours)) return 0;
+
+  return Number((Math.round(hours * 4) / 4).toFixed(2));
+}
+
+export function minutesToHumanDuration(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes < 0) return "Unavailable";
+
+  const roundedMinutes = Math.round(minutes);
+  const hours = Math.floor(roundedMinutes / 60);
+  const remainingMinutes = roundedMinutes % 60;
+
+  if (hours === 0) {
+    return `${remainingMinutes}m`;
+  }
+
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+export function minutesToQuarterHours(minutes: number): number {
+  if (!Number.isFinite(minutes) || minutes < 0) return 0;
+
+  return roundHoursToQuarter(minutes / 60);
+}
+
+export function milesToBenchmarkHours(miles: number, mph = 50): number {
+  if (!Number.isFinite(miles) || !Number.isFinite(mph) || miles <= 0 || mph <= 0) {
+    return 0;
+  }
+
+  return roundHoursToQuarter(miles / mph);
+}
+
+export function hoursToPlanningDays(hours: number, hoursPerDay = 10): number {
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(hoursPerDay) ||
+    hours <= 0 ||
+    hoursPerDay <= 0
+  ) {
+    return 0;
+  }
+
+  return roundHoursToQuarter(hours / hoursPerDay);
+}
+
 export function calculateInclusiveTripDays(
   startDate: string | undefined,
   endDate: string | undefined,

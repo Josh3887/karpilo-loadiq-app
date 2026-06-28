@@ -13,6 +13,12 @@ import {
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
 import {
+  hoursToPlanningDays,
+  milesToBenchmarkHours,
+  minutesToHumanDuration,
+  minutesToQuarterHours,
+} from "@/services/trip-dates";
+import {
   DeadheadContinuitySuggestion,
   getDeadheadContinuitySuggestion,
 } from "@/services/saved-load-input";
@@ -34,6 +40,10 @@ type LoadInputFormProps = {
   initialValues?: LoadInputFormValues | null;
   previewMode?: boolean;
 };
+
+const BENCHMARK_MPH = 50;
+const PLANNING_HOURS_PER_DAY = 10;
+const DEFAULT_STOP_DWELL_HOURS = 2;
 
 export function LoadInputForm({
   onCalculate,
@@ -67,6 +77,39 @@ export function LoadInputForm({
     name: "loadedMiles",
   });
   const paidLoadedMiles = Number(watchedPaidLoadedMiles ?? 0);
+  const watchedDeadheadMiles = Number(
+    useWatch({ control, name: "deadheadMiles" }) ?? 0
+  );
+  const watchedRouteLoadedMiles = Number(
+    useWatch({ control, name: "routeLoadedMiles" }) ?? 0
+  );
+  const watchedRouteDeadheadMiles = Number(
+    useWatch({ control, name: "routeDeadheadMiles" }) ?? 0
+  );
+  const watchedDeadheadStartDate =
+    useWatch({ control, name: "deadheadStartDate" }) ?? "";
+  const watchedDeadheadStartTime =
+    useWatch({ control, name: "deadheadStartTime" }) ?? "";
+  const watchedPickupDate = useWatch({ control, name: "pickupDate" }) ?? "";
+  const watchedPickupTime = useWatch({ control, name: "pickupTime" }) ?? "";
+  const watchedPickupWindowStart =
+    useWatch({ control, name: "pickupWindowStart" }) ?? "";
+  const watchedPickupWindowEnd =
+    useWatch({ control, name: "pickupWindowEnd" }) ?? "";
+  const watchedPickupWindowOpenEnded = Boolean(
+    useWatch({ control, name: "pickupWindowOpenEnded" })
+  );
+  const watchedDeliveryDate =
+    useWatch({ control, name: "deliveryDate" }) ?? "";
+  const watchedDeliveryTime =
+    useWatch({ control, name: "deliveryTime" }) ?? "";
+  const watchedDeliveryWindowStart =
+    useWatch({ control, name: "deliveryWindowStart" }) ?? "";
+  const watchedDeliveryWindowEnd =
+    useWatch({ control, name: "deliveryWindowEnd" }) ?? "";
+  const watchedDeliveryWindowOpenEnded = Boolean(
+    useWatch({ control, name: "deliveryWindowOpenEnded" })
+  );
   const revenueInputMode =
     useWatch({ control, name: "revenueInputMode" }) ?? "rpm";
   const fuelSurchargeIncludedInGross = Boolean(
@@ -79,6 +122,15 @@ export function LoadInputForm({
   const routeMileageVariance = getRouteMileageVariance(
     routeEstimate,
     paidLoadedMiles
+  );
+  const planningPreview = buildPlanningSuggestion(
+    {
+      loadedMiles: paidLoadedMiles,
+      deadheadMiles: watchedDeadheadMiles,
+      routeLoadedMiles: watchedRouteLoadedMiles,
+      routeDeadheadMiles: watchedRouteDeadheadMiles,
+    },
+    routeEstimate
   );
   const applyDeadheadSuggestion = useCallback(
     (suggestion: DeadheadContinuitySuggestion) => {
@@ -371,6 +423,12 @@ export function LoadInputForm({
           city: "",
           state: "",
           zip: "",
+          appointmentDate: "",
+          appointmentTime: "",
+          appointmentWindowStart: "",
+          appointmentWindowEnd: "",
+          appointmentWindowOpenEnded: false,
+          dwellHours: DEFAULT_STOP_DWELL_HOURS,
           milesFromPrevious: 0,
           stopRevenue: 0,
           stopExpense: 0,
@@ -427,6 +485,72 @@ export function LoadInputForm({
       shouldDirty: true,
       shouldValidate: true,
     });
+  }
+
+  function markPlanningOverride(
+    field:
+      | "deadheadPlanningHoursUserOverridden"
+      | "deadheadDaysUserOverridden"
+      | "loadedPlanningHoursUserOverridden"
+      | "loadedDaysUserOverridden"
+  ) {
+    setValue(field, true, { shouldDirty: true });
+  }
+
+  function applyPlanningSuggestions(estimate: RouteEstimate | null) {
+    const values = getValues();
+    const suggestion = buildPlanningSuggestion(values, estimate);
+
+    setValue("googleRouteDurationHuman", suggestion.googleDurationHuman, {
+      shouldDirty: true,
+    });
+    setValue(
+      "googleRouteDurationQuarterHours",
+      suggestion.googleDurationQuarterHours,
+      {
+        shouldDirty: true,
+      }
+    );
+    setValue("deadheadBenchmarkHours", suggestion.deadheadBenchmarkHours, {
+      shouldDirty: true,
+    });
+    setValue("loadedBenchmarkHours", suggestion.loadedBenchmarkHours, {
+      shouldDirty: true,
+    });
+    setValue("deadheadBenchmarkDays", suggestion.deadheadBenchmarkDays, {
+      shouldDirty: true,
+    });
+    setValue("loadedBenchmarkDays", suggestion.loadedBenchmarkDays, {
+      shouldDirty: true,
+    });
+
+    if (!values.deadheadPlanningHoursUserOverridden) {
+      setValue("deadheadPlanningHours", suggestion.deadheadPlanningHours, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
+    if (!values.deadheadDaysUserOverridden) {
+      setValue("deadheadDays", suggestion.deadheadPlanningDays, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
+    if (!values.loadedPlanningHoursUserOverridden) {
+      setValue("loadedPlanningHours", suggestion.loadedPlanningHours, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+
+    if (!values.loadedDaysUserOverridden) {
+      setValue("dispatchDays", Math.max(suggestion.loadedPlanningDays, 1), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
   }
 
   async function handleRouteEstimate() {
@@ -502,6 +626,8 @@ export function LoadInputForm({
           }
         );
       }
+
+      applyPlanningSuggestions(estimate);
     } catch {
       setRouteStatus(
         "Route estimate unavailable. Manual mileage entry remains active."
@@ -510,6 +636,7 @@ export function LoadInputForm({
       setValue("routeEstimate", null, {
         shouldDirty: true,
       });
+      applyPlanningSuggestions(null);
     } finally {
       setIsEstimatingRoute(false);
     }
@@ -537,6 +664,10 @@ export function LoadInputForm({
   }
 
   const fuelPriceField = register("fuelPrice");
+  const deadheadPlanningHoursField = register("deadheadPlanningHours");
+  const deadheadDaysField = register("deadheadDays");
+  const loadedPlanningHoursField = register("loadedPlanningHours");
+  const dispatchDaysField = register("dispatchDays");
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-8">
@@ -556,6 +687,26 @@ export function LoadInputForm({
           error={errors.loadNumber?.message}
           {...register("loadNumber")}
         />
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle title="Load Weight" />
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <InputField
+            label="Cargo Weight (lb)"
+            type="number"
+            step="1"
+            min="0"
+            error={errors.estimatedLoadWeightLbs?.message}
+            {...register("estimatedLoadWeightLbs")}
+          />
+
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            Load weight is planning context only. It is not permit, legal,
+            bridge, axle, scale, or compliance authority.
+          </p>
+        </div>
       </section>
 
       <section className="space-y-4">
@@ -795,11 +946,21 @@ export function LoadInputForm({
                     )}
                   />
                   <RouteValue
-                    label="Estimated drive time"
-                    value={formatOptionalMinutes(
+                    label="Google estimated drive time"
+                    value={formatOptionalDuration(
                       routeEstimate.totalEstimate?.estimatedDurationMinutes ??
                         routeEstimate.estimatedDurationMinutes
                     )}
+                  />
+                  <RouteValue
+                    label="Google planning hours"
+                    value={
+                      planningPreview.googleDurationQuarterHours > 0
+                        ? `${formatPlanningNumber(
+                            planningPreview.googleDurationQuarterHours
+                          )} hr`
+                        : "Unavailable"
+                    }
                   />
                   <RouteValue
                     label="Mileage variance"
@@ -827,7 +988,7 @@ export function LoadInputForm({
                           </span>
                           <span className="font-semibold text-slate-200">
                             {formatOptionalMiles(leg.estimatedMiles)} ·{" "}
-                            {formatOptionalMinutes(
+                            {formatOptionalDuration(
                               leg.estimatedDurationMinutes
                             )}
                           </span>
@@ -863,7 +1024,7 @@ export function LoadInputForm({
       </section>
 
       <section className="space-y-4">
-        <SectionTitle title="Operational Timing" />
+        <SectionTitle title="Schedule / Time Planning" />
 
         <label className="block">
           <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
@@ -881,21 +1042,292 @@ export function LoadInputForm({
           </select>
         </label>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              Deadhead Origin
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Start date and time for the truck position before pickup.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InputField
+              label="Deadhead Origin Date"
+              type="date"
+              error={errors.deadheadStartDate?.message}
+              {...register("deadheadStartDate")}
+            />
+
+            <InputField
+              label="Deadhead Origin Time"
+              type="time"
+              error={errors.deadheadStartTime?.message}
+              {...register("deadheadStartTime")}
+            />
+          </div>
+
+          {hasBroadWindow(
+            watchedDeadheadStartDate,
+            watchedDeadheadStartTime
+          ) && <BroadWindowNotice />}
+        </div>
+
+        <EndpointWindowCard
+          title="Pickup Window"
+          dateField={
+            <InputField
+              label="Pickup Date"
+              type="date"
+              error={errors.pickupDate?.message}
+              {...register("pickupDate")}
+            />
+          }
+          timeField={
+            <InputField
+              label="Pickup Time"
+              type="time"
+              error={errors.pickupTime?.message}
+              {...register("pickupTime")}
+            />
+          }
+          windowStartField={
+            <InputField
+              label="Window Start"
+              type="time"
+              error={errors.pickupWindowStart?.message}
+              {...register("pickupWindowStart")}
+            />
+          }
+          windowEndField={
+            <InputField
+              label="Window End"
+              type="time"
+              error={errors.pickupWindowEnd?.message}
+              {...register("pickupWindowEnd")}
+            />
+          }
+          openEndedField={
+            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+                {...register("pickupWindowOpenEnded")}
+              />
+              <span>
+                <span className="block font-semibold text-slate-200">
+                  Open-ended pickup window
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  The appointment has a start time or broad date window without
+                  a fixed closing time.
+                </span>
+              </span>
+            </label>
+          }
+          dwellField={
+            <InputField
+              label="Loading / Dwell Hours"
+              type="number"
+              step="0.25"
+              min="0"
+              error={errors.pickupDwellHours?.message}
+              {...register("pickupDwellHours")}
+            />
+          }
+          broadWindow={hasBroadWindow(
+            watchedPickupDate,
+            watchedPickupTime,
+            watchedPickupWindowStart,
+            watchedPickupWindowEnd,
+            watchedPickupWindowOpenEnded
+          )}
+        />
+
+        <EndpointWindowCard
+          title="Delivery Window"
+          dateField={
+            <InputField
+              label="Delivery Date"
+              type="date"
+              error={errors.deliveryDate?.message}
+              {...register("deliveryDate")}
+            />
+          }
+          timeField={
+            <InputField
+              label="Delivery Time"
+              type="time"
+              error={errors.deliveryTime?.message}
+              {...register("deliveryTime")}
+            />
+          }
+          windowStartField={
+            <InputField
+              label="Window Start"
+              type="time"
+              error={errors.deliveryWindowStart?.message}
+              {...register("deliveryWindowStart")}
+            />
+          }
+          windowEndField={
+            <InputField
+              label="Window End"
+              type="time"
+              error={errors.deliveryWindowEnd?.message}
+              {...register("deliveryWindowEnd")}
+            />
+          }
+          openEndedField={
+            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+                {...register("deliveryWindowOpenEnded")}
+              />
+              <span>
+                <span className="block font-semibold text-slate-200">
+                  Open-ended delivery window
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  The appointment has a start time or broad date window without
+                  a fixed closing time.
+                </span>
+              </span>
+            </label>
+          }
+          dwellField={
+            <InputField
+              label="Unloading / Dwell Hours"
+              type="number"
+              step="0.25"
+              min="0"
+              error={errors.deliveryDwellHours?.message}
+              {...register("deliveryDwellHours")}
+            />
+          }
+          broadWindow={hasBroadWindow(
+            watchedDeliveryDate,
+            watchedDeliveryTime,
+            watchedDeliveryWindowStart,
+            watchedDeliveryWindowEnd,
+            watchedDeliveryWindowOpenEnded
+          )}
+        />
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                Planning Benchmarks
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Google duration fills untouched fields when available. The 50
+                mph benchmark is the fallback comparison.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                applyPlanningSuggestions(routeEstimate);
+                setRouteStatus(
+                  "Planning suggestions refreshed from route duration or 50 mph benchmark."
+                );
+              }}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
+            >
+              Apply Planning Suggestions
+            </button>
+          </div>
+
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <RouteValue
+              label="Google drive time"
+              value={
+                planningPreview.googleDurationHuman || "Unavailable"
+              }
+            />
+            <RouteValue
+              label="Google rounded hours"
+              value={
+                planningPreview.googleDurationQuarterHours > 0
+                  ? `${formatPlanningNumber(
+                      planningPreview.googleDurationQuarterHours
+                    )} hr`
+                  : "Unavailable"
+              }
+            />
+            <RouteValue
+              label="Deadhead 50 mph benchmark"
+              value={`${formatPlanningNumber(
+                planningPreview.deadheadBenchmarkHours
+              )} hr / ${formatPlanningNumber(
+                planningPreview.deadheadBenchmarkDays
+              )} day`}
+            />
+            <RouteValue
+              label="Loaded 50 mph benchmark"
+              value={`${formatPlanningNumber(
+                planningPreview.loadedBenchmarkHours
+              )} hr / ${formatPlanningNumber(
+                planningPreview.loadedBenchmarkDays
+              )} day`}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
-            label="Dispatch Days"
+            label="Deadhead Planning Hours"
             type="number"
             step="0.25"
-            error={errors.dispatchDays?.message}
-            {...register("dispatchDays")}
+            min="0"
+            error={errors.deadheadPlanningHours?.message}
+            {...deadheadPlanningHoursField}
+            onChange={(event) => {
+              void deadheadPlanningHoursField.onChange(event);
+              markPlanningOverride("deadheadPlanningHoursUserOverridden");
+            }}
           />
 
           <InputField
-            label="Deadhead Days"
+            label="Deadhead Planning Days"
             type="number"
             step="0.25"
+            min="0"
             error={errors.deadheadDays?.message}
-            {...register("deadheadDays")}
+            {...deadheadDaysField}
+            onChange={(event) => {
+              void deadheadDaysField.onChange(event);
+              markPlanningOverride("deadheadDaysUserOverridden");
+            }}
+          />
+
+          <InputField
+            label="Loaded Planning Hours"
+            type="number"
+            step="0.25"
+            min="0"
+            error={errors.loadedPlanningHours?.message}
+            {...loadedPlanningHoursField}
+            onChange={(event) => {
+              void loadedPlanningHoursField.onChange(event);
+              markPlanningOverride("loadedPlanningHoursUserOverridden");
+            }}
+          />
+
+          <InputField
+            label="Loaded Planning Days"
+            type="number"
+            step="0.25"
+            min="1"
+            error={errors.dispatchDays?.message}
+            {...dispatchDaysField}
+            onChange={(event) => {
+              void dispatchDaysField.onChange(event);
+              markPlanningOverride("loadedDaysUserOverridden");
+            }}
           />
         </div>
 
@@ -1104,6 +1536,60 @@ function RevenueModeButton({
   );
 }
 
+function EndpointWindowCard({
+  title,
+  dateField,
+  timeField,
+  windowStartField,
+  windowEndField,
+  openEndedField,
+  dwellField,
+  broadWindow,
+}: {
+  title: string;
+  dateField: React.ReactNode;
+  timeField: React.ReactNode;
+  windowStartField: React.ReactNode;
+  windowEndField: React.ReactNode;
+  openEndedField: React.ReactNode;
+  dwellField: React.ReactNode;
+  broadWindow: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+      <div className="mb-3">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+          {title}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Appointment timing, window, and dwell context for planning.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {dateField}
+        {timeField}
+        {windowStartField}
+        {windowEndField}
+        {dwellField}
+      </div>
+
+      <div className="mt-4">{openEndedField}</div>
+
+      {broadWindow && <BroadWindowNotice />}
+    </div>
+  );
+}
+
+function BroadWindowNotice() {
+  return (
+    <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs leading-5 text-amber-100">
+      Date captured without a fixed time/window. LoadIQ treats this as a broad
+      planning window, not an input error.
+    </p>
+  );
+}
+
 const ROUTE_STOP_KIND_OPTIONS: Array<{
   value: RouteStopKind;
   label: string;
@@ -1123,6 +1609,14 @@ function RouteStopEditor({
   onChange: (updates: Partial<RouteStopInput>) => void;
   onRemove: () => void;
 }) {
+  const broadWindow = hasBroadWindow(
+    stop.appointmentDate,
+    stop.appointmentTime,
+    stop.appointmentWindowStart,
+    stop.appointmentWindowEnd,
+    stop.appointmentWindowOpenEnded
+  );
+
   return (
     <div className="rounded-xl border border-slate-800 bg-[#0B1220] p-4">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -1184,6 +1678,71 @@ function RouteStopEditor({
           onChange={(value) => onChange({ zip: value })}
         />
       </div>
+
+      <div className="mt-4 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+        <div className="mb-3">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+            Stop Window
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Stop appointment timing and dwell context for planning.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ControlledTextField
+            label="Stop Date"
+            type="date"
+            value={stop.appointmentDate}
+            onChange={(value) => onChange({ appointmentDate: value })}
+          />
+          <ControlledTextField
+            label="Stop Time"
+            type="time"
+            value={stop.appointmentTime}
+            onChange={(value) => onChange({ appointmentTime: value })}
+          />
+          <ControlledTextField
+            label="Window Start"
+            type="time"
+            value={stop.appointmentWindowStart}
+            onChange={(value) => onChange({ appointmentWindowStart: value })}
+          />
+          <ControlledTextField
+            label="Window End"
+            type="time"
+            value={stop.appointmentWindowEnd}
+            onChange={(value) => onChange({ appointmentWindowEnd: value })}
+          />
+          <ControlledNumberField
+            label="Dwell Hours"
+            value={stop.dwellHours}
+            onChange={(value) => onChange({ dwellHours: value })}
+          />
+        </div>
+
+        <label className="mt-4 flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={Boolean(stop.appointmentWindowOpenEnded)}
+            onChange={(event) =>
+              onChange({ appointmentWindowOpenEnded: event.target.checked })
+            }
+            className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+          />
+          <span>
+            <span className="block font-semibold text-slate-200">
+              Open-ended stop window
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              The stop has a start time or broad date window without a fixed
+              closing time.
+            </span>
+          </span>
+        </label>
+
+        {broadWindow && <BroadWindowNotice />}
+      </div>
     </div>
   );
 }
@@ -1192,10 +1751,12 @@ function ControlledTextField({
   label,
   value,
   onChange,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  type?: React.HTMLInputTypeAttribute;
 }) {
   return (
     <label className="block">
@@ -1203,8 +1764,35 @@ function ControlledTextField({
         {label}
       </span>
       <input
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+      />
+    </label>
+  );
+}
+
+function ControlledNumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        {label}
+      </span>
+      <input
+        type="number"
+        step="0.25"
+        min="0"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(event) => onChange(Number(event.target.value))}
         className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
       />
     </label>
@@ -1249,10 +1837,10 @@ function formatOptionalMiles(value: number | null | undefined) {
   return `${value.toLocaleString()} mi`;
 }
 
-function formatOptionalMinutes(value: number | null | undefined) {
+function formatOptionalDuration(value: number | null | undefined) {
   if (value === null || value === undefined) return "Unavailable";
 
-  return `${value.toLocaleString()} min`;
+  return minutesToHumanDuration(value);
 }
 
 function formatSignedMiles(value: number) {
@@ -1261,6 +1849,113 @@ function formatSignedMiles(value: number) {
   const prefix = value > 0 ? "+" : "";
 
   return `${prefix}${value.toLocaleString()} mi`;
+}
+
+type PlanningSuggestion = {
+  googleDurationHuman: string;
+  googleDurationQuarterHours: number;
+  deadheadPlanningHours: number;
+  deadheadPlanningDays: number;
+  loadedPlanningHours: number;
+  loadedPlanningDays: number;
+  deadheadBenchmarkHours: number;
+  loadedBenchmarkHours: number;
+  deadheadBenchmarkDays: number;
+  loadedBenchmarkDays: number;
+};
+
+function buildPlanningSuggestion(
+  values: Partial<LoadInputRawValues>,
+  estimate: RouteEstimate | null
+): PlanningSuggestion {
+  const deadheadMiles =
+    positivePlanningNumber(estimate?.deadheadEstimate?.estimatedDeadheadMiles) ||
+    positivePlanningNumber(values.routeDeadheadMiles) ||
+    positivePlanningNumber(values.deadheadMiles);
+  const loadedMiles =
+    positivePlanningNumber(estimate?.loadedEstimate?.estimatedLoadedMiles) ||
+    positivePlanningNumber(estimate?.estimatedMiles) ||
+    positivePlanningNumber(values.routeLoadedMiles) ||
+    positivePlanningNumber(values.loadedMiles);
+  const deadheadGoogleMinutes = positivePlanningNumber(
+    estimate?.deadheadEstimate?.estimatedDeadheadDurationMinutes
+  );
+  const loadedGoogleMinutes = positivePlanningNumber(
+    estimate?.loadedEstimate?.estimatedLoadedDurationMinutes ??
+      estimate?.estimatedDurationMinutes
+  );
+  const totalGoogleMinutes =
+    positivePlanningNumber(estimate?.totalEstimate?.estimatedDurationMinutes) ||
+    positivePlanningNumber(estimate?.estimatedDurationMinutes) ||
+    deadheadGoogleMinutes + loadedGoogleMinutes;
+  const deadheadBenchmarkHours = milesToBenchmarkHours(
+    deadheadMiles,
+    BENCHMARK_MPH
+  );
+  const loadedBenchmarkHours = milesToBenchmarkHours(loadedMiles, BENCHMARK_MPH);
+  const deadheadPlanningHours =
+    deadheadGoogleMinutes > 0
+      ? minutesToQuarterHours(deadheadGoogleMinutes)
+      : deadheadBenchmarkHours;
+  const loadedPlanningHours =
+    loadedGoogleMinutes > 0
+      ? minutesToQuarterHours(loadedGoogleMinutes)
+      : loadedBenchmarkHours;
+
+  return {
+    googleDurationHuman:
+      totalGoogleMinutes > 0 ? minutesToHumanDuration(totalGoogleMinutes) : "",
+    googleDurationQuarterHours:
+      totalGoogleMinutes > 0 ? minutesToQuarterHours(totalGoogleMinutes) : 0,
+    deadheadPlanningHours,
+    deadheadPlanningDays: hoursToPlanningDays(
+      deadheadPlanningHours,
+      PLANNING_HOURS_PER_DAY
+    ),
+    loadedPlanningHours,
+    loadedPlanningDays: hoursToPlanningDays(
+      loadedPlanningHours,
+      PLANNING_HOURS_PER_DAY
+    ),
+    deadheadBenchmarkHours,
+    loadedBenchmarkHours,
+    deadheadBenchmarkDays: hoursToPlanningDays(
+      deadheadBenchmarkHours,
+      PLANNING_HOURS_PER_DAY
+    ),
+    loadedBenchmarkDays: hoursToPlanningDays(
+      loadedBenchmarkHours,
+      PLANNING_HOURS_PER_DAY
+    ),
+  };
+}
+
+function positivePlanningNumber(value: unknown) {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+
+  return numeric;
+}
+
+function formatPlanningNumber(value: number) {
+  return Number.isFinite(value) ? value.toFixed(2) : "0.00";
+}
+
+function hasBroadWindow(
+  date: string | undefined,
+  time?: string,
+  windowStart?: string,
+  windowEnd?: string,
+  openEnded?: boolean
+) {
+  return Boolean(
+    date &&
+      !time &&
+      !windowStart &&
+      !windowEnd &&
+      !openEnded
+  );
 }
 
 function RouteWarnings({ estimate }: { estimate: RouteEstimate }) {

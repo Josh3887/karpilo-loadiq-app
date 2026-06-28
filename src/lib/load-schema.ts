@@ -11,6 +11,7 @@ import {
 import { DEFAULT_EQUIPMENT_PROFILE_INPUT } from "@/lib/equipment-profile";
 import {
   isEndDateBeforeStartDate,
+  roundHoursToQuarter,
   snapToQuarterDay,
 } from "@/services/trip-dates";
 
@@ -27,6 +28,10 @@ const numberField = z.preprocess(
 
 const quarterDayField = numberField.transform((value) =>
   snapToQuarterDay(value)
+);
+
+const quarterHourField = numberField.transform((value) =>
+  roundHoursToQuarter(value)
 );
 
 const loadRunStatusValues = LOAD_RUN_STATUS_OPTIONS.map(
@@ -49,6 +54,12 @@ const routeStopSchema = z.object({
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
   zip: z.string().optional().default(""),
+  appointmentDate: z.string().optional().default(""),
+  appointmentTime: z.string().optional().default(""),
+  appointmentWindowStart: z.string().optional().default(""),
+  appointmentWindowEnd: z.string().optional().default(""),
+  appointmentWindowOpenEnded: z.boolean().optional().default(false),
+  dwellHours: quarterHourField.refine((value) => value >= 0).default(2),
   milesFromPrevious: numberField.refine((value) => value >= 0),
   stopRevenue: numberField.refine((value) => value >= 0),
   stopExpense: numberField.refine((value) => value >= 0),
@@ -140,9 +151,34 @@ export const loadInputSchema = z.object({
   deadheadDays: quarterDayField.refine((value) => value >= 0),
   dispatchDate: z.string().optional().default(""),
   pickupDate: z.string().optional().default(""),
+  pickupTime: z.string().optional().default(""),
+  pickupWindowStart: z.string().optional().default(""),
+  pickupWindowEnd: z.string().optional().default(""),
+  pickupWindowOpenEnded: z.boolean().optional().default(false),
+  pickupDwellHours: quarterHourField.refine((value) => value >= 0).default(2),
   deliveryDate: z.string().optional().default(""),
+  deliveryTime: z.string().optional().default(""),
+  deliveryWindowStart: z.string().optional().default(""),
+  deliveryWindowEnd: z.string().optional().default(""),
+  deliveryWindowOpenEnded: z.boolean().optional().default(false),
+  deliveryDwellHours: quarterHourField.refine((value) => value >= 0).default(2),
   deadheadStartDate: z.string().optional().default(""),
+  deadheadStartTime: z.string().optional().default(""),
   deadheadEndDate: z.string().optional().default(""),
+  deadheadPlanningHours: quarterHourField.refine((value) => value >= 0).default(0),
+  loadedPlanningHours: quarterHourField.refine((value) => value >= 0).default(0),
+  deadheadPlanningHoursUserOverridden: z.boolean().optional().default(false),
+  deadheadDaysUserOverridden: z.boolean().optional().default(false),
+  loadedPlanningHoursUserOverridden: z.boolean().optional().default(false),
+  loadedDaysUserOverridden: z.boolean().optional().default(false),
+  googleRouteDurationHuman: z.string().optional().default(""),
+  googleRouteDurationQuarterHours: quarterHourField
+    .refine((value) => value >= 0)
+    .default(0),
+  deadheadBenchmarkHours: quarterHourField.refine((value) => value >= 0).default(0),
+  loadedBenchmarkHours: quarterHourField.refine((value) => value >= 0).default(0),
+  deadheadBenchmarkDays: quarterDayField.refine((value) => value >= 0).default(0),
+  loadedBenchmarkDays: quarterDayField.refine((value) => value >= 0).default(0),
   payPeriodStartDate: z.string().optional().default(""),
   payPeriodEndDate: z.string().optional().default(""),
   loadRunStatus: z.enum(loadRunStatusValues).default("planned"),
@@ -378,9 +414,32 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   deadheadDays: 0,
   dispatchDate: "",
   pickupDate: "",
+  pickupTime: "",
+  pickupWindowStart: "",
+  pickupWindowEnd: "",
+  pickupWindowOpenEnded: false,
+  pickupDwellHours: 2,
   deliveryDate: "",
+  deliveryTime: "",
+  deliveryWindowStart: "",
+  deliveryWindowEnd: "",
+  deliveryWindowOpenEnded: false,
+  deliveryDwellHours: 2,
   deadheadStartDate: "",
+  deadheadStartTime: "",
   deadheadEndDate: "",
+  deadheadPlanningHours: 0,
+  loadedPlanningHours: 0,
+  deadheadPlanningHoursUserOverridden: false,
+  deadheadDaysUserOverridden: false,
+  loadedPlanningHoursUserOverridden: false,
+  loadedDaysUserOverridden: false,
+  googleRouteDurationHuman: "",
+  googleRouteDurationQuarterHours: 0,
+  deadheadBenchmarkHours: 0,
+  loadedBenchmarkHours: 0,
+  deadheadBenchmarkDays: 0,
+  loadedBenchmarkDays: 0,
   payPeriodStartDate: "",
   payPeriodEndDate: "",
   loadRunStatus: "planned",

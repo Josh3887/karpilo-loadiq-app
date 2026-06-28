@@ -12,6 +12,12 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { getAtlasEquipmentPackLabel } from "@/lib/equipment-profile";
 import { LoadInput, LoadResult } from "@/types/load";
 import { saveLoad } from "@/services/save-load";
+import {
+  hoursToPlanningDays,
+  milesToBenchmarkHours,
+  minutesToHumanDuration,
+  minutesToQuarterHours,
+} from "@/services/trip-dates";
 import type { LoadIqAiLoadAnalysisInput } from "@/types/ai-load-analysis";
 import type { WeatherProfitabilityResult } from "@/types/weather-profitability";
 
@@ -192,6 +198,14 @@ export function ResultsPanel({
 
           <div className="space-y-3 text-sm">
             <BreakdownRow label="Total Miles" value={`${formatNumber(result.totalMiles)} mi`} />
+            <BreakdownRow
+              label="Cargo Weight"
+              value={
+                result.estimatedLoadWeightLbs > 0
+                  ? `${formatNumber(result.estimatedLoadWeightLbs)} lb`
+                  : "Not entered"
+              }
+            />
             <BreakdownRow label="Operational Cost" value={formatCurrency(result.operationalCost)} />
             <BreakdownRow label="Cost Per Mile" value={formatRpm(result.costPerMile)} />
             <BreakdownRow label="Fuel % of Gross" value={formatPercent(result.fuelPercentOfGross)} />
@@ -279,6 +293,34 @@ export function ResultsPanel({
                 <BreakdownRow
                   label="Total Google Estimate"
                   value={formatOptionalMiles(getEstimatedTotalRouteMiles(input))}
+                />
+                <BreakdownRow
+                  label="Google Drive Time"
+                  value={formatOptionalDuration(
+                    getEstimatedRouteDurationMinutes(input)
+                  )}
+                />
+                <BreakdownRow
+                  label="Google Planning Hours"
+                  value={formatOptionalHours(getGoogleRouteQuarterHours(input))}
+                />
+                <BreakdownRow
+                  label="Loaded Planning"
+                  value={`${formatOptionalHours(
+                    input.loadedPlanningHours
+                  )} / ${formatNumber(input.dispatchDays)} day`}
+                />
+                <BreakdownRow
+                  label="Deadhead Planning"
+                  value={`${formatOptionalHours(
+                    input.deadheadPlanningHours
+                  )} / ${formatNumber(input.deadheadDays)} day`}
+                />
+                <BreakdownRow
+                  label="50 MPH Benchmark"
+                  value={`${formatOptionalHours(
+                    getBenchmarkRouteHours(input)
+                  )} / ${formatNumber(getBenchmarkRouteDays(input))} day`}
                 />
                 <BreakdownRow
                   label="Variance"
@@ -472,6 +514,64 @@ function getEstimatedTotalRouteMiles(input: LoadInput) {
   return Number(((loaded ?? 0) + (deadhead ?? 0)).toFixed(1));
 }
 
+function getEstimatedRouteDurationMinutes(input: LoadInput) {
+  if (
+    input.routeEstimate?.totalEstimate?.estimatedDurationMinutes !== null &&
+    input.routeEstimate?.totalEstimate?.estimatedDurationMinutes !== undefined
+  ) {
+    return input.routeEstimate.totalEstimate.estimatedDurationMinutes;
+  }
+
+  if (
+    input.routeEstimate?.estimatedDurationMinutes !== null &&
+    input.routeEstimate?.estimatedDurationMinutes !== undefined
+  ) {
+    return input.routeEstimate.estimatedDurationMinutes;
+  }
+
+  return null;
+}
+
+function getGoogleRouteQuarterHours(input: LoadInput) {
+  if (input.googleRouteDurationQuarterHours > 0) {
+    return input.googleRouteDurationQuarterHours;
+  }
+
+  const durationMinutes = getEstimatedRouteDurationMinutes(input);
+
+  if (durationMinutes === null) return null;
+
+  return minutesToQuarterHours(durationMinutes);
+}
+
+function getBenchmarkRouteHours(input: LoadInput) {
+  const savedBenchmark =
+    input.loadedBenchmarkHours + input.deadheadBenchmarkHours;
+
+  if (savedBenchmark > 0) {
+    return savedBenchmark;
+  }
+
+  const loadedMiles = getEstimatedRouteMiles(input) ?? input.loadedMiles;
+  const deadheadMiles =
+    getEstimatedDeadheadRouteMiles(input) ?? input.deadheadMiles;
+
+  return (
+    milesToBenchmarkHours(loadedMiles, 50) +
+    milesToBenchmarkHours(deadheadMiles, 50)
+  );
+}
+
+function getBenchmarkRouteDays(input: LoadInput) {
+  const savedBenchmark = input.loadedBenchmarkDays + input.deadheadBenchmarkDays;
+
+  if (savedBenchmark > 0) {
+    return savedBenchmark;
+  }
+
+  return hoursToPlanningDays(getBenchmarkRouteHours(input), 10);
+}
+
 function getRouteMileageVariance(input: LoadInput) {
   const estimatedRouteMiles = getEstimatedRouteMiles(input);
 
@@ -494,6 +594,20 @@ function formatOptionalMiles(value: number | null) {
   if (value === null) return "Unavailable";
 
   return `${formatNumber(value)} mi`;
+}
+
+function formatOptionalDuration(value: number | null) {
+  if (value === null) return "Unavailable";
+
+  return minutesToHumanDuration(value);
+}
+
+function formatOptionalHours(value: number | null | undefined) {
+  if (value === null || value === undefined || value <= 0) {
+    return "Unavailable";
+  }
+
+  return `${formatNumber(value)} hr`;
 }
 
 function formatSignedMiles(value: number) {

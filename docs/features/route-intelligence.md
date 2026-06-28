@@ -206,6 +206,8 @@ Names only:
 - Label paid loaded miles clearly.
 - Label Google estimated loaded miles, Google estimated deadhead miles, and
   total Google estimated route miles separately.
+- Show Google estimated drive time in human-readable form, such as `11h 59m`,
+  while keeping provider duration minutes in the normalized estimate snapshot.
 - Show loaded mileage variance when paid loaded miles and estimated loaded
   miles are both available.
 - Do not silently overwrite paid loaded miles.

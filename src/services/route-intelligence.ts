@@ -2,6 +2,8 @@ import { LoadInput, RouteStopInput } from "@/types/load";
 
 export type SavedLoadStopType = "pickup" | "stop_off" | "delivery";
 
+const DEFAULT_ROUTE_STOP_DWELL_HOURS = 2;
+
 export type SavedLoadStopInsert = {
   saved_load_id?: string;
   user_id: string;
@@ -30,6 +32,12 @@ export function createRouteStopInput(): RouteStopInput {
     city: "",
     state: "",
     zip: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    appointmentWindowStart: "",
+    appointmentWindowEnd: "",
+    appointmentWindowOpenEnded: false,
+    dwellHours: DEFAULT_ROUTE_STOP_DWELL_HOURS,
     milesFromPrevious: 0,
     stopRevenue: 0,
     stopExpense: 0,
@@ -48,6 +56,12 @@ export function normalizeRouteStops(
       city: stop.city?.trim() ?? "",
       state: stop.state?.trim().toUpperCase() ?? "",
       zip: stop.zip?.trim() ?? "",
+      appointmentDate: stop.appointmentDate?.trim() ?? "",
+      appointmentTime: stop.appointmentTime?.trim() ?? "",
+      appointmentWindowStart: stop.appointmentWindowStart?.trim() ?? "",
+      appointmentWindowEnd: stop.appointmentWindowEnd?.trim() ?? "",
+      appointmentWindowOpenEnded: Boolean(stop.appointmentWindowOpenEnded),
+      dwellHours: normalizeDwellHours(stop.dwellHours),
       milesFromPrevious: positiveNumber(stop.milesFromPrevious),
       stopRevenue: positiveNumber(stop.stopRevenue),
       stopExpense: positiveNumber(stop.stopExpense),
@@ -62,6 +76,12 @@ export function normalizeRouteStops(
           stop.milesFromPrevious ||
           stop.stopRevenue ||
           stop.stopExpense ||
+          stop.appointmentDate ||
+          stop.appointmentTime ||
+          stop.appointmentWindowStart ||
+          stop.appointmentWindowEnd ||
+          stop.appointmentWindowOpenEnded ||
+          stop.dwellHours !== DEFAULT_ROUTE_STOP_DWELL_HOURS ||
           stop.notes
       );
     });
@@ -188,6 +208,16 @@ function emptyToNull(value: string | undefined | null) {
 function positiveNumber(value: unknown) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
+  return numericValue;
+}
+
+function normalizeDwellHours(value: unknown) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return DEFAULT_ROUTE_STOP_DWELL_HOURS;
+  }
+
   return numericValue;
 }
 

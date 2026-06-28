@@ -2,15 +2,25 @@
 
 ## 2026-06-28
 
+### Added
+
+- Added calculator schedule/time planning inputs for deadhead origin, pickup,
+  delivery, stop appointment windows, open-ended windows, 2.00-hour dwell
+  defaults, user-editable planning hours/days, visible cargo weight, Google
+  duration formatting, 0.25-hour planning suggestions, and 50 mph / 10-hour-day
+  benchmark context through snapshot-backed fields.
+
 ### Documentation
 
 - Added the Karpilo LoadIQ Calculator feature contract covering required
   revenue, mileage, date/time/window, load-weight, Route Intelligence duration,
   50 mph planning benchmark, 10-hour planning-day, dwell default, and user
   override rules.
-- Updated the data propagation map to record current calculator
-  time/window/load-weight gaps and the recommended
-  `fix/loadiq-calculator-time-weight-inputs` implementation branch.
+- Updated the data propagation map to record the calculator time/window/load
+  weight contract and its snapshot-backed implementation boundary.
+- Updated calculator, Route Intelligence, and data propagation documentation to
+  reflect the snapshot-backed time/window/load-weight implementation and the
+  remaining first-class schema boundary.
 
 ## 2026-06-27
 
