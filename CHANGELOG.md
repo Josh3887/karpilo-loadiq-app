@@ -19,6 +19,10 @@
 
 ### Documentation
 
+- Added provider-aligned API contract documentation and governance for external
+  integrations, including official documentation links, request/response
+  boundaries, auth, privacy/security, error handling, cost controls, and
+  drift-risk tracking.
 - Added the Karpilo Atlas Intelligence Systems feature contract covering
   architecture, naming, tier gating, source libraries, user-owned intelligence,
   DAT/load-board exclusion, and the future single-readout doctrine.

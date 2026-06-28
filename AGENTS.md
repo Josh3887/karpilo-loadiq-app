@@ -25,6 +25,15 @@ Before changing behavior, also read the relevant files under:
 6. Create or switch to a dedicated task branch before edits.
 7. Identify whether the task touches product, governance, rollout, commercial tier, entitlement, Supabase, billing, AI, analytics, API integrations, Capacitor/mobile/iOS/Android, or legal/public claims.
 
+## Branch Governance
+
+Before making changes:
+
+1. Check git status.
+2. Do not proceed on a dirty worktree unless Joshua explicitly approved that dirty state.
+3. Create or switch to a task-specific branch before editing.
+4. Never make broad unrelated changes under an API-contracts task.
+
 ## Markdown Context Requirement
 
 Before starting any task, inspect repository Markdown context:
@@ -94,6 +103,26 @@ Do not duplicate billing, entitlement, rollout, governance, AI, analytics, or AP
 - Treat Sentry and PostHog as admin/internal tools, not customer-facing product features.
 - Treat trucking operations, driver records, saved loads, billing records, diagnostics, analytics, and AI events as sensitive operational data.
 - Do not run destructive external commands or push changes to Supabase, Stripe, Vercel, Resend, Redis, Sentry, PostHog, OpenAI, Google, EIA, or other external services unless Joshua explicitly asks.
+
+## External API Governance
+
+Whenever adding, modifying, or reviewing any external API integration, update
+`docs/api-contracts/` before or alongside the implementation. Each API contract
+must reference official provider documentation and document:
+
+- authentication
+- request fields
+- consumed response fields
+- errors
+- quotas/cost controls
+- security/privacy boundaries
+- app source-file mapping
+- drift risks
+
+Do not invent provider behavior. Do not rely on memory, examples, or existing
+code alone. Do not use unofficial documentation as the source of truth. If
+official documentation cannot confirm a field or behavior, mark it `UNVERIFIED`
+and do not treat it as contractually valid.
 
 ## Mobile And UI Rules
 
