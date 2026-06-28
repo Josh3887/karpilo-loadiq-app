@@ -186,6 +186,13 @@ export function ResultsPanel({
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
                   {recommendedAction.summary}
                 </p>
+
+                <p className="mt-3 max-w-3xl text-xs leading-5 text-slate-500">
+                  This readout combines Karpilo LoadIQ calculations,
+                  route/fuel/weather context, and Karpilo Atlas intelligence.
+                  Generated AI explanations appear only when requested and
+                  returned.
+                </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">

@@ -2,7 +2,7 @@
 
 ## Executive Definition
 
-Karpilo Atlas Intelligence Systems is the trucking intelligence architecture
+Karpilo Atlas Intelligence Systems is the governed AI/intelligence architecture
 behind Karpilo LoadIQ.
 
 It is not a single generic chatbot. It is not four unrelated AI products. It is
@@ -84,9 +84,10 @@ export const KARPILO_ATLAS_USER_OWNED_INTELLIGENCE =
 ```
 
 Current implementation note: public Karpilo Atlas layer labels should use the
-full module names. AI/OpenAI language belongs only on AI-assisted explanation
-paths that actually request or return AI output, not on deterministic Karpilo
-LoadIQ calculator output.
+full module names. Karpilo Atlas remains the governed AI/intelligence
+architecture behind Karpilo LoadIQ. Generated AI/OpenAI output language belongs
+only on paths that actually request or return generated AI output, not on the
+deterministic Karpilo LoadIQ calculator/math basis.
 
 ## Product Boundary
 
@@ -1015,6 +1016,10 @@ The single readout should include:
 
 Output should be concise, non-redundant, and driver-useful.
 
+The readout may combine Karpilo LoadIQ calculations, route/fuel/weather provider
+context, user-owned operating context, and Karpilo Atlas intelligence. It must
+label each source of output accurately.
+
 Example structure:
 
 ```text
@@ -1041,12 +1046,13 @@ Rules:
 
 - Preserve underlying calculations.
 - Preserve deterministic fallback.
+- Preserve the Karpilo Atlas AI/intelligence identity.
 - Label deterministic Karpilo LoadIQ calculator output as calculation,
-  decision, or planning basis, not AI-generated output.
+  decision, or planning basis, not generated AI/OpenAI output.
 - Label Karpilo Atlas modules with full public names: Karpilo Atlas Core,
   Karpilo Atlas Freight, Karpilo Atlas Route, and Karpilo Atlas Education.
-- Use AI/OpenAI labels only when an actual AI-assisted explanation is requested
-  or returned.
+- Use generated AI/OpenAI labels only when an actual generated AI-assisted
+  explanation is requested or returned.
 - Label provider weather output as Weather Risk Context or Route Weather
   Context, not AI.
 - Preserve tier gates.
@@ -1180,10 +1186,11 @@ src/components/dashboard/results-panel.tsx
 The readout consolidates decision summary, revenue basis, mileage and route
 exposure, fuel and cost exposure, time and schedule pressure, freight fit,
 profit confidence, missing inputs and assumptions, deterministic Karpilo LoadIQ
-details, gated Karpilo Atlas Freight detail, and gated Weather Risk Context into
-one results surface. It does not change calculations, route intelligence,
-weather provider behavior, OpenAI request behavior, billing semantics, or
-premium entitlement gates.
+details, Karpilo Atlas intelligence context, gated Karpilo Atlas Freight
+generated explanation paths, and gated Weather Risk Context into one results
+surface. It does not change calculations, route intelligence, weather provider
+behavior, OpenAI request behavior, billing semantics, or premium entitlement
+gates.
 
 ### Phase 9 - AI/RAG Expansion Later
 

@@ -26,7 +26,7 @@ The calculator must preserve:
 - load weight
 - fuel assumptions
 - profitability results
-- Karpilo LoadIQ deterministic planning notes
+- deterministic Karpilo LoadIQ decision basis and planning notes
 - saved-load and actuals separation
 
 ## Calculator Workflow Order
@@ -350,14 +350,14 @@ The calculator should use time and mileage assumptions to expose:
 - load revenue spread across time
 - profitability confidence
 
-Future Karpilo Atlas AI-assisted intelligence may explain:
+Future Karpilo Atlas generated AI explanations may explain:
 
 - "This window is broad, but the route can likely be completed in less time."
 - "Your planning days are conservative compared to estimated route time."
 - "Deadhead time is consuming unpaid margin."
 
-Do not build this AI behavior as part of this contract task. Treat it as future
-intelligence.
+Do not build this generated AI behavior as part of this contract task. Treat it
+as future Karpilo Atlas intelligence expansion.
 
 ## Product Boundaries
 
@@ -394,9 +394,9 @@ Inspected code shows:
   duration minutes for deadhead, loaded, total, and route leg estimates.
 - `src/components/dashboard/results-panel.tsx` renders revenue basis, fuel
   cost exposure, mileage and route exposure, Google drive-time/planning-hour
-  rows, 50 mph benchmark rows, Karpilo LoadIQ planning notes, Karpilo Atlas
-  Freight surface, and
-  entitlement-gated weather surface.
+  rows, 50 mph benchmark rows, deterministic Karpilo LoadIQ planning notes,
+  Karpilo Atlas Freight intelligence surface, and entitlement-gated Weather
+  Risk Context.
 - `src/services/save-load.ts` persists estimated load weight to
   `estimated_load_weight_lbs` when present and includes weight context in the
   equipment snapshot. Expanded planning inputs are snapshot-backed through
@@ -423,4 +423,4 @@ on a separate approved branch.
 - weather risk integration
 - fuel gauge recovery
 - GPS/location tracking
-- Karpilo Atlas AI-assisted schedule and window analysis
+- Karpilo Atlas generated AI schedule and window explanations

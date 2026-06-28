@@ -4,8 +4,9 @@
 
 ### Fixed
 
-- Clarified Karpilo Atlas readout labels and AI boundaries so deterministic
-  LoadIQ outputs, provider context, and AI-assisted explanations are labeled
+- Clarified Karpilo Atlas readout labels and AI boundaries so Karpilo Atlas
+  keeps its AI/intelligence identity while deterministic LoadIQ outputs,
+  provider context, and generated AI-assisted explanations are labeled
   accurately.
 - Reordered the calculator workflow around EIA fuel baseline, deadhead, pickup,
   stops, delivery, load weight, financial inputs, and the operational

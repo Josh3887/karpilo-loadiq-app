@@ -120,13 +120,13 @@ export const ATLAS_LAYER_ORDER: AtlasLayerKey[] = [
 ];
 
 export const ATLAS_PROCESSING_DISCLOSURE =
-  "Karpilo Atlas AI-assisted explanations provide controlled educational, informational, and analytical support inside Karpilo LoadIQ. Karpilo Atlas activates from explicit user actions, calculated results, saved snapshots, and server-side governance checks. It remains supplemental to the calculator and does not make operational decisions.";
+  "Karpilo Atlas Intelligence Systems is the governed AI/intelligence architecture behind Karpilo LoadIQ. It activates from explicit user actions, calculated results, saved snapshots, and server-side governance checks. Generated AI-assisted explanations appear only when requested and available. Karpilo Atlas remains supplemental to the calculator and does not make operational decisions.";
 
 export const ATLAS_PROPRIETARY_STATEMENT =
-  "Karpilo Atlas Core, Karpilo Atlas Freight, Karpilo Atlas Route, Karpilo Atlas Education, and Karpilo Atlas AI-assisted explanations are proprietary Karpilo LoadIQ support concepts developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
+  "Karpilo Atlas Intelligence Systems, including Karpilo Atlas Core, Karpilo Atlas Freight, Karpilo Atlas Route, Karpilo Atlas Education, and generated AI-assisted explanations, is proprietary Karpilo LoadIQ AI/intelligence architecture developed by Karpilo Endeavor Technologies. These systems support educational app guidance, calculation explanation, profitability interpretation, and non-authoritative operational awareness based on structured application data, calculated outputs, and user-provided inputs.";
 
 export const ATLAS_EDUCATIONAL_DISCLAIMER =
-  "Karpilo Atlas Education provides contextual support for navigating Karpilo LoadIQ features, workflows, and app tools. AI-assisted explanations, when requested and available, explain functionality and calculation context only. They do not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
+  "Karpilo Atlas Education is part of the Karpilo Atlas AI/intelligence architecture and provides contextual support for navigating Karpilo LoadIQ features, workflows, and app tools. Generated AI-assisted explanations, when requested and available, explain functionality and calculation context only. They do not make business, financial, legal, tax, compliance, safety, routing, broker, or dispatch decisions.";
 
 export const ATLAS_CORE_CONTROLLED_ORCHESTRATION_NOTE =
   "Karpilo Atlas Core owns controlled activation, equipment context, regulation-reference boundaries, and operational review. Hover, focus, route-change, and background navigation events must not open Karpilo Atlas panels or call AI.";
