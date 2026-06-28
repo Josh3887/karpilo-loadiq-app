@@ -40,6 +40,14 @@ analytics remain future schema work. Fuel/DEF purchase tracking, end odometer,
 tolls, lumpers, and accessorial actuals are saved-load actuals, not calculator
 planning inputs.
 
+This map also records the calculator feature-contract requirement for
+date/time, appointment-window, dwell, load-weight, Route Intelligence duration,
+50 mph planning benchmark, standard 10-hour planning day, and user-override
+behavior. Current code has partial support through date-only fields, route
+duration minutes, dispatch/deadhead day values, load-weight schema/snapshots,
+and saved-load reporting, but the full calculator UI/model implementation
+belongs on `fix/loadiq-calculator-time-weight-inputs`.
+
 No implementation changes are made by this document.
 
 ## Source Of Truth Matrix
@@ -58,6 +66,8 @@ No implementation changes are made by this document.
 | Pay templates | Settings operating profile form | Authenticated user | Calculator defaults, driver pay calculation, saved-load pay snapshot | `pay_structure_templates`, `input_snapshot`, `pay_structure_snapshot` | Supabase auth, RLS | CONNECTED |
 | Calculator defaults | `getCalculatorDefaults()` from profile and overhead services | Application services | Dashboard calculator store, calculator form, calculator engine | React/Zustand state; no independent DB row | Operational profile and overhead services | PARTIALLY CONNECTED due duplicated loader |
 | Calculator inputs | Calculator form, saved-load edit hydration, lane template hydration | Authenticated user | Calculator engine, save-load service, snapshots | React Hook Form, `LoadInput`, `input_snapshot` | Zod schema, defaults, optional EIA lookup | CONNECTED with scaffolded fields |
+| Calculator timing/window assumptions | Existing date-only fields plus calculator feature contract for future time/window/dwell fields | Authenticated user | Calculator engine, Route Intelligence context, saved-load snapshots, detail/report context | Current `input_snapshot`; future first-class columns only if approved | Route duration minutes, 50 mph benchmark, 10-hour planning day, user overrides | PARTIALLY CONNECTED/CONTRACTED |
+| Calculator load weight | Existing `estimatedLoadWeightLbs` model and future visible calculator input | Authenticated user | Calculator engine, Atlas route context, saved-load detail/report, future truck-specific routing context | `saved_loads.estimated_load_weight_lbs`, `input_snapshot`, optional `equipment_context_snapshot` | Visible calculator field is missing; route/legal boundaries apply | PARTIALLY CONNECTED |
 | Calculator outputs | `calculateLoadMetrics()` | Application calculator engine | Results panel, saved-load service, reports, dashboard history | Zustand state, `result_snapshot`, flattened saved_load columns | Calculator input schema | CONNECTED |
 | Saved load estimate | Save Load action from current input/result | Authenticated user | Loads page, load detail, report, lane templates, edit estimate | `saved_loads`, `saved_load_stops`, snapshots | Entitlement gate, Supabase schema | CONNECTED with optional-column fallback |
 | Saved load actuals | Load detail post-trip actuals form | Authenticated user | Detail actual result, report actual result, post-trip rollups, odometer validation, fuel/DEF purchase context | `saved_loads.actuals_snapshot`, `post_trip_actuals` | Supabase auth, RLS | CONNECTED |
@@ -83,7 +93,7 @@ No implementation changes are made by this document.
 | Fuel tank count/capacity | Settings and calculator defaults | Intended `truck_profiles` and `saved_loads.fuel_gauge_snapshot` | User | Settings, calculator load lifecycle | Fuel gauge, saved-load snapshot | Optional snapshot only; live schema missing | BLOCKED with fallback |
 | Equipment type/pack/combination | Settings vehicle profile, Fit Check | `truck_profiles`, `input_snapshot`, optional equipment snapshot | User | Settings, Fit Check hydration, calculator defaults | Calculator context, Atlas surfaces, reports/detail context | Not core profitability math | PARTIALLY CONNECTED/BLOCKED |
 | Trailer dimensions/type/division | Settings vehicle profile | `truck_profiles`, `input_snapshot` | User | Settings | Vehicle Intelligence, calculator default merge, saved snapshots | Context only; not compliance authority | PARTIALLY CONNECTED |
-| Weight/capability fields | Settings and calculator form estimated load weight | `truck_profiles`, `saved_loads.estimated_load_weight_lbs`, snapshots | User | Settings, calculator | Atlas route detail, report context | Estimated only; not certified scale/compliance | PARTIALLY CONNECTED |
+| Weight/capability fields | Settings and calculator model estimated load weight | `truck_profiles`, `saved_loads.estimated_load_weight_lbs`, snapshots | User | Settings, future calculator visible load-weight input | Atlas route detail, report context | Estimated only; not certified scale/compliance; current calculator form does not visibly expose load weight | PARTIALLY CONNECTED |
 | Specialized capabilities/securement/route notes | Settings | `truck_profiles`, snapshots | User | Settings | Atlas/vehicle context | Stored only where schema exists | BLOCKED on missing live columns |
 | Fixed overhead rows | Expense Intelligence, Fit Check hydration | `user_overhead_items` | User | Overhead manager, Fit Check hydration | Calculator defaults, overhead UI | Daily/monthly/weekly/annual overhead; saved snapshots | CONNECTED |
 | Subscription expense row | Derived from active subscription unless manually entered | Synthetic row from `subscriptions`, not user row | App service | Not directly edited | Expense Intelligence, calculator defaults | Affects overhead if active | CONNECTED with billing dependency |
@@ -96,9 +106,12 @@ No implementation changes are made by this document.
 | Pickup/delivery/deadhead origin | Calculator form | `saved_loads`, `saved_load_stops`, `input_snapshot` | User | Calculator | Engine, route stops, detail/report | Lane, route stop records, report route context | CONNECTED |
 | Loaded/deadhead miles | Calculator form | `saved_loads`, `input_snapshot`, result snapshot | User | Calculator | Calculator engine, detail/report, Atlas route | Fuel, RPM, true RPM, deadhead percent | CONNECTED |
 | Route estimated loaded/deadhead/total miles | Google route estimate action | `input_snapshot.routeEstimate`, `routeLoadedMiles`, `routeDeadheadMiles` | User/app | Calculator route intelligence panel | Results panel, saved-load detail via snapshots, route model | Estimated miles stay separate from paid loaded miles; copy to paid loaded miles remains explicit | CONNECTED |
+| Route estimated time | Google route estimate action | `input_snapshot.routeEstimate.*DurationMinutes` | App provider estimate | Route Intelligence API/provider layer | Calculator route intelligence panel and future planning suggestions | Current UI displays raw minutes; feature contract requires human-readable `11h 59m` style display plus optional 0.25-hour planning suggestion | PARTIALLY CONNECTED |
 | Odometer validation | Running load workflow and saved-load detail | `input_snapshot`, `actuals_snapshot` | User | Calculator running status, saved-load actuals | Detail/report actual context, future analytics | Running loads may capture origin odometer; end odometer and actual mileage validation live in saved-load post-trip actuals; planned/booked/dispatched do not allow odometer input | CONNECTED through snapshots |
 | Route stops | Calculator stop editor | `saved_load_stops`, `input_snapshot`, `routeEstimate.loadedEstimate.legs` | User | Calculator | Route model, detail/report, save service | Stops are freight stops typed only as P/U or DEL and routed in user-entered order; no stop labels required; fuel/DEF purchases are not route stops | CONNECTED |
+| Stop dates, windows, and dwell | Calculator feature contract; future calculator stop editor | Future `input_snapshot.routeStops[]` fields; first-class columns only if approved later | User | Future calculator timing UI | Calculator planning days, saved-load detail/report context, future AI/Atlas schedule analysis | Missing in current form/model; default dwell should be 2.00 hours and open-ended one-day windows should apply when date exists without exact time/window | MISSING/CONTRACTED |
 | Dispatch/deadhead dates and days | Calculator form | `input_snapshot`, `result_snapshot`, flattened saved load | User | Calculator | Engine, detail/report, Atlas route | Daily overhead, daily profitability, report dates | CONNECTED |
+| Planning hours/days and user overrides | Current dispatch/deadhead day fields plus feature contract for generated suggestions | `input_snapshot`, `result_snapshot`; future explicit override metadata | User | Calculator timing model | Profit/day, hourly profitability, revenue leakage analysis | Current day values snap to 0.25 day; feature contract requires 0.25-hour increments, 50 mph fallback, 10-hour planning day, and no overwrite after user edit | PARTIALLY CONNECTED/CONTRACTED |
 | Pay period dates | Calculator form | `input_snapshot` | User | Calculator | No clear report/engine consumer in inspected paths | Snapshot only | PARTIALLY CONNECTED |
 | Revenue mode/gross/RPM/FSC | Calculator form | `saved_loads`, `input_snapshot`, `result_snapshot` | User | Calculator | Engine, results, history/detail/report | Gross, linehaul, revenue per mile, net | CONNECTED |
 | Fuel price/source metadata | EIA service or manual override | `saved_loads`, `input_snapshot`, `result_snapshot` | EIA/manual user | Calculator | Engine, detail/report, saved load fuel source | Fuel cost, fuel percent, report fuel source; EIA display rounds to two decimals | CONNECTED with external availability risk |
@@ -214,6 +227,9 @@ Saved Loads
 | Portal profile to app operating profile | Portal bridge -> Settings operating profile | Portal tables absent and ownership boundary unclear | `fix/loadiq-portal-profile-boundary` after Supabase reconciliation |
 | Calculator default hydration ownership | Settings -> one calculator default owner -> form/store | Duplicate state owner in form and Zustand store | `fix/loadiq-calculator-default-hydration` |
 | First-class route/odometer/purchase analytics columns | Calculator/detail snapshots -> durable analytics/reporting | No schema columns by design in this branch | Future schema branch only after approval |
+| Calculator time/window/load-weight visible inputs | Feature contract -> calculator form/schema/results/snapshots | Current UI lacks time-of-day, windows, dwell, planning-hour overrides, and visible load-weight input | `fix/loadiq-calculator-time-weight-inputs` |
+| Google duration display and planning suggestions | Route Intelligence minutes -> human-readable display -> 0.25-hour calculator suggestion | Current calculator displays raw minutes and does not derive planning-hour suggestions | `fix/loadiq-calculator-time-weight-inputs` |
+| 50 mph benchmark day presets | Mileage inputs/route estimates -> planning hours -> 10-hour planning days | Benchmark not implemented as calculator preset logic | `fix/loadiq-calculator-time-weight-inputs` |
 | Pay period fields to reports | Pay template/load input -> report/pay review | Snapshot only, no clear report math | `fix/loadiq-pay-period-report-context` |
 | Weather profitability snapshot reporting | Weather panel -> saved load -> report/detail | Entitlement/tier conflict and consumer thinness | Wait for billing reconciliation |
 | Billing tier semantics to feature gates | Product tiers -> entitlement code -> UI claims | Silver/Gold/Platinum/Pro conflict unresolved | `fix/loadiq-billing-tier-entitlement-alignment` |
@@ -240,26 +256,34 @@ Saved Loads
      runtime owner before reaching the form and calculator store.
    - Preserve formulas and saved-load stabilization.
 
-3. `fix/loadiq-profile-portal-boundary`
+3. `fix/loadiq-calculator-time-weight-inputs`
+   - Implement the calculator feature contract for time-of-day, appointment
+     windows, open-ended window flags, dwell defaults, visible load weight,
+     50 mph benchmark presets, 10-hour planning-day presets, Google duration
+     display, and user override metadata.
+   - Use snapshots for V1 unless a separate schema branch is explicitly
+     approved.
+
+4. `fix/loadiq-profile-portal-boundary`
    - Clarify whether portal `profiles`/`portal_access` are only portal bridge
      records or should hydrate app operating profile fields.
    - Do not treat rollout phase, plan interest, or portal status as paid tier
      entitlement.
 
-4. `fix/loadiq-billing-tier-entitlement-alignment`
+5. `fix/loadiq-billing-tier-entitlement-alignment`
    - Resolve Silver/Gold/Platinum/Pro scaffolding and public claims before
      expanding feature gates or report/export claims.
 
-5. `fix/loadiq-saved-load-report-context`
+6. `fix/loadiq-saved-load-report-context`
    - After schema reconciliation, add report/detail consumers for fuel gauge and
      equipment context snapshots where useful.
    - Keep reports framed as estimates and operational summaries.
 
-6. `fix/loadiq-route-actual-mileage-wiring`
+7. `fix/loadiq-route-actual-mileage-wiring`
    - Only after product approval, decide whether route-vs-actual mileage fields
      are real feature inputs, saved-load actual fields, or dead schema.
 
-7. `fix/loadiq-fitcheck-settings-roundtrip`
+8. `fix/loadiq-fitcheck-settings-roundtrip`
    - Decide whether Settings should backfill Fit Check intake fields beyond
      current snapshot reuse, or whether Fit Check remains an intake/review path.
 
@@ -296,6 +320,8 @@ Inspected source areas:
   `src/hooks/use-load-calculator.ts`,
   `src/components/calculator/load-input-form.tsx`,
   `src/domains/calculator/calculator-engine.ts`
+- Calculator feature contract:
+  `docs/features/calculator.md`
 - Saved Loads and reports: `src/services/save-load.ts`,
   `src/services/saved-load-actions.ts`,
   `src/services/saved-load-input.ts`,

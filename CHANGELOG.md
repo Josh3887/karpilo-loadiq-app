@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-28
+
+### Documentation
+
+- Added the Karpilo LoadIQ Calculator feature contract covering required
+  revenue, mileage, date/time/window, load-weight, Route Intelligence duration,
+  50 mph planning benchmark, 10-hour planning-day, dwell default, and user
+  override rules.
+- Updated the data propagation map to record current calculator
+  time/window/load-weight gaps and the recommended
+  `fix/loadiq-calculator-time-weight-inputs` implementation branch.
+
 ## 2026-06-27
 
 ### Added
