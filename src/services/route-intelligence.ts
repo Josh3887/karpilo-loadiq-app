@@ -1,4 +1,5 @@
 import { LoadInput, RouteStopInput } from "@/types/load";
+import { toDateInputValue, toTimeInputValue } from "@/services/trip-dates";
 
 export type SavedLoadStopType = "pickup" | "stop_off" | "delivery";
 
@@ -34,7 +35,9 @@ export function createRouteStopInput(): RouteStopInput {
     zip: "",
     appointmentDate: "",
     appointmentTime: "",
+    appointmentWindowStartDate: "",
     appointmentWindowStart: "",
+    appointmentWindowEndDate: "",
     appointmentWindowEnd: "",
     appointmentWindowOpenEnded: false,
     dwellHours: DEFAULT_ROUTE_STOP_DWELL_HOURS,
@@ -56,10 +59,14 @@ export function normalizeRouteStops(
       city: stop.city?.trim() ?? "",
       state: stop.state?.trim().toUpperCase() ?? "",
       zip: stop.zip?.trim() ?? "",
-      appointmentDate: stop.appointmentDate?.trim() ?? "",
-      appointmentTime: stop.appointmentTime?.trim() ?? "",
-      appointmentWindowStart: stop.appointmentWindowStart?.trim() ?? "",
-      appointmentWindowEnd: stop.appointmentWindowEnd?.trim() ?? "",
+      appointmentDate: toDateInputValue(stop.appointmentDate),
+      appointmentTime: toTimeInputValue(stop.appointmentTime),
+      appointmentWindowStartDate: toDateInputValue(
+        stop.appointmentWindowStartDate
+      ),
+      appointmentWindowStart: toTimeInputValue(stop.appointmentWindowStart),
+      appointmentWindowEndDate: toDateInputValue(stop.appointmentWindowEndDate),
+      appointmentWindowEnd: toTimeInputValue(stop.appointmentWindowEnd),
       appointmentWindowOpenEnded: Boolean(stop.appointmentWindowOpenEnded),
       dwellHours: normalizeDwellHours(stop.dwellHours),
       milesFromPrevious: positiveNumber(stop.milesFromPrevious),
@@ -78,7 +85,9 @@ export function normalizeRouteStops(
           stop.stopExpense ||
           stop.appointmentDate ||
           stop.appointmentTime ||
+          stop.appointmentWindowStartDate ||
           stop.appointmentWindowStart ||
+          stop.appointmentWindowEndDate ||
           stop.appointmentWindowEnd ||
           stop.appointmentWindowOpenEnded ||
           stop.dwellHours !== DEFAULT_ROUTE_STOP_DWELL_HOURS ||

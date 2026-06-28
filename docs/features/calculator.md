@@ -81,8 +81,8 @@ The calculator planning model must support these inputs:
 - pickup date and time
 - delivery date and time
 - each P/U or DEL stop date and time
-- stop appointment window start
-- stop appointment window end
+- appointment window start date and optional 24-hour start time
+- appointment window end date and optional 24-hour end time
 - open-ended stop window support
 - user override fields for estimated time and planning days
 
@@ -92,6 +92,14 @@ user narrows it. If no date exists, the calculator must not silently invent a
 schedule. It should show missing-schedule intelligence and let the user enter
 dates.
 
+Time inputs use browser-valid military/24-hour `HH:mm` values such as `00:00`,
+`07:30`, `13:45`, and `23:59`. AM/PM text, full datetime strings, and malformed
+time values must not be passed into visible time inputs.
+
+Open-ended appointment windows still require start and end date context. Blank
+start/end times are allowed when the appointment is a broad date-window context,
+but the open-ended flag must not hide missing date context.
+
 ## Stop Timing Rules
 
 Route stops are freight stops only. Stops are typed as `P/U` or `DEL` and route
@@ -100,8 +108,8 @@ in the order entered. Stop labels are not required.
 Each P/U or DEL stop can have:
 
 - date and time
-- appointment window start
-- appointment window end
+- appointment window start date and optional 24-hour start time
+- appointment window end date and optional 24-hour end time
 - open-ended window flag
 - dwell, loading, or unloading time
 

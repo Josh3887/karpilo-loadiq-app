@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Fixed calculator appointment-window time inputs to use valid 24-hour values
+  and clarified open-ended windows as start/end date context.
+
 ### Documentation
 
 - Added the Karpilo Atlas Intelligence Systems feature contract covering

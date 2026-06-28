@@ -16,6 +16,65 @@ export function formatLocalDate(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+export function toDateInputValue(value: unknown): string {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? "" : formatLocalDate(value);
+  }
+
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (dateOnly && isValidDateParts(dateOnly[1], dateOnly[2], dateOnly[3])) {
+    return `${dateOnly[1]}-${dateOnly[2]}-${dateOnly[3]}`;
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return formatLocalDate(parsed);
+}
+
+export function toTimeInputValue(value: unknown): string {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? "" : formatLocalTime(value);
+  }
+
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const timeOnly = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  if (timeOnly) {
+    return formatTimeParts(timeOnly[1], timeOnly[2]);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return "";
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return formatLocalTime(parsed);
+}
+
+export function combineDateAndTimeForSnapshot(
+  date: string,
+  time?: string
+): string | null {
+  const normalizedDate = toDateInputValue(date);
+  if (!normalizedDate) return null;
+
+  const normalizedTime = toTimeInputValue(time);
+  return normalizedTime
+    ? `${normalizedDate}T${normalizedTime}:00`
+    : normalizedDate;
+}
+
 export function snapToQuarterDay(value: number) {
   if (!Number.isFinite(value)) return 0;
 
@@ -133,4 +192,52 @@ function parseDateOnly(value: string | undefined) {
     day,
     utcTime,
   };
+}
+
+function formatLocalTime(date: Date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function formatTimeParts(hoursValue: string, minutesValue: string) {
+  const hours = Number(hoursValue);
+  const minutes = Number(minutesValue);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return "";
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}`;
+}
+
+function isValidDateParts(
+  yearValue: string,
+  monthValue: string,
+  dayValue: string
+) {
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return (
+    Number.isInteger(year) &&
+    Number.isInteger(month) &&
+    Number.isInteger(day) &&
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }

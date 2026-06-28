@@ -17,6 +17,8 @@ import {
   milesToBenchmarkHours,
   minutesToHumanDuration,
   minutesToQuarterHours,
+  toDateInputValue,
+  toTimeInputValue,
 } from "@/services/trip-dates";
 import {
   DeadheadContinuitySuggestion,
@@ -87,26 +89,42 @@ export function LoadInputForm({
     useWatch({ control, name: "routeDeadheadMiles" }) ?? 0
   );
   const watchedDeadheadStartDate =
-    useWatch({ control, name: "deadheadStartDate" }) ?? "";
+    toDateInputValue(useWatch({ control, name: "deadheadStartDate" }));
   const watchedDeadheadStartTime =
-    useWatch({ control, name: "deadheadStartTime" }) ?? "";
-  const watchedPickupDate = useWatch({ control, name: "pickupDate" }) ?? "";
-  const watchedPickupTime = useWatch({ control, name: "pickupTime" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "deadheadStartTime" }));
+  const watchedPickupDate = toDateInputValue(
+    useWatch({ control, name: "pickupDate" })
+  );
+  const watchedPickupTime = toTimeInputValue(
+    useWatch({ control, name: "pickupTime" })
+  );
+  const watchedPickupWindowStartDate = toDateInputValue(
+    useWatch({ control, name: "pickupWindowStartDate" })
+  );
   const watchedPickupWindowStart =
-    useWatch({ control, name: "pickupWindowStart" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "pickupWindowStart" }));
+  const watchedPickupWindowEndDate = toDateInputValue(
+    useWatch({ control, name: "pickupWindowEndDate" })
+  );
   const watchedPickupWindowEnd =
-    useWatch({ control, name: "pickupWindowEnd" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "pickupWindowEnd" }));
   const watchedPickupWindowOpenEnded = Boolean(
     useWatch({ control, name: "pickupWindowOpenEnded" })
   );
   const watchedDeliveryDate =
-    useWatch({ control, name: "deliveryDate" }) ?? "";
+    toDateInputValue(useWatch({ control, name: "deliveryDate" }));
   const watchedDeliveryTime =
-    useWatch({ control, name: "deliveryTime" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "deliveryTime" }));
+  const watchedDeliveryWindowStartDate = toDateInputValue(
+    useWatch({ control, name: "deliveryWindowStartDate" })
+  );
   const watchedDeliveryWindowStart =
-    useWatch({ control, name: "deliveryWindowStart" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "deliveryWindowStart" }));
+  const watchedDeliveryWindowEndDate = toDateInputValue(
+    useWatch({ control, name: "deliveryWindowEndDate" })
+  );
   const watchedDeliveryWindowEnd =
-    useWatch({ control, name: "deliveryWindowEnd" }) ?? "";
+    toTimeInputValue(useWatch({ control, name: "deliveryWindowEnd" }));
   const watchedDeliveryWindowOpenEnded = Boolean(
     useWatch({ control, name: "deliveryWindowOpenEnded" })
   );
@@ -243,7 +261,7 @@ export function LoadInputForm({
   useEffect(() => {
     if (!initialValues) return;
 
-    reset(initialValues);
+    reset(normalizeScheduleInputValues(initialValues));
     if (initialValues.fuelPriceSource === "USER_OVERRIDE") {
       userOverrodeFuelPrice.current = true;
       queueMicrotask(() => {
@@ -323,17 +341,19 @@ export function LoadInputForm({
           ),
         }
       : null;
-    const parsedValues = loadInputSchema.parse({
-      ...values,
-      originOdometer: submittedOriginOdometer,
-      endOdometer: 0,
-      accessorialItems: [],
-      tolls: 0,
-      lumpers: 0,
-      routeEstimate: submittedRouteEstimate,
-      actualTotalMiles: 0,
-      odometerValidation: submittedOdometerValidation,
-    });
+    const parsedValues = normalizeScheduleInputValues(
+      loadInputSchema.parse({
+        ...values,
+        originOdometer: submittedOriginOdometer,
+        endOdometer: 0,
+        accessorialItems: [],
+        tolls: 0,
+        lumpers: 0,
+        routeEstimate: submittedRouteEstimate,
+        actualTotalMiles: 0,
+        odometerValidation: submittedOdometerValidation,
+      })
+    );
     const derivedLinehaulRevenue =
       parsedValues.revenueInputMode === "gross"
         ? Math.max(
@@ -425,7 +445,9 @@ export function LoadInputForm({
           zip: "",
           appointmentDate: "",
           appointmentTime: "",
+          appointmentWindowStartDate: "",
           appointmentWindowStart: "",
+          appointmentWindowEndDate: "",
           appointmentWindowEnd: "",
           appointmentWindowOpenEnded: false,
           dwellHours: DEFAULT_STOP_DWELL_HOURS,
@@ -1057,55 +1079,96 @@ export function LoadInputForm({
               label="Deadhead Origin Date"
               type="date"
               error={errors.deadheadStartDate?.message}
-              {...register("deadheadStartDate")}
+              {...register("deadheadStartDate", {
+                setValueAs: toDateInputValue,
+              })}
             />
 
             <InputField
               label="Deadhead Origin Time"
               type="time"
+              step="900"
               error={errors.deadheadStartTime?.message}
-              {...register("deadheadStartTime")}
+              {...register("deadheadStartTime", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           </div>
 
           {hasBroadWindow(
             watchedDeadheadStartDate,
             watchedDeadheadStartTime
-          ) && <BroadWindowNotice />}
+          ) && (
+            <WindowContextNotice>
+              Date captured without a fixed time. LoadIQ treats this as broad
+              planning context, not an input error.
+            </WindowContextNotice>
+          )}
         </div>
 
         <EndpointWindowCard
           title="Pickup Window"
-          dateField={
+          appointmentDateField={
             <InputField
               label="Pickup Date"
               type="date"
               error={errors.pickupDate?.message}
-              {...register("pickupDate")}
+              {...register("pickupDate", {
+                setValueAs: toDateInputValue,
+              })}
             />
           }
-          timeField={
+          appointmentTimeField={
             <InputField
               label="Pickup Time"
               type="time"
+              step="900"
               error={errors.pickupTime?.message}
-              {...register("pickupTime")}
+              {...register("pickupTime", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
-          windowStartField={
+          windowStartDateField={
             <InputField
-              label="Window Start"
+              label="Window Start Date"
+              type="date"
+              error={errors.pickupWindowStartDate?.message}
+              {...register("pickupWindowStartDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowStartTimeField={
+            <InputField
+              label="Window Start Time"
               type="time"
+              step="900"
               error={errors.pickupWindowStart?.message}
-              {...register("pickupWindowStart")}
+              {...register("pickupWindowStart", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
-          windowEndField={
+          windowEndDateField={
             <InputField
-              label="Window End"
+              label="Window End Date"
+              type="date"
+              error={errors.pickupWindowEndDate?.message}
+              {...register("pickupWindowEndDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowEndTimeField={
+            <InputField
+              label="Window End Time"
               type="time"
+              step="900"
               error={errors.pickupWindowEnd?.message}
-              {...register("pickupWindowEnd")}
+              {...register("pickupWindowEnd", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
           openEndedField={
@@ -1120,8 +1183,8 @@ export function LoadInputForm({
                   Open-ended pickup window
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  The appointment has a start time or broad date window without
-                  a fixed closing time.
+                  The appointment is flexible, but start and end dates still
+                  define the window context. Times may stay blank.
                 </span>
               </span>
             </label>
@@ -1136,47 +1199,80 @@ export function LoadInputForm({
               {...register("pickupDwellHours")}
             />
           }
-          broadWindow={hasBroadWindow(
-            watchedPickupDate,
-            watchedPickupTime,
-            watchedPickupWindowStart,
-            watchedPickupWindowEnd,
-            watchedPickupWindowOpenEnded
-          )}
+          windowContextMessage={getWindowContextMessage({
+            appointmentDate: watchedPickupDate,
+            appointmentTime: watchedPickupTime,
+            windowStartDate: watchedPickupWindowStartDate,
+            windowStartTime: watchedPickupWindowStart,
+            windowEndDate: watchedPickupWindowEndDate,
+            windowEndTime: watchedPickupWindowEnd,
+            openEnded: watchedPickupWindowOpenEnded,
+          })}
         />
 
         <EndpointWindowCard
           title="Delivery Window"
-          dateField={
+          appointmentDateField={
             <InputField
               label="Delivery Date"
               type="date"
               error={errors.deliveryDate?.message}
-              {...register("deliveryDate")}
+              {...register("deliveryDate", {
+                setValueAs: toDateInputValue,
+              })}
             />
           }
-          timeField={
+          appointmentTimeField={
             <InputField
               label="Delivery Time"
               type="time"
+              step="900"
               error={errors.deliveryTime?.message}
-              {...register("deliveryTime")}
+              {...register("deliveryTime", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
-          windowStartField={
+          windowStartDateField={
             <InputField
-              label="Window Start"
+              label="Window Start Date"
+              type="date"
+              error={errors.deliveryWindowStartDate?.message}
+              {...register("deliveryWindowStartDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowStartTimeField={
+            <InputField
+              label="Window Start Time"
               type="time"
+              step="900"
               error={errors.deliveryWindowStart?.message}
-              {...register("deliveryWindowStart")}
+              {...register("deliveryWindowStart", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
-          windowEndField={
+          windowEndDateField={
             <InputField
-              label="Window End"
+              label="Window End Date"
+              type="date"
+              error={errors.deliveryWindowEndDate?.message}
+              {...register("deliveryWindowEndDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowEndTimeField={
+            <InputField
+              label="Window End Time"
               type="time"
+              step="900"
               error={errors.deliveryWindowEnd?.message}
-              {...register("deliveryWindowEnd")}
+              {...register("deliveryWindowEnd", {
+                setValueAs: toTimeInputValue,
+              })}
             />
           }
           openEndedField={
@@ -1191,8 +1287,8 @@ export function LoadInputForm({
                   Open-ended delivery window
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  The appointment has a start time or broad date window without
-                  a fixed closing time.
+                  The appointment is flexible, but start and end dates still
+                  define the window context. Times may stay blank.
                 </span>
               </span>
             </label>
@@ -1207,13 +1303,15 @@ export function LoadInputForm({
               {...register("deliveryDwellHours")}
             />
           }
-          broadWindow={hasBroadWindow(
-            watchedDeliveryDate,
-            watchedDeliveryTime,
-            watchedDeliveryWindowStart,
-            watchedDeliveryWindowEnd,
-            watchedDeliveryWindowOpenEnded
-          )}
+          windowContextMessage={getWindowContextMessage({
+            appointmentDate: watchedDeliveryDate,
+            appointmentTime: watchedDeliveryTime,
+            windowStartDate: watchedDeliveryWindowStartDate,
+            windowStartTime: watchedDeliveryWindowStart,
+            windowEndDate: watchedDeliveryWindowEndDate,
+            windowEndTime: watchedDeliveryWindowEnd,
+            openEnded: watchedDeliveryWindowOpenEnded,
+          })}
         />
 
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
@@ -1538,22 +1636,26 @@ function RevenueModeButton({
 
 function EndpointWindowCard({
   title,
-  dateField,
-  timeField,
-  windowStartField,
-  windowEndField,
+  appointmentDateField,
+  appointmentTimeField,
+  windowStartDateField,
+  windowStartTimeField,
+  windowEndDateField,
+  windowEndTimeField,
   openEndedField,
   dwellField,
-  broadWindow,
+  windowContextMessage,
 }: {
   title: string;
-  dateField: React.ReactNode;
-  timeField: React.ReactNode;
-  windowStartField: React.ReactNode;
-  windowEndField: React.ReactNode;
+  appointmentDateField: React.ReactNode;
+  appointmentTimeField: React.ReactNode;
+  windowStartDateField: React.ReactNode;
+  windowStartTimeField: React.ReactNode;
+  windowEndDateField: React.ReactNode;
+  windowEndTimeField: React.ReactNode;
   openEndedField: React.ReactNode;
   dwellField: React.ReactNode;
-  broadWindow: boolean;
+  windowContextMessage: string;
 }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
@@ -1567,25 +1669,28 @@ function EndpointWindowCard({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {dateField}
-        {timeField}
-        {windowStartField}
-        {windowEndField}
+        {appointmentDateField}
+        {appointmentTimeField}
+        {windowStartDateField}
+        {windowStartTimeField}
+        {windowEndDateField}
+        {windowEndTimeField}
         {dwellField}
       </div>
 
       <div className="mt-4">{openEndedField}</div>
 
-      {broadWindow && <BroadWindowNotice />}
+      {windowContextMessage && (
+        <WindowContextNotice>{windowContextMessage}</WindowContextNotice>
+      )}
     </div>
   );
 }
 
-function BroadWindowNotice() {
+function WindowContextNotice({ children }: { children: React.ReactNode }) {
   return (
     <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs leading-5 text-amber-100">
-      Date captured without a fixed time/window. LoadIQ treats this as a broad
-      planning window, not an input error.
+      {children}
     </p>
   );
 }
@@ -1609,13 +1714,15 @@ function RouteStopEditor({
   onChange: (updates: Partial<RouteStopInput>) => void;
   onRemove: () => void;
 }) {
-  const broadWindow = hasBroadWindow(
-    stop.appointmentDate,
-    stop.appointmentTime,
-    stop.appointmentWindowStart,
-    stop.appointmentWindowEnd,
-    stop.appointmentWindowOpenEnded
-  );
+  const windowContextMessage = getWindowContextMessage({
+    appointmentDate: stop.appointmentDate,
+    appointmentTime: stop.appointmentTime,
+    windowStartDate: stop.appointmentWindowStartDate,
+    windowStartTime: stop.appointmentWindowStart,
+    windowEndDate: stop.appointmentWindowEndDate,
+    windowEndTime: stop.appointmentWindowEnd,
+    openEnded: stop.appointmentWindowOpenEnded,
+  });
 
   return (
     <div className="rounded-xl border border-slate-800 bg-[#0B1220] p-4">
@@ -1693,26 +1800,53 @@ function RouteStopEditor({
           <ControlledTextField
             label="Stop Date"
             type="date"
-            value={stop.appointmentDate}
-            onChange={(value) => onChange({ appointmentDate: value })}
+            value={toDateInputValue(stop.appointmentDate)}
+            onChange={(value) =>
+              onChange({ appointmentDate: toDateInputValue(value) })
+            }
           />
           <ControlledTextField
             label="Stop Time"
             type="time"
-            value={stop.appointmentTime}
-            onChange={(value) => onChange({ appointmentTime: value })}
+            step="900"
+            value={toTimeInputValue(stop.appointmentTime)}
+            onChange={(value) =>
+              onChange({ appointmentTime: toTimeInputValue(value) })
+            }
           />
           <ControlledTextField
-            label="Window Start"
-            type="time"
-            value={stop.appointmentWindowStart}
-            onChange={(value) => onChange({ appointmentWindowStart: value })}
+            label="Window Start Date"
+            type="date"
+            value={toDateInputValue(stop.appointmentWindowStartDate)}
+            onChange={(value) =>
+              onChange({ appointmentWindowStartDate: toDateInputValue(value) })
+            }
           />
           <ControlledTextField
-            label="Window End"
+            label="Window Start Time"
             type="time"
-            value={stop.appointmentWindowEnd}
-            onChange={(value) => onChange({ appointmentWindowEnd: value })}
+            step="900"
+            value={toTimeInputValue(stop.appointmentWindowStart)}
+            onChange={(value) =>
+              onChange({ appointmentWindowStart: toTimeInputValue(value) })
+            }
+          />
+          <ControlledTextField
+            label="Window End Date"
+            type="date"
+            value={toDateInputValue(stop.appointmentWindowEndDate)}
+            onChange={(value) =>
+              onChange({ appointmentWindowEndDate: toDateInputValue(value) })
+            }
+          />
+          <ControlledTextField
+            label="Window End Time"
+            type="time"
+            step="900"
+            value={toTimeInputValue(stop.appointmentWindowEnd)}
+            onChange={(value) =>
+              onChange({ appointmentWindowEnd: toTimeInputValue(value) })
+            }
           />
           <ControlledNumberField
             label="Dwell Hours"
@@ -1735,13 +1869,15 @@ function RouteStopEditor({
               Open-ended stop window
             </span>
             <span className="mt-1 block text-xs leading-5 text-slate-500">
-              The stop has a start time or broad date window without a fixed
-              closing time.
+              The stop is flexible, but start and end dates still define the
+              window context. Times may stay blank.
             </span>
           </span>
         </label>
 
-        {broadWindow && <BroadWindowNotice />}
+        {windowContextMessage && (
+          <WindowContextNotice>{windowContextMessage}</WindowContextNotice>
+        )}
       </div>
     </div>
   );
@@ -1752,11 +1888,13 @@ function ControlledTextField({
   value,
   onChange,
   type = "text",
+  step,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: React.HTMLInputTypeAttribute;
+  step?: string;
 }) {
   return (
     <label className="block">
@@ -1765,6 +1903,7 @@ function ControlledTextField({
       </span>
       <input
         type={type}
+        step={step}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
@@ -1950,12 +2089,149 @@ function hasBroadWindow(
   openEnded?: boolean
 ) {
   return Boolean(
-    date &&
-      !time &&
-      !windowStart &&
-      !windowEnd &&
+    toDateInputValue(date) &&
+      !toTimeInputValue(time) &&
+      !toTimeInputValue(windowStart) &&
+      !toTimeInputValue(windowEnd) &&
       !openEnded
   );
+}
+
+function getWindowContextMessage({
+  appointmentDate,
+  appointmentTime,
+  windowStartDate,
+  windowStartTime,
+  windowEndDate,
+  windowEndTime,
+  openEnded,
+}: {
+  appointmentDate?: string;
+  appointmentTime?: string;
+  windowStartDate?: string;
+  windowStartTime?: string;
+  windowEndDate?: string;
+  windowEndTime?: string;
+  openEnded?: boolean;
+}) {
+  const normalizedAppointmentDate = toDateInputValue(appointmentDate);
+  const normalizedAppointmentTime = toTimeInputValue(appointmentTime);
+  const normalizedStartDate = toDateInputValue(windowStartDate);
+  const normalizedStartTime = toTimeInputValue(windowStartTime);
+  const normalizedEndDate = toDateInputValue(windowEndDate);
+  const normalizedEndTime = toTimeInputValue(windowEndTime);
+
+  if (openEnded && (!normalizedStartDate || !normalizedEndDate)) {
+    return "Open-ended windows still need start and end dates. Times can stay blank for broad date context.";
+  }
+
+  if (normalizedStartDate && !normalizedEndDate) {
+    return "Window start date is set. Add an end date or clear the start date to avoid incomplete window context.";
+  }
+
+  if (!normalizedStartDate && normalizedEndDate) {
+    return "Window end date is set. Add a start date or clear the end date to avoid incomplete window context.";
+  }
+
+  if (
+    normalizedStartDate &&
+    normalizedEndDate &&
+    !normalizedStartTime &&
+    !normalizedEndTime
+  ) {
+    return "Start and end dates captured without exact times. LoadIQ treats this as broad date-window context.";
+  }
+
+  if (
+    normalizedAppointmentDate &&
+    !normalizedAppointmentTime &&
+    !normalizedStartDate &&
+    !normalizedEndDate &&
+    !normalizedStartTime &&
+    !normalizedEndTime &&
+    !openEnded
+  ) {
+    return "Date captured without a fixed time/window. LoadIQ treats this as broad planning context, not an input error.";
+  }
+
+  return "";
+}
+
+function normalizeScheduleInputValues(
+  values: LoadInputFormValues
+): LoadInputFormValues {
+  const pickupWindow = normalizeWindowDates({
+    appointmentDate: values.pickupDate,
+    startDate: values.pickupWindowStartDate,
+    endDate: values.pickupWindowEndDate,
+  });
+  const deliveryWindow = normalizeWindowDates({
+    appointmentDate: values.deliveryDate,
+    startDate: values.deliveryWindowStartDate,
+    endDate: values.deliveryWindowEndDate,
+  });
+
+  return {
+    ...values,
+    deadheadStartDate: toDateInputValue(values.deadheadStartDate),
+    deadheadStartTime: toTimeInputValue(values.deadheadStartTime),
+    deadheadEndDate: toDateInputValue(values.deadheadEndDate),
+    pickupDate: toDateInputValue(values.pickupDate),
+    pickupTime: toTimeInputValue(values.pickupTime),
+    pickupWindowStartDate: pickupWindow.startDate,
+    pickupWindowStart: toTimeInputValue(values.pickupWindowStart),
+    pickupWindowEndDate: pickupWindow.endDate,
+    pickupWindowEnd: toTimeInputValue(values.pickupWindowEnd),
+    deliveryDate: toDateInputValue(values.deliveryDate),
+    deliveryTime: toTimeInputValue(values.deliveryTime),
+    deliveryWindowStartDate: deliveryWindow.startDate,
+    deliveryWindowStart: toTimeInputValue(values.deliveryWindowStart),
+    deliveryWindowEndDate: deliveryWindow.endDate,
+    deliveryWindowEnd: toTimeInputValue(values.deliveryWindowEnd),
+    routeStops: values.routeStops.map((stop) => {
+      const stopWindow = normalizeWindowDates({
+        appointmentDate: stop.appointmentDate,
+        startDate: stop.appointmentWindowStartDate,
+        endDate: stop.appointmentWindowEndDate,
+      });
+
+      return {
+        ...stop,
+        appointmentDate: toDateInputValue(stop.appointmentDate),
+        appointmentTime: toTimeInputValue(stop.appointmentTime),
+        appointmentWindowStartDate: stopWindow.startDate,
+        appointmentWindowStart: toTimeInputValue(stop.appointmentWindowStart),
+        appointmentWindowEndDate: stopWindow.endDate,
+        appointmentWindowEnd: toTimeInputValue(stop.appointmentWindowEnd),
+      };
+    }),
+  };
+}
+
+function normalizeWindowDates({
+  appointmentDate,
+  startDate,
+  endDate,
+}: {
+  appointmentDate: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const normalizedAppointmentDate = toDateInputValue(appointmentDate);
+  const normalizedStartDate = toDateInputValue(startDate);
+  const normalizedEndDate = toDateInputValue(endDate);
+
+  if (!normalizedStartDate && !normalizedEndDate && normalizedAppointmentDate) {
+    return {
+      startDate: normalizedAppointmentDate,
+      endDate: normalizedAppointmentDate,
+    };
+  }
+
+  return {
+    startDate: normalizedStartDate,
+    endDate: normalizedEndDate,
+  };
 }
 
 function RouteWarnings({ estimate }: { estimate: RouteEstimate }) {

@@ -32,7 +32,9 @@ export type RouteStopInput = {
   zip: string;
   appointmentDate: string;
   appointmentTime: string;
+  appointmentWindowStartDate: string;
   appointmentWindowStart: string;
+  appointmentWindowEndDate: string;
   appointmentWindowEnd: string;
   appointmentWindowOpenEnded: boolean;
   dwellHours: number;
@@ -132,13 +134,17 @@ export type LoadInput = {
   dispatchDate: string;
   pickupDate: string;
   pickupTime: string;
+  pickupWindowStartDate: string;
   pickupWindowStart: string;
+  pickupWindowEndDate: string;
   pickupWindowEnd: string;
   pickupWindowOpenEnded: boolean;
   pickupDwellHours: number;
   deliveryDate: string;
   deliveryTime: string;
+  deliveryWindowStartDate: string;
   deliveryWindowStart: string;
+  deliveryWindowEndDate: string;
   deliveryWindowEnd: string;
   deliveryWindowOpenEnded: boolean;
   deliveryDwellHours: number;
