@@ -11,6 +11,9 @@
   source authority, allowed/prohibited use, source-library categories,
   DAT/load-board exclusion, and industry association perspective
   classification.
+- Added the first Karpilo Atlas Core entitlement and module-contract scaffold
+  for tier-governed Core, Freight, Route, Education, and User-Owned
+  Intelligence outputs.
 
 ## 2026-06-28
 

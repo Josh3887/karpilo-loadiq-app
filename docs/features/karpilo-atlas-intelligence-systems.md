@@ -724,7 +724,14 @@ if (entitlements.freight.intelligenceEnabled) {
 }
 ```
 
-Suggested future contract:
+Initial entitlement scaffold:
+
+```text
+src/lib/karpilo-atlas/entitlements.ts
+src/lib/karpilo-atlas/types.ts
+```
+
+Implemented contract:
 
 ```ts
 export type KarpiloLoadIQTier = "silver" | "gold" | "platinum" | "pro";
@@ -818,9 +825,14 @@ export type KarpiloAtlasEntitlements = {
 export function getKarpiloAtlasEntitlements(
   tier: KarpiloLoadIQTier
 ): KarpiloAtlasEntitlements {
-  // Return centralized entitlement object.
+  // Returns the centralized Atlas entitlement object.
 }
 ```
+
+This scaffold defines Atlas-specific product entitlement contracts only. It
+does not change billing provider behavior, checkout behavior, Stripe mappings,
+existing app feature gates, UI locks, calculator behavior, or public tier
+availability.
 
 ## Source Registry Scaffold
 
@@ -1056,10 +1068,11 @@ No app code.
 
 ### Phase 2 - Type/Entitlement Scaffold
 
-Potential future files:
+Initial implemented files:
 
 ```text
 src/lib/karpilo-atlas/constants.ts
+src/lib/karpilo-atlas/index.ts
 src/lib/karpilo-atlas/types.ts
 src/lib/karpilo-atlas/entitlements.ts
 ```
@@ -1080,10 +1093,15 @@ src/lib/karpilo-atlas/sources/source-registry.ts
 
 ### Phase 4 - User-Owned Intelligence Scaffold
 
-Potential future files:
+Initial implemented files:
 
 ```text
 src/lib/karpilo-atlas/user-owned-intelligence/types.ts
+```
+
+Potential future files:
+
+```text
 src/lib/karpilo-atlas/user-owned-intelligence/audit-types.ts
 ```
 
@@ -1100,7 +1118,16 @@ Implement:
 
 ### Phase 6 - Module Service Scaffolding
 
-Potential future files:
+Initial implemented contract files:
+
+```text
+src/lib/karpilo-atlas/core/types.ts
+src/lib/karpilo-atlas/freight/types.ts
+src/lib/karpilo-atlas/route/types.ts
+src/lib/karpilo-atlas/education/types.ts
+```
+
+Potential future service directories:
 
 ```text
 src/lib/karpilo-atlas/core/
