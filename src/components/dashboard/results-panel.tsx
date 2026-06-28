@@ -227,8 +227,16 @@ export function ResultsPanel({
                   value={`${formatNumber(input.loadedMiles)} mi`}
                 />
                 <BreakdownRow
-                  label="Estimated Route"
+                  label="Google Estimated Loaded"
                   value={formatOptionalMiles(getEstimatedRouteMiles(input))}
+                />
+                <BreakdownRow
+                  label="Google Estimated Deadhead"
+                  value={formatOptionalMiles(getEstimatedDeadheadRouteMiles(input))}
+                />
+                <BreakdownRow
+                  label="Total Google Estimate"
+                  value={formatOptionalMiles(getEstimatedTotalRouteMiles(input))}
                 />
                 <BreakdownRow
                   label="Variance"
@@ -249,8 +257,9 @@ export function ResultsPanel({
               </div>
 
               <p className="mt-4 text-xs leading-5 text-slate-500">
-                Google route miles remain separate from paid loaded miles unless
-                copied by explicit user action.
+                Paid loaded miles are the miles you are paid on. Google
+                estimated miles are planning estimates only and are not
+                truck-legal routing.
               </p>
             </div>
           </div>
@@ -350,6 +359,13 @@ function BreakdownRow({ label, value }: BreakdownRowProps) {
 
 function getEstimatedRouteMiles(input: LoadInput) {
   if (
+    input.routeEstimate?.loadedEstimate?.estimatedLoadedMiles !== null &&
+    input.routeEstimate?.loadedEstimate?.estimatedLoadedMiles !== undefined
+  ) {
+    return input.routeEstimate.loadedEstimate.estimatedLoadedMiles;
+  }
+
+  if (
     input.routeEstimate?.estimatedMiles !== null &&
     input.routeEstimate?.estimatedMiles !== undefined
   ) {
@@ -361,6 +377,37 @@ function getEstimatedRouteMiles(input: LoadInput) {
   }
 
   return null;
+}
+
+function getEstimatedDeadheadRouteMiles(input: LoadInput) {
+  if (
+    input.routeEstimate?.deadheadEstimate?.estimatedDeadheadMiles !== null &&
+    input.routeEstimate?.deadheadEstimate?.estimatedDeadheadMiles !== undefined
+  ) {
+    return input.routeEstimate.deadheadEstimate.estimatedDeadheadMiles;
+  }
+
+  if (input.routeDeadheadMiles > 0) {
+    return input.routeDeadheadMiles;
+  }
+
+  return null;
+}
+
+function getEstimatedTotalRouteMiles(input: LoadInput) {
+  if (
+    input.routeEstimate?.totalEstimate?.estimatedMiles !== null &&
+    input.routeEstimate?.totalEstimate?.estimatedMiles !== undefined
+  ) {
+    return input.routeEstimate.totalEstimate.estimatedMiles;
+  }
+
+  const loaded = getEstimatedRouteMiles(input);
+  const deadhead = getEstimatedDeadheadRouteMiles(input);
+
+  if (loaded === null && deadhead === null) return null;
+
+  return Number(((loaded ?? 0) + (deadhead ?? 0)).toFixed(1));
 }
 
 function getRouteMileageVariance(input: LoadInput) {

@@ -2,11 +2,55 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { estimateRoute } from "@/services/route-intelligence/route-intelligence-service";
+import { RouteStopKind } from "@/types/route-intelligence";
+
+const routeStopKindValues: [RouteStopKind, ...RouteStopKind[]] = [
+  "pickup",
+  "delivery",
+  "intermediate_stop",
+  "fuel",
+  "def",
+  "scale",
+  "rest",
+  "customer",
+  "other",
+];
+
+const routeStopSchema = z.object({
+  id: z.string().optional(),
+  address: z.string().trim().min(3),
+  label: z.string().trim().optional(),
+  kind: z.enum(routeStopKindValues).default("intermediate_stop"),
+  sequence: z.coerce.number().int().positive().optional(),
+});
 
 const estimateRouteRequestSchema = z.object({
-  origin: z.string().trim().min(3),
-  destination: z.string().trim().min(3),
+  origin: z.string().trim().optional(),
+  destination: z.string().trim().optional(),
+  deadheadOrigin: z.string().trim().optional(),
+  pickupAddress: z.string().trim().optional(),
+  deliveryAddress: z.string().trim().optional(),
+  stops: z.array(routeStopSchema).optional().default([]),
   provider: z.enum(["google_estimate", "trimble_truck"]).default("google_estimate"),
+}).superRefine((value, context) => {
+  const pickupAddress = value.pickupAddress ?? value.origin ?? "";
+  const deliveryAddress = value.deliveryAddress ?? value.destination ?? "";
+
+  if (pickupAddress.length < 3) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Pickup address is required.",
+      path: ["pickupAddress"],
+    });
+  }
+
+  if (deliveryAddress.length < 3) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Delivery address is required.",
+      path: ["deliveryAddress"],
+    });
+  }
 });
 
 export async function POST(request: NextRequest) {
@@ -54,11 +98,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const response = await estimateRoute(
-    parsed.data.origin,
-    parsed.data.destination,
-    parsed.data.provider
-  );
+  const response = await estimateRoute({
+    deadheadOrigin: parsed.data.deadheadOrigin,
+    pickupAddress: parsed.data.pickupAddress ?? parsed.data.origin,
+    deliveryAddress: parsed.data.deliveryAddress ?? parsed.data.destination,
+    stops: parsed.data.stops.map((stop, index) => ({
+      ...stop,
+      sequence: stop.sequence ?? index + 1,
+    })),
+    provider: parsed.data.provider,
+  });
 
   return NextResponse.json(response, {
     headers: {

@@ -33,10 +33,10 @@ business model, but it is duplicated wiring.
 
 The third issue is disconnected or scaffolded fields. Some typed calculator
 fields and demo values exist without a complete production UI or report
-consumer. Examples include `carrierLoadId`, `dispatcherReference`,
-`routeLoadedMiles`, `actualLoadedMiles`, `routeDeadheadMiles`,
-`actualDeadheadMiles`, and parts of the portal profile bridge. These should be
-classified as scaffolded until a later wiring branch assigns clear ownership.
+consumer. Examples include `carrierLoadId`, `dispatcherReference`, and parts of
+the portal profile bridge. Route estimate fields now have calculator/results
+ownership, while first-class database columns for route/odometer/purchase
+analytics remain future schema work.
 
 No implementation changes are made by this document.
 
@@ -58,7 +58,7 @@ No implementation changes are made by this document.
 | Calculator inputs | Calculator form, saved-load edit hydration, lane template hydration | Authenticated user | Calculator engine, save-load service, snapshots | React Hook Form, `LoadInput`, `input_snapshot` | Zod schema, defaults, optional EIA lookup | CONNECTED with scaffolded fields |
 | Calculator outputs | `calculateLoadMetrics()` | Application calculator engine | Results panel, saved-load service, reports, dashboard history | Zustand state, `result_snapshot`, flattened saved_load columns | Calculator input schema | CONNECTED |
 | Saved load estimate | Save Load action from current input/result | Authenticated user | Loads page, load detail, report, lane templates, edit estimate | `saved_loads`, `saved_load_stops`, snapshots | Entitlement gate, Supabase schema | CONNECTED with optional-column fallback |
-| Saved load actuals | Load detail post-trip actuals form | Authenticated user | Detail actual result, report actual result, post-trip rollups | `saved_loads.actuals_snapshot`, `post_trip_actuals` | Supabase auth, RLS | CONNECTED |
+| Saved load actuals | Load detail post-trip actuals form | Authenticated user | Detail actual result, report actual result, post-trip rollups, odometer validation, fuel/DEF purchase context | `saved_loads.actuals_snapshot`, `post_trip_actuals` | Supabase auth, RLS | CONNECTED |
 | Lane templates | Saved load detail action from `input_snapshot` | Authenticated user | Calculator initial values | `lane_templates.input_snapshot` | Saved-load input compatibility | CONNECTED |
 | Dashboard summaries | Saved-load history and calculator runtime state | Application UI | Dashboard/history widgets, billing usage counts | `saved_loads`, local store | Supabase auth, entitlements | CONNECTED |
 | Reports | Saved load detail/report page | Authenticated user with export entitlement | Print/export-style report | Reads `saved_loads`, `saved_load_stops`, snapshots | Billing entitlement gate | CONNECTED, gated |
@@ -93,8 +93,9 @@ No implementation changes are made by this document.
 | Carrier load ID/dispatcher reference | Schema/demo only from inspected production UI | `input_snapshot` if present | Unknown | Not clearly surfaced in production UI | No clear consumer | Demo data only observed | SCAFFOLDED/UNKNOWN |
 | Pickup/delivery/deadhead origin | Calculator form | `saved_loads`, `saved_load_stops`, `input_snapshot` | User | Calculator | Engine, route stops, detail/report | Lane, route stop records, report route context | CONNECTED |
 | Loaded/deadhead miles | Calculator form | `saved_loads`, `input_snapshot`, result snapshot | User | Calculator | Calculator engine, detail/report, Atlas route | Fuel, RPM, true RPM, deadhead percent | CONNECTED |
-| Route/actual loaded/deadhead miles | Schema/demo values | `input_snapshot` if present | Unknown | No clear production UI found | No clear engine/report consumer found | Not observed in main save/report path | SCAFFOLDED |
-| Route stops | Calculator stop editor | `saved_load_stops`, `input_snapshot` | User | Calculator | Route model, detail/report, save service | Stop revenue/expense included through accessorial inputs if entered there; stops are route context | CONNECTED |
+| Route estimated loaded/deadhead/total miles | Google route estimate action | `input_snapshot.routeEstimate`, `routeLoadedMiles`, `routeDeadheadMiles` | User/app | Calculator route intelligence panel | Results panel, saved-load detail via snapshots, route model | Estimated miles stay separate from paid loaded miles; copy to paid loaded miles remains explicit | CONNECTED |
+| Odometer validation | Running load workflow and saved-load detail | `input_snapshot`, `actuals_snapshot` | User | Calculator running status, saved-load actuals | Detail/report actual context, future analytics | Origin/end odometer produce actual total miles and variance warnings; planned/booked/dispatched do not allow odometer input | CONNECTED through snapshots |
+| Route stops | Calculator stop editor | `saved_load_stops`, `input_snapshot`, `routeEstimate.loadedEstimate.legs` | User | Calculator | Route model, detail/report, save service | Stops are routed in user-entered order; stop revenue/expense remain accessorial/business context | CONNECTED |
 | Dispatch/deadhead dates and days | Calculator form | `input_snapshot`, `result_snapshot`, flattened saved load | User | Calculator | Engine, detail/report, Atlas route | Daily overhead, daily profitability, report dates | CONNECTED |
 | Pay period dates | Calculator form | `input_snapshot` | User | Calculator | No clear report/engine consumer in inspected paths | Snapshot only | PARTIALLY CONNECTED |
 | Revenue mode/gross/RPM/FSC | Calculator form | `saved_loads`, `input_snapshot`, `result_snapshot` | User | Calculator | Engine, results, history/detail/report | Gross, linehaul, revenue per mile, net | CONNECTED |
@@ -105,7 +106,7 @@ No implementation changes are made by this document.
 | Calculator results | Calculator engine | Zustand store, `result_snapshot`, flattened saved-load fields | App engine | Recomputed from inputs | Results panel, save service, history/detail/report | Profitability score/band, true RPM, costs, warnings | CONNECTED |
 | Saved-load input snapshot | Save service | `saved_loads.input_snapshot` | User/app | Save Load | Edit estimate, lane templates, reports/detail context | Rehydrates calculator | CONNECTED |
 | Saved-load result snapshot | Save service | `saved_loads.result_snapshot` | App engine | Save Load | Detail/report | Report metrics and explanations | CONNECTED |
-| Saved-load actuals | Load detail actuals form | `saved_loads.actuals_snapshot`, `post_trip_actuals` | User | Load detail | Detail/report actuals | Actual net, actual expense total, variance | CONNECTED |
+| Saved-load actuals | Load detail actuals form | `saved_loads.actuals_snapshot`, `post_trip_actuals` | User | Load detail | Detail/report actuals | Actual net, actual expense total, odometer validation, fuel purchases, DEF purchases, variance | CONNECTED |
 | Weather profitability snapshot | Results panel gated by Pro-like entitlement | `saved_loads.weather_profitability_snapshot` if allowed | App/user | Results panel | Saved load/detail future use | Not central to core circuit | PARTIALLY CONNECTED with tier conflict |
 | Lane template input | Saved-load detail action | `lane_templates.input_snapshot` | User | Saved load detail | Calculator initial values | Reuses prior load structure | CONNECTED |
 | Billing entitlement | Subscription records and usage events | `subscriptions`, `usage_events`, `saved_loads` count | Billing domain | Stripe/manual/test harness code | Calculate/save/export/template/weather gates | Feature access gates | CONNECTED with unresolved tier semantics |
@@ -197,10 +198,7 @@ Saved Loads
 | --- | --- | --- | --- | --- |
 | `carrierLoadId` | `LoadInput`, schema, demo data | No inspected production UI/report consumer | SCAFFOLDED | Decide whether this is broker/carrier reference or remove from active form model later |
 | `dispatcherReference` | `LoadInput`, schema, demo data | No inspected production UI/report consumer | SCAFFOLDED | Do not add dispatch feature semantics without product approval |
-| `routeLoadedMiles` | Schema/types/demo | No main engine/report consumer found | SCAFFOLDED | Might be future route-vs-actual split |
-| `actualLoadedMiles` | Schema/types/demo | No main engine/report consumer found | SCAFFOLDED | Actual miles currently handled by post-trip actuals only at cost level |
-| `routeDeadheadMiles` | Schema/types/demo | No main engine/report consumer found | SCAFFOLDED | Current deadhead source is `deadheadMiles` |
-| `actualDeadheadMiles` | Schema/types/demo | No main engine/report consumer found | SCAFFOLDED | Actual route reconciliation not wired |
+| `actualLoadedMiles` / `actualDeadheadMiles` | Odometer validation and snapshot model | `input_snapshot` / `actuals_snapshot` if present | PARTIALLY CONNECTED | Actual total odometer miles are wired; loaded/deadhead actual split remains future unless user-entered values are added intentionally |
 | Pay period start/end | Calculator form | `input_snapshot`; no clear result/report math | PARTIALLY CONNECTED | Pay template period semantics exist, but report usage is thin |
 | Portal plan interest | Portal settings/public forms | Portal tables | BLOCKED/SEPARATE | Not a commercial tier entitlement source |
 | Weather profitability snapshot | Results panel Pro-like gate | Optional save field | PARTIALLY CONNECTED | Tier conflict and snapshot consumers need later audit |
@@ -213,7 +211,7 @@ Saved Loads
 | Equipment context to persistent saved equipment snapshot | Settings -> Calculator -> Saved Load -> Detail/Report | Missing live equipment snapshot and truck profile columns | `fix/loadiq-supabase-forward-reconciliation-application` |
 | Portal profile to app operating profile | Portal bridge -> Settings operating profile | Portal tables absent and ownership boundary unclear | `fix/loadiq-portal-profile-boundary` after Supabase reconciliation |
 | Calculator default hydration ownership | Settings -> one calculator default owner -> form/store | Duplicate state owner in form and Zustand store | `fix/loadiq-calculator-default-hydration` |
-| Route-vs-actual mile fields | Calculator estimate -> actual reconciliation/report | Fields exist but no primary consumer found | `fix/loadiq-route-actual-mileage-wiring` only if product-approved |
+| First-class route/odometer/purchase analytics columns | Calculator/detail snapshots -> durable analytics/reporting | No schema columns by design in this branch | Future schema branch only after approval |
 | Pay period fields to reports | Pay template/load input -> report/pay review | Snapshot only, no clear report math | `fix/loadiq-pay-period-report-context` |
 | Weather profitability snapshot reporting | Weather panel -> saved load -> report/detail | Entitlement/tier conflict and consumer thinness | Wait for billing reconciliation |
 | Billing tier semantics to feature gates | Product tiers -> entitlement code -> UI claims | Silver/Gold/Platinum/Pro conflict unresolved | `fix/loadiq-billing-tier-entitlement-alignment` |

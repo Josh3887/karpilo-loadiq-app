@@ -1,7 +1,12 @@
-import { estimateGoogleRoute, validateGoogleAddress } from "./google-provider";
+import {
+  estimateGoogleRoute,
+  estimateGoogleRoutePlan,
+  validateGoogleAddress,
+} from "./google-provider";
 import { getUnavailableTrimbleRouteEstimate } from "./trimble-provider";
 import {
   AddressValidationResponse,
+  RouteEstimateRequest,
   RouteEstimateResponse,
   RouteProvider,
 } from "@/types/route-intelligence";
@@ -27,13 +32,30 @@ export async function validateAddress(
 }
 
 export async function estimateRoute(
-  origin: string,
-  destination: string,
+  input: string | RouteEstimateRequest,
+  destination?: string,
   provider: RouteProvider = "google_estimate"
 ): Promise<RouteEstimateResponse> {
-  if (provider === "trimble_truck") {
-    return getUnavailableTrimbleRouteEstimate(origin, destination);
+  const request =
+    typeof input === "string"
+      ? {
+          pickupAddress: input,
+          deliveryAddress: destination ?? "",
+          provider,
+        }
+      : {
+          ...input,
+          provider: input.provider ?? provider,
+        };
+  const selectedProvider = request.provider ?? provider;
+
+  if (selectedProvider === "trimble_truck") {
+    return getUnavailableTrimbleRouteEstimate(request);
   }
 
-  return estimateGoogleRoute(origin, destination);
+  if (typeof input === "string") {
+    return estimateGoogleRoute(input, destination ?? "");
+  }
+
+  return estimateGoogleRoutePlan(request);
 }

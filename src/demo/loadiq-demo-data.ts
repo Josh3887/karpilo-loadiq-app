@@ -90,6 +90,9 @@ export const demoLoadInput: LoadInput = {
   deadheadStartCity: "Dayton",
   deadheadStartState: "OH",
   deadheadStartZip: "45402",
+  deadheadOriginSuggestionApplied: false,
+  deadheadOriginSuggestionSourceLoadId: "",
+  suggestedOriginOdometer: 0,
   routeStops: [
     {
       id: "demo-stop-little-rock",
@@ -129,6 +132,10 @@ export const demoLoadInput: LoadInput = {
   actualLoadedMiles: 0,
   routeDeadheadMiles: 82,
   actualDeadheadMiles: 0,
+  originOdometer: 0,
+  endOdometer: 0,
+  actualTotalMiles: 0,
+  odometerValidation: null,
   dispatchDays: 2.5,
   deadheadDays: 0.25,
   dispatchDate: "2026-05-13",

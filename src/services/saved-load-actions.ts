@@ -205,7 +205,7 @@ export async function updateSavedLoadActuals(
   const { data: load, error: loadError } = await supabase
     .from("saved_loads")
     .select(
-      "gross_revenue, total_miles, operational_cost, input_snapshot, result_snapshot"
+      "gross_revenue, loaded_miles, total_miles, operational_cost, input_snapshot, result_snapshot"
     )
     .eq("id", loadId)
     .eq("user_id", userId)
@@ -241,6 +241,7 @@ export async function updateSavedLoadActuals(
       grossRevenue: Number(load.gross_revenue),
       estimatedTripCost,
       totalTripMiles: totalMiles,
+      paidLoadedMiles: Number(load.loaded_miles),
     }
   );
   const actualNet = Number(normalizedActuals.actualNetProfit ?? 0);

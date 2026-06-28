@@ -1,4 +1,5 @@
 import { LoadInput, LoadResult } from "@/types/load";
+import { LoadPurchaseEntry, OdometerValidation } from "@/types/trip-validation";
 
 export type SavedLoadStatus =
   | "calculated"
@@ -29,6 +30,8 @@ export type PostTripActualExpense = {
   amount: number;
   date: string;
   vendorName?: string;
+  city?: string;
+  state?: string;
   location?: string;
   notes?: string;
   receiptAttached?: boolean;
@@ -54,6 +57,16 @@ export type SavedLoadActuals = {
   parking: number;
   other: number;
   postTripActualExpenses?: PostTripActualExpense[];
+  fuelPurchases?: LoadPurchaseEntry[];
+  defPurchases?: LoadPurchaseEntry[];
+  originOdometer?: number;
+  endOdometer?: number;
+  actualTotalMiles?: number;
+  actualDeadheadMiles?: number;
+  actualLoadedMiles?: number;
+  odometerVarianceVsEstimated?: number;
+  odometerVarianceVsPaid?: number;
+  odometerValidation?: OdometerValidation;
   actualGrossRevenue?: number;
   estimatedTripCost?: number;
   actualTripCost?: number;

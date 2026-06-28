@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,13 +13,21 @@ import {
 } from "@/lib/load-schema";
 import { getCalculatorDefaults } from "@/services/calculator-defaults";
 import { getDieselPrice } from "@/services/fuel-prices";
+import {
+  DeadheadContinuitySuggestion,
+  getDeadheadContinuitySuggestion,
+} from "@/services/saved-load-input";
+import { buildOdometerValidation, isRunningLoadStatus } from "@/services/trip-validation";
 import { AccessorialInputItem } from "@/types/accessorial";
+import { LOAD_RUN_STATUS_OPTIONS } from "@/lib/fuel-gauge";
 import {
   GOOGLE_ROUTE_DISCLAIMER,
   RouteEstimate,
   RouteEstimateResponse,
+  RouteStopKind,
   TRIMBLE_ROUTE_PLACEHOLDER,
 } from "@/types/route-intelligence";
+import { RouteStopInput } from "@/types/load";
 
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
 
@@ -32,6 +40,7 @@ type LoadInputFormProps = {
 export function LoadInputForm({
   onCalculate,
   initialValues,
+  previewMode = false,
 }: LoadInputFormProps) {
   const [accessorialItems, setAccessorialItems] = useState<
     AccessorialInputItem[]
@@ -41,6 +50,8 @@ export function LoadInputForm({
   const [routeEstimate, setRouteEstimate] = useState<RouteEstimate | null>(
     initialValues?.routeEstimate ?? null
   );
+  const [continuitySuggestion, setContinuitySuggestion] =
+    useState<DeadheadContinuitySuggestion | null>(null);
   const [isEstimatingRoute, setIsEstimatingRoute] = useState(false);
   const userOverrodeFuelPrice = useRef(false);
 
@@ -66,9 +77,60 @@ export function LoadInputForm({
   const fuelSurchargeIncludedInGross = Boolean(
     useWatch({ control, name: "fuelSurchargeIncludedInGross" })
   );
+  const routeStops = (useWatch({ control, name: "routeStops" }) ??
+    []) as RouteStopInput[];
+  const loadRunStatus =
+    useWatch({ control, name: "loadRunStatus" }) ?? "planned";
+  const deadheadMiles = Number(useWatch({ control, name: "deadheadMiles" }) ?? 0);
+  const originOdometer = Number(
+    useWatch({ control, name: "originOdometer" }) ?? 0
+  );
+  const endOdometer = Number(useWatch({ control, name: "endOdometer" }) ?? 0);
   const routeMileageVariance = getRouteMileageVariance(
     routeEstimate,
     paidLoadedMiles
+  );
+  const odometerValidation = buildOdometerValidation({
+    originOdometer,
+    endOdometer,
+    estimatedTotalMiles:
+      routeEstimate?.totalEstimate?.estimatedMiles ??
+      deadheadMiles + paidLoadedMiles,
+    paidLoadedMiles,
+    capturedAtStatus: loadRunStatus,
+  });
+  const applyDeadheadSuggestion = useCallback(
+    (suggestion: DeadheadContinuitySuggestion) => {
+      setValue("deadheadStartAddress", suggestion.address, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("deadheadStartCity", suggestion.city, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("deadheadStartState", suggestion.state, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("deadheadStartZip", suggestion.zip, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("deadheadOriginSuggestionApplied", true, {
+        shouldDirty: true,
+      });
+      setValue("deadheadOriginSuggestionSourceLoadId", suggestion.sourceLoadId, {
+        shouldDirty: true,
+      });
+
+      if (suggestion.suggestedOriginOdometer) {
+        setValue("suggestedOriginOdometer", suggestion.suggestedOriginOdometer, {
+          shouldDirty: true,
+        });
+      }
+    },
+    [setValue]
   );
 
   useEffect(() => {
@@ -168,8 +230,53 @@ export function LoadInputForm({
     });
   }, [initialValues, reset]);
 
+  useEffect(() => {
+    if (previewMode || initialValues) return;
+
+    let cancelled = false;
+
+    async function loadContinuitySuggestion() {
+      try {
+        const suggestion = await getDeadheadContinuitySuggestion();
+
+        if (cancelled || !suggestion) return;
+
+        setContinuitySuggestion(suggestion);
+
+        const currentValues = getValues();
+        const hasDeadheadOrigin = Boolean(
+          currentValues.deadheadStartAddress ||
+            currentValues.deadheadStartCity ||
+            currentValues.deadheadStartState ||
+            currentValues.deadheadStartZip
+        );
+
+        if (!hasDeadheadOrigin) {
+          applyDeadheadSuggestion(suggestion);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    void loadContinuitySuggestion();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyDeadheadSuggestion, getValues, initialValues, previewMode]);
+
   function submit(values: LoadInputRawValues) {
     const paidMiles = Number(values.loadedMiles ?? 0);
+    const submittedOdometerValidation = buildOdometerValidation({
+      originOdometer: Number(values.originOdometer ?? 0),
+      endOdometer: Number(values.endOdometer ?? 0),
+      estimatedTotalMiles:
+        routeEstimate?.totalEstimate?.estimatedMiles ??
+        Number(values.loadedMiles ?? 0) + Number(values.deadheadMiles ?? 0),
+      paidLoadedMiles: paidMiles,
+      capturedAtStatus: String(values.loadRunStatus ?? "planned"),
+    });
     const submittedRouteEstimate = routeEstimate
       ? {
           ...routeEstimate,
@@ -183,6 +290,8 @@ export function LoadInputForm({
       ...values,
       accessorialItems,
       routeEstimate: submittedRouteEstimate,
+      actualTotalMiles: submittedOdometerValidation.actualTotalMiles ?? 0,
+      odometerValidation: submittedOdometerValidation,
     });
     const derivedLinehaulRevenue =
       parsedValues.revenueInputMode === "gross"
@@ -240,12 +349,114 @@ export function LoadInputForm({
       .join(", ");
   }
 
+  function buildDeadheadAddress(values: LoadInputRawValues) {
+    return [
+      values.deadheadStartAddress,
+      values.deadheadStartCity,
+      values.deadheadStartState,
+      values.deadheadStartZip,
+    ]
+      .filter((part): part is string => typeof part === "string")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  function buildStopAddress(stop: RouteStopInput) {
+    return [stop.address, stop.city, stop.state, stop.zip]
+      .filter(Boolean)
+      .map((part) => String(part).trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  function addRouteStop() {
+    setValue(
+      "routeStops",
+      [
+        ...routeStops,
+        {
+          id: createRouteStopId(),
+          stopType: "intermediate_stop",
+          label: "",
+          address: "",
+          city: "",
+          state: "",
+          zip: "",
+          milesFromPrevious: 0,
+          stopRevenue: 0,
+          stopExpense: 0,
+          notes: "",
+        },
+      ],
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      }
+    );
+  }
+
+  function updateRouteStop(
+    index: number,
+    updates: Partial<RouteStopInput>
+  ) {
+    setValue(
+      "routeStops",
+      routeStops.map((stop, stopIndex) =>
+        stopIndex === index ? { ...stop, ...updates } : stop
+      ),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      }
+    );
+  }
+
+  function removeRouteStop(index: number) {
+    setValue(
+      "routeStops",
+      routeStops.filter((_, stopIndex) => stopIndex !== index),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      }
+    );
+  }
+
+  function clearDeadheadSuggestion() {
+    setValue("deadheadStartAddress", "", { shouldDirty: true });
+    setValue("deadheadStartCity", "", { shouldDirty: true });
+    setValue("deadheadStartState", "", { shouldDirty: true });
+    setValue("deadheadStartZip", "", { shouldDirty: true });
+    setValue("deadheadOriginSuggestionApplied", false, { shouldDirty: true });
+    setValue("deadheadOriginSuggestionSourceLoadId", "", { shouldDirty: true });
+  }
+
+  function applySuggestedOriginOdometer() {
+    if (!continuitySuggestion?.suggestedOriginOdometer) return;
+
+    setValue("originOdometer", continuitySuggestion.suggestedOriginOdometer, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
   async function handleRouteEstimate() {
     const values = getValues();
-    const origin = buildRouteAddress(values, "pickup");
-    const destination = buildRouteAddress(values, "delivery");
+    const pickupAddress = buildRouteAddress(values, "pickup");
+    const deliveryAddress = buildRouteAddress(values, "delivery");
+    const deadheadOrigin = buildDeadheadAddress(values);
+    const stops = routeStops
+      .map((stop, index) => ({
+        id: stop.id,
+        address: buildStopAddress(stop),
+        label: stop.label || `Stop ${index + 1}`,
+        kind: stop.stopType,
+        sequence: index + 1,
+      }))
+      .filter((stop) => stop.address.length >= 3);
 
-    if (origin.length < 3 || destination.length < 3) {
+    if (pickupAddress.length < 3 || deliveryAddress.length < 3) {
       setRouteStatus(
         "Enter pickup and delivery address details before estimating mileage."
       );
@@ -262,8 +473,10 @@ export function LoadInputForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          origin,
-          destination,
+          deadheadOrigin: deadheadOrigin || undefined,
+          pickupAddress,
+          deliveryAddress,
+          stops,
           provider: "google_estimate",
         }),
       });
@@ -279,13 +492,28 @@ export function LoadInputForm({
       if (
         response.ok &&
         payload.status === "available" &&
-        estimate?.estimatedMiles !== null &&
-        estimate?.estimatedMiles !== undefined
+        estimate?.loadedEstimate?.estimatedLoadedMiles !== null &&
+        estimate?.loadedEstimate?.estimatedLoadedMiles !== undefined
       ) {
-        setValue("routeLoadedMiles", estimate.estimatedMiles, {
+        setValue("routeLoadedMiles", estimate.loadedEstimate.estimatedLoadedMiles, {
           shouldDirty: true,
           shouldValidate: true,
         });
+      }
+
+      if (
+        response.ok &&
+        estimate?.deadheadEstimate?.estimatedDeadheadMiles !== null &&
+        estimate?.deadheadEstimate?.estimatedDeadheadMiles !== undefined
+      ) {
+        setValue(
+          "routeDeadheadMiles",
+          estimate.deadheadEstimate.estimatedDeadheadMiles,
+          {
+            shouldDirty: true,
+            shouldValidate: true,
+          }
+        );
       }
     } catch {
       setRouteStatus(
@@ -301,19 +529,23 @@ export function LoadInputForm({
   }
 
   function handleUseEstimateAsPaidMiles() {
+    const estimatedLoadedMiles =
+      routeEstimate?.loadedEstimate?.estimatedLoadedMiles ??
+      routeEstimate?.estimatedMiles;
+
     if (
-      routeEstimate?.estimatedMiles === null ||
-      routeEstimate?.estimatedMiles === undefined
+      estimatedLoadedMiles === null ||
+      estimatedLoadedMiles === undefined
     ) {
       return;
     }
 
-    setValue("loadedMiles", routeEstimate.estimatedMiles, {
+    setValue("loadedMiles", estimatedLoadedMiles, {
       shouldDirty: true,
       shouldValidate: true,
     });
     setRouteStatus(
-      "Google estimate copied into paid loaded miles by user action."
+      "Google estimated loaded miles copied into paid loaded miles by user action."
     );
   }
 
@@ -341,6 +573,64 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Route Intelligence" />
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                Deadhead
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Suggested deadhead origin from previous delivery is optional and
+                can be edited or cleared.
+              </p>
+            </div>
+            {continuitySuggestion && (
+              <button
+                type="button"
+                onClick={clearDeadheadSuggestion}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300 transition hover:border-sky-400 hover:text-sky-200"
+              >
+                Clear Suggestion
+              </button>
+            )}
+          </div>
+
+          {continuitySuggestion && (
+            <p className="mb-3 rounded-lg border border-sky-400/20 bg-sky-400/5 p-3 text-xs leading-5 text-sky-100">
+              Suggested deadhead origin from previous delivery:{" "}
+              {continuitySuggestion.formattedAddress}. This default is not
+              forced.
+            </p>
+          )}
+
+          <div className="space-y-4">
+            <InputField
+              label="Deadhead Origin Address"
+              placeholder="Previous delivery, yard, truck stop, or current city"
+              error={errors.deadheadStartAddress?.message}
+              {...register("deadheadStartAddress")}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <InputField
+                label="Deadhead City"
+                error={errors.deadheadStartCity?.message}
+                {...register("deadheadStartCity")}
+              />
+              <InputField
+                label="Deadhead State"
+                error={errors.deadheadStartState?.message}
+                {...register("deadheadStartState")}
+              />
+              <InputField
+                label="Deadhead ZIP"
+                error={errors.deadheadStartZip?.message}
+                {...register("deadheadStartZip")}
+              />
+            </div>
+          </div>
+        </div>
 
         <InputField
           label="Pickup Address"
@@ -398,9 +688,48 @@ export function LoadInputForm({
           />
         </div>
 
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                Ordered Stops
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Stops are routed in the order entered.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addRouteStop}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
+            >
+              + Add Stop
+            </button>
+          </div>
+
+          {routeStops.length === 0 ? (
+            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-500">
+              Add fuel, DEF, scale, rest, customer, or other intermediate stops
+              when they are part of the planned loaded route.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {routeStops.map((stop, index) => (
+                <RouteStopEditor
+                  key={stop.id ?? index}
+                  index={index}
+                  stop={stop}
+                  onChange={(updates) => updateRouteStop(index, updates)}
+                  onRemove={() => removeRouteStop(index)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <InputField
-            label="Paid Loaded Miles"
+            label="Paid loaded miles"
             type="number"
             error={errors.loadedMiles?.message}
             {...register("loadedMiles")}
@@ -413,6 +742,11 @@ export function LoadInputForm({
             {...register("deadheadMiles")}
           />
         </div>
+
+        <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-400">
+          Paid loaded miles are the miles you are paid on. Google estimated
+          miles are planning estimates only.
+        </p>
 
         <button
           type="button"
@@ -435,6 +769,14 @@ export function LoadInputForm({
             {routeEstimate && (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {routeEstimate.deadheadEstimate?.origin && (
+                    <RouteValue
+                      label="Deadhead origin verified"
+                      value={
+                        routeEstimate.deadheadEstimate.origin.formattedAddress
+                      }
+                    />
+                  )}
                   <RouteValue
                     label="Pickup verified"
                     value={routeEstimate.origin.formattedAddress}
@@ -444,20 +786,32 @@ export function LoadInputForm({
                     value={routeEstimate.destination.formattedAddress}
                   />
                   <RouteValue
-                    label="Google estimated route miles"
-                    value={
-                      routeEstimate.estimatedMiles === null
-                        ? "Unavailable"
-                        : `${routeEstimate.estimatedMiles.toLocaleString()} mi`
-                    }
+                    label="Google estimated deadhead miles"
+                    value={formatOptionalMiles(
+                      routeEstimate.deadheadEstimate
+                        ?.estimatedDeadheadMiles ?? null
+                    )}
+                  />
+                  <RouteValue
+                    label="Google estimated loaded miles"
+                    value={formatOptionalMiles(
+                      routeEstimate.loadedEstimate?.estimatedLoadedMiles ??
+                        routeEstimate.estimatedMiles
+                    )}
+                  />
+                  <RouteValue
+                    label="Total Google estimated route miles"
+                    value={formatOptionalMiles(
+                      routeEstimate.totalEstimate?.estimatedMiles ??
+                        routeEstimate.estimatedMiles
+                    )}
                   />
                   <RouteValue
                     label="Estimated drive time"
-                    value={
-                      routeEstimate.estimatedDurationMinutes === null
-                        ? "Unavailable"
-                      : `${routeEstimate.estimatedDurationMinutes.toLocaleString()} min`
-                    }
+                    value={formatOptionalMinutes(
+                      routeEstimate.totalEstimate?.estimatedDurationMinutes ??
+                        routeEstimate.estimatedDurationMinutes
+                    )}
                   />
                   <RouteValue
                     label="Mileage variance"
@@ -468,6 +822,32 @@ export function LoadInputForm({
                     }
                   />
                 </div>
+
+                {routeEstimate.routeLegs && routeEstimate.routeLegs.length > 0 && (
+                  <div className="rounded-lg border border-slate-800 bg-[#060B14] p-3">
+                    <p className="mb-2 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500">
+                      Route Legs
+                    </p>
+                    <div className="space-y-2">
+                      {routeEstimate.routeLegs.map((leg) => (
+                        <div
+                          key={`${leg.fromLabel}-${leg.toLabel}`}
+                          className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <span className="text-slate-400">
+                            {leg.fromLabel} to {leg.toLabel}
+                          </span>
+                          <span className="font-semibold text-slate-200">
+                            {formatOptionalMiles(leg.estimatedMiles)} ·{" "}
+                            {formatOptionalMinutes(
+                              leg.estimatedDurationMinutes
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {routeEstimate.estimatedMiles !== null && (
                   <button
@@ -486,6 +866,9 @@ export function LoadInputForm({
             <p className="font-semibold text-slate-300">
               {routeEstimate?.disclaimer ?? GOOGLE_ROUTE_DISCLAIMER}
             </p>
+            <p className="text-slate-500">
+              Google estimates are not truck-legal routing.
+            </p>
             <p className="text-slate-500">{TRIMBLE_ROUTE_PLACEHOLDER}</p>
           </div>
         )}
@@ -493,6 +876,22 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Operational Timing" />
+
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+            Load Status
+          </span>
+          <select
+            {...register("loadRunStatus")}
+            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+          >
+            {LOAD_RUN_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="grid grid-cols-2 gap-4">
           <InputField
@@ -510,6 +909,102 @@ export function LoadInputForm({
             error={errors.deadheadDays?.message}
             {...register("deadheadDays")}
           />
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              Odometer Validation
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Odometer mileage validates what you actually drove. Use it for
+              profitability intelligence, not as a substitute for ELD, tax,
+              legal, or compliance records.
+            </p>
+          </div>
+
+          {isRunningLoadStatus(loadRunStatus) ? (
+            <div className="space-y-4">
+              {continuitySuggestion?.suggestedOriginOdometer && (
+                <div className="rounded-lg border border-sky-400/20 bg-sky-400/5 p-3 text-xs leading-5 text-sky-100">
+                  Suggested from previous load end odometer:{" "}
+                  {continuitySuggestion.suggestedOriginOdometer.toLocaleString()}
+                  <button
+                    type="button"
+                    onClick={applySuggestedOriginOdometer}
+                    className="ml-3 rounded-md border border-sky-300/30 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-sky-200"
+                  >
+                    Use
+                  </button>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InputField
+                  label="Origin Odometer"
+                  type="number"
+                  step="1"
+                  error={errors.originOdometer?.message}
+                  {...register("originOdometer")}
+                />
+                <InputField
+                  label="End Odometer"
+                  type="number"
+                  step="1"
+                  error={errors.endOdometer?.message}
+                  {...register("endOdometer")}
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <RouteValue
+                  label="Actual odometer miles"
+                  value={formatOptionalMiles(
+                    odometerValidation.actualTotalMiles ?? null
+                  )}
+                />
+                <RouteValue
+                  label="Variance vs estimate"
+                  value={
+                    odometerValidation.odometerVarianceVsEstimated ===
+                    undefined
+                      ? "Unavailable"
+                      : formatSignedMiles(
+                          odometerValidation.odometerVarianceVsEstimated
+                        )
+                  }
+                />
+                <RouteValue
+                  label="Variance vs paid"
+                  value={
+                    odometerValidation.odometerVarianceVsPaid === undefined
+                      ? "Unavailable"
+                      : formatSignedMiles(
+                          odometerValidation.odometerVarianceVsPaid
+                        )
+                  }
+                />
+              </div>
+
+              {odometerValidation.warnings.length > 0 && (
+                <ul className="space-y-1 text-xs text-amber-200">
+                  {odometerValidation.warnings.map((warning) => (
+                    <li key={warning}>- {warning}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : loadRunStatus === "ran" ? (
+            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
+              Completed loads show locked odometer values only when they were
+              captured during the running load workflow.
+            </p>
+          ) : (
+            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
+              Odometer input is available only when the load status is Running.
+              Planned, booked, and dispatched loads do not allow odometer input.
+            </p>
+          )}
         </div>
       </section>
 
@@ -682,6 +1177,124 @@ function RevenueModeButton({
   );
 }
 
+const ROUTE_STOP_KIND_OPTIONS: Array<{
+  value: RouteStopKind;
+  label: string;
+}> = [
+  { value: "intermediate_stop", label: "Intermediate stop" },
+  { value: "fuel", label: "Fuel" },
+  { value: "def", label: "DEF" },
+  { value: "scale", label: "Scale" },
+  { value: "rest", label: "Rest" },
+  { value: "customer", label: "Customer" },
+  { value: "other", label: "Other" },
+];
+
+function RouteStopEditor({
+  index,
+  stop,
+  onChange,
+  onRemove,
+}: {
+  index: number;
+  stop: RouteStopInput;
+  onChange: (updates: Partial<RouteStopInput>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-[#0B1220] p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+            Stop {index + 1}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Routed after pickup and before delivery.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-red-200 transition hover:bg-red-500/20"
+        >
+          Remove
+        </button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+            Stop Type
+          </span>
+          <select
+            value={stop.stopType}
+            onChange={(event) =>
+              onChange({ stopType: event.target.value as RouteStopKind })
+            }
+            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+          >
+            {ROUTE_STOP_KIND_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <ControlledTextField
+          label="Stop Label"
+          value={stop.label ?? ""}
+          onChange={(value) => onChange({ label: value })}
+        />
+
+        <ControlledTextField
+          label="Stop Address"
+          value={stop.address}
+          onChange={(value) => onChange({ address: value })}
+        />
+        <ControlledTextField
+          label="Stop City"
+          value={stop.city}
+          onChange={(value) => onChange({ city: value })}
+        />
+        <ControlledTextField
+          label="Stop State"
+          value={stop.state}
+          onChange={(value) => onChange({ state: value })}
+        />
+        <ControlledTextField
+          label="Stop ZIP"
+          value={stop.zip}
+          onChange={(value) => onChange({ zip: value })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ControlledTextField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+      />
+    </label>
+  );
+}
+
 function RouteValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -699,16 +1312,31 @@ function getRouteMileageVariance(
   estimate: RouteEstimate | null,
   paidLoadedMiles: number
 ) {
+  const estimatedLoadedMiles =
+    estimate?.loadedEstimate?.estimatedLoadedMiles ?? estimate?.estimatedMiles;
+
   if (
-    estimate?.estimatedMiles === null ||
-    estimate?.estimatedMiles === undefined ||
+    estimatedLoadedMiles === null ||
+    estimatedLoadedMiles === undefined ||
     !Number.isFinite(paidLoadedMiles) ||
     paidLoadedMiles <= 0
   ) {
     return null;
   }
 
-  return Number((estimate.estimatedMiles - paidLoadedMiles).toFixed(1));
+  return Number((estimatedLoadedMiles - paidLoadedMiles).toFixed(1));
+}
+
+function formatOptionalMiles(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return `${value.toLocaleString()} mi`;
+}
+
+function formatOptionalMinutes(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return `${value.toLocaleString()} min`;
 }
 
 function formatSignedMiles(value: number) {
@@ -733,6 +1361,14 @@ function RouteWarnings({ estimate }: { estimate: RouteEstimate }) {
       ))}
     </ul>
   );
+}
+
+function createRouteStopId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {

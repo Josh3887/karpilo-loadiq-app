@@ -13,7 +13,8 @@ import {
   getExpenseCategoryLabel,
   normalizeSavedLoadActuals,
 } from "@/services/post-trip-actuals";
-import { SavedLoadActuals } from "@/types/saved-load";
+import { PostTripActualExpense, SavedLoadActuals } from "@/types/saved-load";
+import { LoadInput } from "@/types/load";
 
 import {
   formatCurrency,
@@ -62,13 +63,7 @@ export default async function LoadDetailPage({
     dispatchDays?: number;
     deadheadDays?: number;
   } | null;
-  const inputSnapshot = load.input_snapshot as {
-    dispatchDate?: string;
-    pickupDate?: string;
-    deliveryDate?: string;
-    deadheadStartDate?: string;
-    deadheadEndDate?: string;
-  } | null;
+  const inputSnapshot = load.input_snapshot as Partial<LoadInput> | null;
   const snapshotFuelPercent = Number(resultSnapshot?.fuelPercentOfGross);
   const snapshotMarginPercent = Number(resultSnapshot?.profitMarginPercent);
   const fuelPercent = Number.isFinite(snapshotFuelPercent)
@@ -98,7 +93,14 @@ export default async function LoadDetailPage({
     grossRevenue: Number(load.gross_revenue),
     estimatedTripCost,
     totalTripMiles: Number(load.total_miles),
+    paidLoadedMiles: Number(load.loaded_miles),
   });
+  const estimatedTotalRouteMiles =
+    inputSnapshot?.routeEstimate?.totalEstimate?.estimatedMiles ??
+    (inputSnapshot?.routeLoadedMiles || inputSnapshot?.routeDeadheadMiles
+      ? Number(inputSnapshot?.routeLoadedMiles ?? 0) +
+        Number(inputSnapshot?.routeDeadheadMiles ?? 0)
+      : Number(load.total_miles));
   const savedDeadheadPercent =
     Number(load.total_miles) > 0
       ? (Number(load.deadhead_miles) / Number(load.total_miles)) * 100
@@ -266,6 +268,14 @@ export default async function LoadDetailPage({
                 label="Actual Fuel $/Gal"
                 value={formatFuelPrice(actualSummary.actualFuelPrice)}
               />
+              {actualSummary.odometerValidation?.actualTotalMiles && (
+                <BreakdownRow
+                  label="Actual Odometer Miles"
+                  value={`${Number(
+                    actualSummary.odometerValidation.actualTotalMiles
+                  ).toLocaleString()} mi`}
+                />
+              )}
             </div>
 
             {actualSummary.postTripActualExpenses &&
@@ -285,7 +295,7 @@ export default async function LoadDetailPage({
                             {expense.expenseSubcategory}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {[expense.vendorName, expense.location, expense.date]
+                            {[expense.vendorName, formatExpenseLocation(expense), expense.date]
                               .filter(Boolean)
                               .join(" · ") || "No vendor/location/date provided"}
                           </p>
@@ -415,6 +425,10 @@ export default async function LoadDetailPage({
           grossRevenue={Number(load.gross_revenue)}
           estimatedTripCost={estimatedTripCost}
           totalTripMiles={Number(load.total_miles)}
+          paidLoadedMiles={Number(load.loaded_miles)}
+          estimatedTotalRouteMiles={estimatedTotalRouteMiles}
+          loadStatus={load.status}
+          loadRunStatus={load.load_run_status ?? load.was_run_status}
         />
         <EntityNoteForm savedLoadId={id} />
       </div>
@@ -527,4 +541,12 @@ function formatStopType(type: string) {
   if (type === "pickup") return "Pickup";
   if (type === "delivery") return "Delivery";
   return type.replaceAll("_", " ");
+}
+
+function formatExpenseLocation(expense: PostTripActualExpense) {
+  return (
+    [expense.city, expense.state].filter(Boolean).join(", ") ||
+    expense.location ||
+    ""
+  );
 }

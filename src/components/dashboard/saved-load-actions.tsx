@@ -21,6 +21,11 @@ import {
   POST_TRIP_EXPENSE_GROUPS,
 } from "@/services/post-trip-actuals";
 import {
+  buildOdometerValidation,
+  isCompletedLoadStatus,
+  isRunningLoadStatus,
+} from "@/services/trip-validation";
+import {
   PostTripActualExpense,
   PostTripExpenseCategory,
   SavedLoadActuals,
@@ -45,6 +50,10 @@ type SavedLoadActionsProps = {
   grossRevenue: number;
   estimatedTripCost: number;
   totalTripMiles: number;
+  paidLoadedMiles: number;
+  estimatedTotalRouteMiles?: number | null;
+  loadStatus?: string | null;
+  loadRunStatus?: string | null;
 };
 
 export function SavedLoadActions({
@@ -53,19 +62,41 @@ export function SavedLoadActions({
   grossRevenue,
   estimatedTripCost,
   totalTripMiles,
+  paidLoadedMiles,
+  estimatedTotalRouteMiles,
+  loadStatus,
+  loadRunStatus,
 }: SavedLoadActionsProps) {
   const router = useRouter();
   const context = {
     grossRevenue,
     estimatedTripCost,
     totalTripMiles,
+    paidLoadedMiles,
   };
   const [actuals, setActuals] = useState(() =>
     buildActualsForForm(initialActuals ?? defaultActuals, context)
   );
   const [outcome, setOutcome] = useState("unknown");
   const [status, setStatus] = useState("");
-  const actualSummary = normalizeSavedLoadActuals(actuals, context);
+  const effectiveRunStatus = loadRunStatus || loadStatus || "";
+  const odometerEditable = isRunningLoadStatus(effectiveRunStatus);
+  const odometerLocked = isCompletedLoadStatus(effectiveRunStatus);
+  const odometerValidation = buildOdometerValidation({
+    originOdometer: actuals.originOdometer,
+    endOdometer: actuals.endOdometer,
+    estimatedTotalMiles: estimatedTotalRouteMiles ?? totalTripMiles,
+    paidLoadedMiles,
+    capturedAtStatus: effectiveRunStatus,
+  });
+  const actualSummary = normalizeSavedLoadActuals(
+    {
+      ...actuals,
+      odometerValidation,
+      actualTotalMiles: odometerValidation.actualTotalMiles,
+    },
+    context
+  );
 
   async function handleDuplicate() {
     try {
@@ -89,12 +120,15 @@ export function SavedLoadActions({
     }
   }
 
-  function addExpense() {
+  function addExpense(
+    category: PostTripExpenseCategory = "fuel_fluids",
+    subcategory = "Diesel"
+  ) {
     setActuals((prev) => ({
       ...prev,
       postTripActualExpenses: [
         ...(prev.postTripActualExpenses ?? []),
-        createPostTripExpense(),
+        createPostTripExpense(category, subcategory),
       ],
     }));
   }
@@ -123,6 +157,13 @@ export function SavedLoadActions({
       postTripActualExpenses: (prev.postTripActualExpenses ?? []).filter(
         (expense) => expense.id !== expenseId
       ),
+    }));
+  }
+
+  function updateOdometer(updates: Partial<SavedLoadActuals>) {
+    setActuals((prev) => ({
+      ...prev,
+      ...updates,
     }));
   }
 
@@ -205,6 +246,91 @@ export function SavedLoadActions({
           </div>
         </div>
 
+        <div className="mt-5 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-3">
+            <h3 className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+              Odometer Validation
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Odometer mileage validates what you actually drove. Use it for
+              profitability intelligence, not as a substitute for ELD, tax,
+              legal, or compliance records.
+            </p>
+          </div>
+
+          {odometerEditable ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ActualField
+                  label="Origin Odometer"
+                  value={Number(actuals.originOdometer ?? 0)}
+                  onChange={(value) => updateOdometer({ originOdometer: value })}
+                />
+                <ActualField
+                  label="End Odometer"
+                  value={Number(actuals.endOdometer ?? 0)}
+                  onChange={(value) => updateOdometer({ endOdometer: value })}
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <SummaryTile
+                  label="Actual odometer miles"
+                  value={formatOptionalMiles(
+                    odometerValidation.actualTotalMiles
+                  )}
+                />
+                <SummaryTile
+                  label="Variance vs estimate"
+                  value={formatOptionalSignedMiles(
+                    odometerValidation.odometerVarianceVsEstimated
+                  )}
+                />
+                <SummaryTile
+                  label="Variance vs paid"
+                  value={formatOptionalSignedMiles(
+                    odometerValidation.odometerVarianceVsPaid
+                  )}
+                />
+              </div>
+            </div>
+          ) : odometerLocked && actualSummary.odometerValidation?.actualTotalMiles ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              <SummaryTile
+                label="Actual odometer miles"
+                value={formatOptionalMiles(
+                  actualSummary.odometerValidation.actualTotalMiles
+                )}
+              />
+              <SummaryTile
+                label="Variance vs estimate"
+                value={formatOptionalSignedMiles(
+                  actualSummary.odometerValidation.odometerVarianceVsEstimated
+                )}
+              />
+              <SummaryTile
+                label="Variance vs paid"
+                value={formatOptionalSignedMiles(
+                  actualSummary.odometerValidation.odometerVarianceVsPaid
+                )}
+              />
+            </div>
+          ) : (
+            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
+              Odometer input is available only while a load is running. Planned,
+              booked, and dispatched loads do not allow odometer input.
+            </p>
+          )}
+
+          {odometerValidation.warnings.length > 0 && (
+            <ul className="mt-3 space-y-1 text-xs text-amber-200">
+              {odometerValidation.warnings.map((warning) => (
+                <li key={warning}>- {warning}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="mt-5 space-y-4">
           {(actuals.postTripActualExpenses ?? []).length === 0 ? (
             <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-400">
@@ -227,10 +353,24 @@ export function SavedLoadActions({
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
-            onClick={addExpense}
+            onClick={() => addExpense("fuel_fluids", "Diesel")}
             className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
           >
-            + Add Trip Expense
+            + Fuel purchase
+          </button>
+          <button
+            type="button"
+            onClick={() => addExpense("fuel_fluids", "DEF")}
+            className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
+          >
+            + DEF purchase
+          </button>
+          <button
+            type="button"
+            onClick={() => addExpense()}
+            className="rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
+          >
+            + Trip Expense
           </button>
         </div>
 
@@ -249,6 +389,10 @@ export function SavedLoadActions({
         </label>
 
         <div className="mt-4 space-y-2 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+          <p>
+            Fuel and DEF purchases support better IFTA-style estimates and
+            profitability intelligence. They are not tax filing records.
+          </p>
           <p>
             Karpilo LoadIQ provides operational organization and tracking tools
             only and does not provide legal, accounting, or tax advice.
@@ -353,13 +497,19 @@ function PostTripExpenseEditor({
     expense.expenseSubcategory
   );
   const calculatedTotal = Number(expense.calculatedTotal ?? 0);
+  const purchaseLabel =
+    expense.expenseSubcategory === "DEF"
+      ? "DEF purchase"
+      : expense.expenseSubcategory === "Diesel"
+        ? "Fuel purchase"
+        : null;
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-[#060B14] p-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
-            {getExpenseCategoryLabel(expense.expenseCategory)}
+            {purchaseLabel ?? getExpenseCategoryLabel(expense.expenseCategory)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             {expense.expenseSubcategory || "Expense detail pending"}
@@ -428,6 +578,16 @@ function PostTripExpenseEditor({
               label="Calculated Total"
               value={formatCurrency(calculatedTotal)}
             />
+            <TextField
+              label="City"
+              value={expense.city ?? ""}
+              onChange={(value) => onChange({ city: value })}
+            />
+            <TextField
+              label="State"
+              value={expense.state ?? ""}
+              onChange={(value) => onChange({ state: value })}
+            />
           </>
         ) : (
           <ActualField
@@ -438,7 +598,7 @@ function PostTripExpenseEditor({
         )}
 
         <TextField
-          label="Date"
+          label={gallonBased ? "Purchase Date" : "Date"}
           type="date"
           value={expense.date ?? ""}
           onChange={(value) => onChange({ date: value })}
@@ -448,11 +608,13 @@ function PostTripExpenseEditor({
           value={expense.vendorName ?? ""}
           onChange={(value) => onChange({ vendorName: value })}
         />
-        <TextField
-          label="Location"
-          value={expense.location ?? ""}
-          onChange={(value) => onChange({ location: value })}
-        />
+        {!gallonBased && (
+          <TextField
+            label="Location"
+            value={expense.location ?? ""}
+            onChange={(value) => onChange({ location: value })}
+          />
+        )}
       </div>
 
       <label className="mt-4 flex min-h-12 items-center gap-3 rounded-xl border border-slate-800 bg-[#0B1220] px-4 text-sm font-semibold uppercase tracking-[0.12em] text-slate-300">
@@ -490,6 +652,21 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
       <div className="mt-2 text-lg font-black text-slate-100">{value}</div>
     </div>
   );
+}
+
+function formatOptionalMiles(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return `${Number(value).toLocaleString()} mi`;
+}
+
+function formatOptionalSignedMiles(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+  if (value === 0) return "0 mi";
+
+  const prefix = value > 0 ? "+" : "";
+
+  return `${prefix}${Number(value).toLocaleString()} mi`;
 }
 
 type ActualFieldProps = {

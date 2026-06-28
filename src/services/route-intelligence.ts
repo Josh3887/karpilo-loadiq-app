@@ -25,7 +25,8 @@ export type SavedLoadStopRecord = SavedLoadStopInsert & {
 export function createRouteStopInput(): RouteStopInput {
   return {
     id: createRouteStopId(),
-    stopType: "pickup",
+    stopType: "intermediate_stop",
+    label: "",
     address: "",
     city: "",
     state: "",
@@ -43,7 +44,8 @@ export function normalizeRouteStops(
   return (stops ?? [])
     .map((stop) => ({
       id: stop.id || createRouteStopId(),
-      stopType: stop.stopType === "delivery" ? "delivery" as const : "pickup" as const,
+      stopType: stop.stopType ?? "intermediate_stop",
+      label: stop.label?.trim() ?? "",
       address: stop.address?.trim() ?? "",
       city: stop.city?.trim() ?? "",
       state: stop.state?.trim().toUpperCase() ?? "",
@@ -62,7 +64,8 @@ export function normalizeRouteStops(
           stop.milesFromPrevious ||
           stop.stopRevenue ||
           stop.stopExpense ||
-          stop.notes
+          stop.notes ||
+          stop.label
       );
     });
 }
@@ -104,7 +107,8 @@ export function buildSavedLoadStopRows(
       stop_expense: stop.stopExpense > 0 ? stop.stopExpense : null,
       notes: emptyToNull(
         [
-          stop.stopType === "delivery" ? "Stop Type: DEL" : "Stop Type: P-U",
+          `Stop Type: ${formatStopKind(stop.stopType)}`,
+          stop.label ? `Label: ${stop.label}` : "",
           stop.address ? `Address: ${stop.address}` : "",
           stop.notes,
         ]
@@ -189,6 +193,19 @@ function positiveNumber(value: unknown) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
   return numericValue;
+}
+
+function formatStopKind(kind: string | undefined) {
+  if (kind === "def") return "DEF";
+  if (kind === "fuel") return "Fuel";
+  if (kind === "scale") return "Scale";
+  if (kind === "rest") return "Rest";
+  if (kind === "customer") return "Customer";
+  if (kind === "delivery") return "Delivery";
+  if (kind === "pickup") return "Pickup";
+  if (kind === "intermediate_stop") return "Intermediate stop";
+
+  return "Other";
 }
 
 function createRouteStopId() {

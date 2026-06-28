@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AccessorialInputItem } from "@/types/accessorial";
 import { RouteEstimate } from "@/types/route-intelligence";
-import { RouteStopInput } from "@/types/load";
+import { LoadInput, RouteStopInput } from "@/types/load";
 import {
   LOAD_PULLED_REASON_OPTIONS,
   LOAD_RUN_STATUS_OPTIONS,
@@ -39,7 +39,20 @@ const loadPulledReasonValues = LOAD_PULLED_REASON_OPTIONS.map(
 
 const routeStopSchema = z.object({
   id: z.string().optional(),
-  stopType: z.enum(["pickup", "delivery"]).default("pickup"),
+  stopType: z
+    .enum([
+      "pickup",
+      "delivery",
+      "intermediate_stop",
+      "fuel",
+      "def",
+      "scale",
+      "rest",
+      "customer",
+      "other",
+    ])
+    .default("intermediate_stop"),
+  label: z.string().optional().default(""),
   address: z.string().optional().default(""),
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
@@ -73,6 +86,9 @@ export const loadInputSchema = z.object({
   deadheadStartCity: z.string().optional().default(""),
   deadheadStartState: z.string().optional().default(""),
   deadheadStartZip: z.string().optional().default(""),
+  deadheadOriginSuggestionApplied: z.boolean().optional().default(false),
+  deadheadOriginSuggestionSourceLoadId: z.string().optional().default(""),
+  suggestedOriginOdometer: numberField.refine((value) => value >= 0).default(0),
   routeStops: z.array(routeStopSchema).default([]),
   estimatedLoadWeightLbs: numberField.refine((value) => value >= 0),
 
@@ -121,6 +137,10 @@ export const loadInputSchema = z.object({
 
   routeDeadheadMiles: numberField.refine((value) => value >= 0),
   actualDeadheadMiles: numberField.refine((value) => value >= 0),
+  originOdometer: numberField.refine((value) => value >= 0).default(0),
+  endOdometer: numberField.refine((value) => value >= 0).default(0),
+  actualTotalMiles: numberField.refine((value) => value >= 0).default(0),
+  odometerValidation: z.custom<LoadInput["odometerValidation"]>().nullable().default(null),
 
   dispatchDays: quarterDayField.refine((value) => value >= 1, {
     message: "Dispatch days must be at least 1.",
@@ -300,6 +320,19 @@ export const loadInputSchema = z.object({
       path: ["loadPulledReason"],
     });
   }
+
+  if (
+    value.loadRunStatus === "running" &&
+    value.originOdometer > 0 &&
+    value.endOdometer > 0 &&
+    value.endOdometer < value.originOdometer
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "End odometer must be greater than or equal to origin odometer.",
+      path: ["endOdometer"],
+    });
+  }
 });
 
 export type LoadInputFormValues = z.infer<typeof loadInputSchema>;
@@ -322,6 +355,9 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   deadheadStartCity: "",
   deadheadStartState: "",
   deadheadStartZip: "",
+  deadheadOriginSuggestionApplied: false,
+  deadheadOriginSuggestionSourceLoadId: "",
+  suggestedOriginOdometer: 0,
   routeStops: [],
   estimatedLoadWeightLbs: 0,
   equipmentType: DEFAULT_EQUIPMENT_PROFILE_INPUT.equipmentType,
@@ -353,6 +389,10 @@ export const defaultLoadInputValues: LoadInputFormValues = {
 
   routeDeadheadMiles: 0,
   actualDeadheadMiles: 0,
+  originOdometer: 0,
+  endOdometer: 0,
+  actualTotalMiles: 0,
+  odometerValidation: null,
 
   dispatchDays: 1,
   deadheadDays: 0,

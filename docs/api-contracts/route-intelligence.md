@@ -50,52 +50,59 @@ Response body:
 }
 ```
 
-Success example:
-
-```json
-{
-  "status": "available",
-  "provider": "google_estimate",
-  "address": {
-    "input": "123 Main St, Chicago, IL 60601",
-    "formattedAddress": "123 Main St, Chicago, IL 60601-0000, USA",
-    "lat": 41.0,
-    "lng": -87.0,
-    "confidence": "high",
-    "verdict": "validation=PREMISE; geocode=PREMISE; complete",
-    "warnings": []
-  },
-  "message": "Address validated by Google.",
-  "warnings": []
-}
-```
-
-Error example:
-
-```json
-{
-  "status": "invalid",
-  "provider": "google_estimate",
-  "address": null,
-  "message": "Address validation requires an address.",
-  "warnings": ["Enter a pickup or delivery address before validation."]
-}
-```
-
 ## POST /api/route-intelligence/estimate
 
-Request body:
+Preferred request body:
 
 ```json
 {
-  "origin": "123 Main St, Chicago, IL 60601",
-  "destination": "500 Market St, St. Louis, MO 63101",
+  "deadheadOrigin": "Dayton, OH 45402",
+  "pickupAddress": "7800 Col. H. Weir Cook Memorial Dr, Indianapolis, IN 46241",
+  "deliveryAddress": "2400 Aviation Dr, Dallas, TX 75261",
+  "stops": [
+    {
+      "id": "stop-1",
+      "address": "Little Rock, AR 72201",
+      "label": "Customer stop",
+      "kind": "customer",
+      "sequence": 1
+    }
+  ],
+  "provider": "google_estimate"
+}
+```
+
+Legacy `origin` and `destination` request bodies remain supported and map to
+`pickupAddress` and `deliveryAddress`:
+
+```json
+{
+  "origin": "Indianapolis, IN 46241",
+  "destination": "Dallas, TX 75261",
   "provider": "google_estimate"
 }
 ```
 
 `provider` is optional and defaults to `google_estimate`. Allowed values are
 `google_estimate` and `trimble_truck`.
+
+Supported stop `kind` values:
+
+```ts
+type RouteStopKind =
+  | "pickup"
+  | "delivery"
+  | "intermediate_stop"
+  | "fuel"
+  | "def"
+  | "scale"
+  | "rest"
+  | "customer"
+  | "other";
+```
+
+Stops are routed in ascending `sequence` order. The API does not optimize stop
+order.
 
 Response body:
 
@@ -111,125 +118,84 @@ Response body:
     estimatedDurationMinutes: number | null;
     trafficAwareDurationMinutes?: number | null;
     routeMileageVariance?: number | null;
+    deadheadEstimate?: {
+      origin: VerifiedAddress | null;
+      pickup: VerifiedAddress | null;
+      estimatedDeadheadMiles: number | null;
+      estimatedDeadheadDurationMinutes: number | null;
+      warnings: string[];
+    };
+    loadedEstimate?: {
+      pickup: VerifiedAddress | null;
+      stops: VerifiedAddress[];
+      delivery: VerifiedAddress | null;
+      estimatedLoadedMiles: number | null;
+      estimatedLoadedDurationMinutes: number | null;
+      legs?: Array<{
+        fromLabel: string;
+        toLabel: string;
+        estimatedMiles: number | null;
+        estimatedDurationMinutes: number | null;
+      }>;
+      warnings: string[];
+    };
+    totalEstimate?: {
+      estimatedMiles: number | null;
+      estimatedDurationMinutes: number | null;
+    };
+    routeLegs?: Array<{
+      fromLabel: string;
+      toLabel: string;
+      estimatedMiles: number | null;
+      estimatedDurationMinutes: number | null;
+    }>;
     truckSpecific: boolean;
     confidence: "low" | "medium" | "high";
     warnings: string[];
     disclaimer: string;
-    trackedMovementMiles?: number;
-    actualDrivenLoadedMiles?: number;
-    movementMileageVariance?: number;
-    trackingConfidence?: "low" | "medium" | "high";
-    trackingSource?:
-      | "manual"
-      | "browser_geolocation"
-      | "native_mobile"
-      | "eld_telematics"
-      | "future_integration";
-    deadheadOdometerStart?: number;
-    deadheadOdometerEnd?: number;
-    loadedOdometerStart?: number;
-    loadedOdometerEnd?: number;
-    actualDeadheadMiles?: number;
-    actualLoadedMiles?: number;
-    actualTotalTripMiles?: number;
-    loadedPaidVsActualVariance?: number;
-    loadedEstimatedVsActualVariance?: number;
-    deadheadEstimatedVsActualVariance?: number;
   } | null;
   message: string;
   warnings: string[];
 }
 ```
 
-Success example:
+`estimate.estimatedMiles` remains a legacy-compatible alias for Google
+estimated loaded miles. New UI should prefer
+`estimate.loadedEstimate.estimatedLoadedMiles`.
 
-```json
-{
-  "status": "available",
-  "provider": "google_estimate",
-  "estimate": {
-    "provider": "google_estimate",
-    "origin": {
-      "input": "123 Main St, Chicago, IL 60601",
-      "formattedAddress": "123 Main St, Chicago, IL 60601-0000, USA",
-      "lat": 41.0,
-      "lng": -87.0,
-      "confidence": "high",
-      "warnings": []
-    },
-    "destination": {
-      "input": "500 Market St, St. Louis, MO 63101",
-      "formattedAddress": "500 Market St, St. Louis, MO 63101-0000, USA",
-      "lat": 38.0,
-      "lng": -90.0,
-      "confidence": "high",
-      "warnings": []
-    },
-    "estimatedMiles": 298.4,
-    "estimatedDurationMinutes": 275,
-    "trafficAwareDurationMinutes": 275,
-    "truckSpecific": false,
-    "confidence": "high",
-    "warnings": [
-      "Google estimate uses standard driving routes and does not account for truck-specific restrictions.",
-      "Mileage estimate only. Not truck-legal routing."
-    ],
-    "disclaimer": "Mileage estimate only. Not truck-legal routing."
-  },
-  "message": "Google route estimate available.",
-  "warnings": [
-    "Google estimate uses standard driving routes and does not account for truck-specific restrictions.",
-    "Mileage estimate only. Not truck-legal routing."
-  ]
-}
+If no `deadheadOrigin` is provided, the response may omit `deadheadEstimate` and
+`totalEstimate` equals loaded estimate when loaded estimate is available.
+
+## Mileage Contract
+
+Paid loaded miles are user-entered and authoritative for revenue modeling.
+Google estimated loaded miles remain separate in `routeLoadedMiles` and
+`routeEstimate`. Google estimated deadhead miles remain separate in
+`routeDeadheadMiles` and `routeEstimate.deadheadEstimate`.
+
+Loaded route mileage variance is:
+
+```text
+Google estimated loaded miles - paid loaded miles
 ```
 
-Error example:
+The UI may let a user copy Google estimated loaded miles into paid loaded miles
+only through an explicit user action.
 
-```json
-{
-  "status": "unavailable",
-  "provider": "google_estimate",
-  "estimate": {
-    "provider": "google_estimate",
-    "origin": {
-      "input": "Chicago, IL",
-      "formattedAddress": "Chicago, IL",
-      "lat": null,
-      "lng": null,
-      "confidence": "low",
-      "warnings": ["GOOGLE_MAPS_API_KEY is not configured."]
-    },
-    "destination": {
-      "input": "St. Louis, MO",
-      "formattedAddress": "St. Louis, MO",
-      "lat": null,
-      "lng": null,
-      "confidence": "low",
-      "warnings": ["GOOGLE_MAPS_API_KEY is not configured."]
-    },
-    "estimatedMiles": null,
-    "estimatedDurationMinutes": null,
-    "trafficAwareDurationMinutes": null,
-    "truckSpecific": false,
-    "confidence": "low",
-    "warnings": [
-      "Pickup: GOOGLE_MAPS_API_KEY is not configured.",
-      "Delivery: GOOGLE_MAPS_API_KEY is not configured.",
-      "Route mileage requires validated pickup and delivery coordinates.",
-      "Mileage estimate only. Not truck-legal routing."
-    ],
-    "disclaimer": "Mileage estimate only. Not truck-legal routing."
-  },
-  "message": "Route estimate unavailable.",
-  "warnings": [
-    "Pickup: GOOGLE_MAPS_API_KEY is not configured.",
-    "Delivery: GOOGLE_MAPS_API_KEY is not configured.",
-    "Route mileage requires validated pickup and delivery coordinates.",
-    "Mileage estimate only. Not truck-legal routing."
-  ]
-}
-```
+## Odometer And Purchase Snapshots
+
+Running-load odometer validation and fuel/DEF purchases are not separate API
+routes. They persist through existing saved-load snapshot structures:
+
+- `input_snapshot.originOdometer`
+- `input_snapshot.endOdometer`
+- `input_snapshot.odometerValidation`
+- `actuals_snapshot.odometerValidation`
+- `actuals_snapshot.fuelPurchases`
+- `actuals_snapshot.defPurchases`
+
+Fuel and DEF purchases support better IFTA-style estimates and profitability
+intelligence. They are not tax filing records.
 
 ## Provider Boundaries
 
@@ -240,52 +206,18 @@ and Google Routes behind LoadIQ server routes.
 approved integration configures live Trimble routing. Do not require Trimble
 keys in V1.
 
-## Mileage Contract
-
-Google must not silently overwrite paid loaded miles. The calculator stores
-Google mileage separately as `routeLoadedMiles` and `routeEstimate`. The UI may
-let a user copy a route estimate into paid loaded miles only through an
-explicit user action.
-
-Route mileage variance is:
-
-```text
-estimated route miles - paid loaded miles
-```
-
 ## Security
 
 `GOOGLE_MAPS_API_KEY` is server-side only. Do not expose it to client
 components. Do not create `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` or any other
 `NEXT_PUBLIC_` secret for protected Google calls.
 
-UI components call LoadIQ API routes. They must not call Google directly.
+## Explicit Non-Goals
 
-## Error Handling
-
-The API returns normalized `invalid`, `unavailable`, or `error`-capable status
-values and warning arrays. Missing keys, invalid addresses, API disabled,
-quota, billing, and provider failures must degrade to manual mileage entry.
-
-## Persistence
-
-V1 persists route context through the existing calculator `input_snapshot`.
-No Supabase migrations are required for this feature branch. Direct saved-load
-columns continue to represent user-entered paid loaded miles and deadhead
-miles.
-
-## Product Disclaimers
-
-Google route mileage is a decision-support estimate only. It is not
-truck-legal routing and does not replace ELD, legal, tax, permit, HAZMAT,
-height/weight, insurance, accounting, or compliance authority.
-
-## Future Extensions
-
-- Add durable server-side rate limits before production provider expansion.
-- Add provider privacy and cost-control review before public enablement.
-- Add Trimble truck-specific routing after launch on a separate approved
-  branch.
-- Add tracked movement mileage only after explicit product, privacy, and
-  permission decisions.
-- Add post-trip odometer validation without changing the paid-mileage contract.
+- No Supabase migrations.
+- No `.env.local` changes.
+- No Trimble live calls.
+- No weather expansion.
+- No GPS or live location tracking.
+- No IFTA filing compliance claim.
+- No fuel gauge recovery in this task.

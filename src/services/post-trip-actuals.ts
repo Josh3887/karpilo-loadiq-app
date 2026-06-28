@@ -3,6 +3,10 @@ import {
   PostTripExpenseCategory,
   SavedLoadActuals,
 } from "@/types/saved-load";
+import {
+  buildLoadPurchaseEntries,
+  buildOdometerValidation,
+} from "@/services/trip-validation";
 
 export const POST_TRIP_EXPENSE_GROUPS: Array<{
   category: PostTripExpenseCategory;
@@ -127,6 +131,7 @@ export type PostTripActualContext = {
   grossRevenue: number;
   estimatedTripCost: number;
   totalTripMiles: number;
+  paidLoadedMiles?: number;
 };
 
 export function createPostTripExpense(
@@ -142,6 +147,8 @@ export function createPostTripExpense(
     amount: 0,
     date: "",
     vendorName: "",
+    city: "",
+    state: "",
     location: "",
     notes: "",
     receiptAttached: false,
@@ -206,7 +213,13 @@ export function normalizePostTripExpense(
     amount,
     date: expense.date ?? "",
     vendorName: expense.vendorName ?? "",
-    location: expense.location ?? "",
+    city: expense.city?.trim() ?? "",
+    state: expense.state?.trim().toUpperCase() ?? "",
+    location:
+      expense.location?.trim() ||
+      [expense.city?.trim(), expense.state?.trim().toUpperCase()]
+        .filter(Boolean)
+        .join(", "),
     notes: expense.notes ?? "",
     receiptAttached: expense.receiptAttached ?? false,
     receiptUrl: expense.receiptUrl ?? "",
@@ -232,6 +245,7 @@ export function buildActualsForForm(
     grossRevenue: nonNegative(actuals?.actualGrossRevenue),
     estimatedTripCost: nonNegative(actuals?.estimatedTripCost),
     totalTripMiles: nonNegative(actuals?.totalTripMiles),
+    paidLoadedMiles: nonNegative(actuals?.actualLoadedMiles),
   }
 ): SavedLoadActuals {
   const baseActuals = normalizeSavedLoadActuals(actuals, context);
@@ -286,6 +300,15 @@ export function normalizeSavedLoadActuals(
         parking: legacyParking,
         other: legacyOther,
       };
+  const odometerValidation =
+    actuals?.odometerValidation ??
+    buildOdometerValidation({
+      originOdometer: actuals?.originOdometer,
+      endOdometer: actuals?.endOdometer,
+      estimatedTotalMiles: context.totalTripMiles,
+      paidLoadedMiles: context.paidLoadedMiles ?? context.totalTripMiles,
+      capturedAtStatus: actuals?.odometerValidation?.capturedAtStatus,
+    });
   const actualNetProfit = roundCurrency(actualGrossRevenue - actualExpenseTotal);
 
   return {
@@ -297,6 +320,17 @@ export function normalizeSavedLoadActuals(
     parking: rollups.parking,
     other: rollups.other,
     postTripActualExpenses: expenses,
+    fuelPurchases: buildLoadPurchaseEntries(expenses, "fuel"),
+    defPurchases: buildLoadPurchaseEntries(expenses, "def"),
+    originOdometer: odometerValidation.originOdometer,
+    endOdometer: odometerValidation.endOdometer,
+    actualTotalMiles: odometerValidation.actualTotalMiles,
+    actualDeadheadMiles: nonNegative(actuals?.actualDeadheadMiles),
+    actualLoadedMiles: nonNegative(actuals?.actualLoadedMiles),
+    odometerVarianceVsEstimated:
+      odometerValidation.odometerVarianceVsEstimated,
+    odometerVarianceVsPaid: odometerValidation.odometerVarianceVsPaid,
+    odometerValidation,
     actualGrossRevenue,
     estimatedTripCost,
     actualTripCost: actualExpenseTotal,
@@ -322,13 +356,20 @@ function rollupExpenses(expenses: PostTripActualExpense[]) {
   for (const expense of expenses) {
     if (
       expense.expenseCategory === "fuel_fluids" &&
-      (expense.expenseSubcategory === "Diesel" ||
-        expense.expenseSubcategory === "DEF")
+      expense.expenseSubcategory === "Diesel"
     ) {
       fuelCost += expense.amount;
-      if (expense.expenseSubcategory === "Diesel" && expense.pricePerGallon) {
+      if (expense.pricePerGallon) {
         actualFuelPrice = expense.pricePerGallon;
       }
+      continue;
+    }
+
+    if (
+      expense.expenseCategory === "fuel_fluids" &&
+      expense.expenseSubcategory === "DEF"
+    ) {
+      other += expense.amount;
       continue;
     }
 

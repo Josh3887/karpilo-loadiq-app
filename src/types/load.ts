@@ -1,6 +1,7 @@
 import { AccessorialInputItem } from "@/types/accessorial";
 import { FuelPriceSource } from "@/types/fuel";
-import { RouteEstimate } from "@/types/route-intelligence";
+import { RouteEstimate, RouteStopKind } from "@/types/route-intelligence";
+import { OdometerValidation } from "@/types/trip-validation";
 import type { LoadPulledReason, LoadRunStatus } from "@/lib/fuel-gauge";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
@@ -24,7 +25,8 @@ export type ReserveAllocationMode = "flat" | "cpm" | "percent";
 
 export type RouteStopInput = {
   id?: string;
-  stopType: "pickup" | "delivery";
+  stopType: RouteStopKind;
+  label?: string;
   address: string;
   city: string;
   state: string;
@@ -83,6 +85,9 @@ export type LoadInput = {
   deadheadStartCity: string;
   deadheadStartState: string;
   deadheadStartZip: string;
+  deadheadOriginSuggestionApplied: boolean;
+  deadheadOriginSuggestionSourceLoadId: string;
+  suggestedOriginOdometer: number;
   routeStops: RouteStopInput[];
   estimatedLoadWeightLbs: number;
 
@@ -112,6 +117,10 @@ export type LoadInput = {
   actualLoadedMiles: number;
   routeDeadheadMiles: number;
   actualDeadheadMiles: number;
+  originOdometer: number;
+  endOdometer: number;
+  actualTotalMiles: number;
+  odometerValidation: OdometerValidation | null;
 
   dispatchDays: number;
   deadheadDays: number;

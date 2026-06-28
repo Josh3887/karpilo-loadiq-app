@@ -1,5 +1,6 @@
 import {
   FutureTrimbleRouteInputs,
+  RouteEstimateRequest,
   RouteEstimate,
   RouteEstimateResponse,
   TRIMBLE_ROUTE_PLACEHOLDER,
@@ -31,11 +32,19 @@ function placeholderAddress(input: string): VerifiedAddress {
 }
 
 export function getUnavailableTrimbleRouteEstimate(
-  originInput: string,
-  destinationInput: string
+  input: string | RouteEstimateRequest,
+  destinationInput = ""
 ): RouteEstimateResponse {
-  const origin = placeholderAddress(originInput);
-  const destination = placeholderAddress(destinationInput);
+  const pickupInput =
+    typeof input === "string"
+      ? input
+      : input.pickupAddress ?? input.origin ?? "";
+  const deliveryInput =
+    typeof input === "string"
+      ? destinationInput
+      : input.deliveryAddress ?? input.destination ?? "";
+  const origin = placeholderAddress(pickupInput);
+  const destination = placeholderAddress(deliveryInput);
   const warnings = [
     "Trimble truck-specific routing is scaffolded only and is not configured.",
     "Future Trimble routing will require tractor/trailer profile, vehicle dimensions, gross weight, axle count, HAZMAT/load flags, routing profile, and toll preference.",

@@ -11,6 +11,13 @@
 - Added calculator route estimate UI that keeps paid loaded miles separate from
   Google estimated route miles and only copies an estimate into paid miles by
   explicit user action.
+- Added Route Intelligence support for deadhead origin, previous-delivery
+  deadhead suggestions, ordered intermediate stops, Google estimated deadhead
+  miles, Google estimated loaded miles, total Google estimated route miles, and
+  route leg details while preserving paid loaded miles as user-entered.
+- Added running-load odometer validation fields and saved-load actuals support
+  for diesel fuel and DEF purchase entries through existing snapshot
+  structures, without adding Supabase migrations or fuel gauge recovery work.
 - Added Route Intelligence feature and API contract documentation for mileage
   terms, provider boundaries, API shapes, persistence, security, and future
   tracking/odometer concepts.

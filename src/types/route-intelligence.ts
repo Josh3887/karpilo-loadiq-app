@@ -12,6 +12,65 @@ export type VerifiedAddress = {
   warnings: string[];
 };
 
+export type RouteStopKind =
+  | "pickup"
+  | "delivery"
+  | "intermediate_stop"
+  | "fuel"
+  | "def"
+  | "scale"
+  | "rest"
+  | "customer"
+  | "other";
+
+export type RouteStopInput = {
+  id?: string;
+  label?: string;
+  address: string;
+  kind: RouteStopKind;
+  sequence: number;
+};
+
+export type RouteLegEstimate = {
+  fromLabel: string;
+  toLabel: string;
+  estimatedMiles: number | null;
+  estimatedDurationMinutes: number | null;
+};
+
+export type DeadheadRouteEstimate = {
+  origin: VerifiedAddress | null;
+  pickup: VerifiedAddress | null;
+  estimatedDeadheadMiles: number | null;
+  estimatedDeadheadDurationMinutes: number | null;
+  warnings: string[];
+};
+
+export type LoadedRouteEstimate = {
+  pickup: VerifiedAddress | null;
+  stops: VerifiedAddress[];
+  delivery: VerifiedAddress | null;
+  estimatedLoadedMiles: number | null;
+  estimatedLoadedDurationMinutes: number | null;
+  legs?: RouteLegEstimate[];
+  warnings: string[];
+};
+
+export type TotalRouteEstimate = {
+  estimatedMiles: number | null;
+  estimatedDurationMinutes: number | null;
+};
+
+export type RouteEstimateRequest = {
+  origin?: string;
+  destination?: string;
+  deadheadOrigin?: string;
+  pickupAddress?: string;
+  deliveryAddress?: string;
+  stops?: RouteStopInput[];
+  provider?: RouteProvider;
+};
+
 export type RouteEstimate = {
   provider: RouteProvider;
   origin: VerifiedAddress;
@@ -20,6 +79,10 @@ export type RouteEstimate = {
   estimatedDurationMinutes: number | null;
   trafficAwareDurationMinutes?: number | null;
   routeMileageVariance?: number | null;
+  deadheadEstimate?: DeadheadRouteEstimate;
+  loadedEstimate?: LoadedRouteEstimate;
+  totalEstimate?: TotalRouteEstimate;
+  routeLegs?: RouteLegEstimate[];
   truckSpecific: boolean;
   confidence: RouteConfidence;
   warnings: string[];
