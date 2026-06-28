@@ -1,0 +1,243 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { InternalBillingTestHarnessPanel } from "@/components/billing/internal-billing-test-harness-panel";
+import { PaymentAccessActions } from "@/components/billing/payment-access-actions";
+import {
+  SettingsMetric,
+  SettingsPageShell,
+  SettingsPanel,
+  StatusPill,
+} from "@/components/settings/settings-shell";
+import { BILLING_EMAIL } from "@/config/billing";
+import { FUTURE_PLATFORM_FEATURE_SCOPE } from "@/config/pricing";
+import { getInternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness";
+import type { InternalBillingTestHarnessSnapshot } from "@/domains/billing/internal-test-harness-types";
+import { formatPlanTierLabel } from "@/domains/billing/plan-limits";
+import { getServerPaymentAccess } from "@/domains/billing/server-entitlements";
+import { getPreviewPaymentAccess } from "@/lib/preview-data";
+import { isPreviewModeEnabled } from "@/lib/preview-mode";
+import { createClient } from "@/lib/supabase-server";
+import { getUserReservationAndLockState } from "@/services/reservations";
+
+export default async function BillingSettingsPage() {
+  const previewMode = await isPreviewModeEnabled();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && !previewMode) {
+    redirect("/auth/login");
+  }
+
+  if (previewMode && !user) {
+    return (
+      <BillingSettingsContent
+        paymentAccess={getPreviewPaymentAccess()}
+        reservationState={{ reservations: [], locks: [] }}
+      />
+    );
+  }
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const [paymentAccess, reservationState, billingTestHarness] = await Promise.all([
+    getServerPaymentAccess(user.id, user.email),
+    getUserReservationAndLockState(user.id),
+    getInternalBillingTestHarnessSnapshot(user.email),
+  ]);
+
+  return (
+    <BillingSettingsContent
+      paymentAccess={paymentAccess}
+      reservationState={reservationState}
+      billingTestHarness={billingTestHarness}
+    />
+  );
+}
+
+function BillingSettingsContent({
+  paymentAccess,
+  reservationState,
+  billingTestHarness,
+}: {
+  paymentAccess: Awaited<ReturnType<typeof getServerPaymentAccess>>;
+  reservationState: Awaited<ReturnType<typeof getUserReservationAndLockState>>;
+  billingTestHarness?: InternalBillingTestHarnessSnapshot | null;
+}) {
+  const lifecycleDate =
+    paymentAccess.billingStartsAt ??
+    paymentAccess.canceledAt ??
+    paymentAccess.currentPeriodEnd ??
+    paymentAccess.trialEnd;
+  const hasLifetimeDisplay =
+    paymentAccess.lifetimePriceLock ||
+    paymentAccess.tier === "pilot" ||
+    paymentAccess.tier === "launch500";
+  const futureFeatureScope =
+    paymentAccess.futureFeatureAccessScope ??
+    (hasLifetimeDisplay ? FUTURE_PLATFORM_FEATURE_SCOPE : null);
+
+  return (
+    <SettingsPageShell
+      title="Billing Command"
+      description="One entitlement brain, multiple payment rails. Pricing follows Founding 50, Launch 500, then Standard Public Access."
+      actions={
+        <StatusPill tone={paymentAccess.hasActiveAccess ? "green" : "red"}>
+          {formatStatus(paymentAccess.entitlementStatus)}
+        </StatusPill>
+      }
+    >
+      <InternalBillingTestHarnessPanel harness={billingTestHarness} />
+
+      <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <SettingsMetric
+          label="Current Plan"
+          value={formatPlanTierLabel(paymentAccess.tier)}
+          detail="Resolved from subscription entitlement"
+          tone="blue"
+        />
+        <SettingsMetric
+          label="Entitlement"
+          value={formatStatus(paymentAccess.entitlementStatus)}
+          detail={paymentAccess.hasActiveAccess ? "Access active" : "Needs billing setup"}
+          tone={paymentAccess.hasActiveAccess ? "green" : "red"}
+        />
+        <SettingsMetric
+          label="Billing Provider"
+          value={formatStatus(paymentAccess.billingProvider)}
+          detail={paymentAccess.hasStripeCustomer ? "Stripe customer linked" : "No Stripe customer link"}
+        />
+        <SettingsMetric
+          label="Lifecycle Date"
+          value={formatDate(lifecycleDate)}
+          detail={paymentAccess.cancelAtPeriodEnd ? "Cancel at period end" : "Billing, renewal, or trial marker"}
+        />
+        <SettingsMetric
+          label="Trial State"
+          value={paymentAccess.trialStatus ? formatStatus(paymentAccess.trialStatus) : formatTrialDuration(paymentAccess.trialDurationDays)}
+          detail={paymentAccess.trialEnd ? `Trial marker ${formatDate(paymentAccess.trialEnd)}` : "7-day trial when supported"}
+          tone={paymentAccess.canContinueTrial ? "green" : "blue"}
+        />
+        <SettingsMetric
+          label="Lifetime Lock"
+          value={hasLifetimeDisplay ? "Protected" : "Not active"}
+          detail={hasLifetimeDisplay ? "Pilot or Legacy Launch protection" : "Standard price rules"}
+          tone={hasLifetimeDisplay ? "green" : "blue"}
+        />
+        <SettingsMetric
+          label="Cohort"
+          value={formatCohort(paymentAccess.cohortPhase, paymentAccess.cohortCap)}
+          detail="Pilot, launch, or standard rollout classification"
+        />
+        <SettingsMetric
+          label="Price Rule"
+          value={hasLifetimeDisplay || paymentAccess.priceSubjectToChange === false ? "Locked where eligible" : "Subject to change"}
+          detail="Standard Public Access has no lifetime lock"
+        />
+      </section>
+
+      <SettingsPanel
+        title="Entitlement Scope"
+        description="Subscription metadata keeps pricing locks separate from feature access so Stripe, Apple, Google Play, and manual reconciliation can share one access decision."
+      >
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm leading-6 text-slate-300">
+          {futureFeatureScope ??
+            "Pilot and Legacy Launch accounts can carry lifetime pricing protection when assigned by backend entitlement records. Standard Public Access has no lifetime lock; entitlement enforcement remains unchanged."}
+        </div>
+      </SettingsPanel>
+
+      <SettingsPanel
+        title="Payment Access"
+        description="Use the correct payment rail for the account. Stripe-managed users go to Stripe; Apple and Google users stay with their app-store subscription manager."
+      >
+        <PaymentAccessActions
+          paymentAccess={paymentAccess}
+          billingEmail={BILLING_EMAIL}
+        />
+      </SettingsPanel>
+
+      {(reservationState.reservations.length > 0 ||
+        reservationState.locks.length > 0) && (
+        <SettingsPanel
+          title="Pricing Lock State"
+          description="Reservation and pricing lock records remain separate from the payment provider and are not overwritten here."
+          kicker="Rollout Access"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            {reservationState.reservations.map((reservation) => (
+              <div
+                key={reservation.id}
+                className="min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300"
+              >
+                <div className="break-words font-black text-slate-100">
+                  {reservation.cohort} reservation
+                </div>
+                <div className="mt-2 break-words [overflow-wrap:anywhere]">
+                  Code {reservation.code} · {reservation.status}
+                </div>
+                <div className="mt-1 break-words text-slate-500">
+                  ${reservation.monthly_price}/mo · $
+                  {reservation.annual_price}/yr
+                </div>
+              </div>
+            ))}
+            {reservationState.locks.map((lock) => (
+              <div
+                key={lock.id}
+                className="min-w-0 overflow-hidden rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-sm text-sky-100"
+              >
+                <div className="break-words font-black text-slate-100">
+                  {lock.cohort} pricing lock
+                </div>
+                <div className="mt-2 break-words [overflow-wrap:anywhere]">
+                  {lock.lock_status} via {lock.billing_provider}
+                </div>
+                <div className="mt-1 break-words text-sky-200/75">
+                  ${lock.monthly_price}/mo · ${lock.annual_price}/yr
+                </div>
+              </div>
+            ))}
+          </div>
+        </SettingsPanel>
+      )}
+
+      <SettingsPanel
+        title="Plan Catalog"
+        description="Plan selection, checkout, and full pricing details stay in the existing billing route."
+      >
+        <Link
+          href="/dashboard/billing"
+          className="inline-flex rounded-xl border border-sky-400/30 bg-sky-400/10 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20"
+        >
+          Open Billing & Plan
+        </Link>
+      </SettingsPanel>
+    </SettingsPageShell>
+  );
+}
+
+function formatStatus(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "Not set";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatTrialDuration(value: number | null) {
+  return value ? `${value}-day trial` : "Not set";
+}
+
+function formatCohort(phase: string | null, cap: number | null) {
+  const label = phase ? formatStatus(phase) : "Standard";
+  return cap ? `${label} / ${cap}` : label;
+}

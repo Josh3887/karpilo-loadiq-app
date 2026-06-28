@@ -26,6 +26,7 @@ type LoadInputRawValues = z.input<typeof loadInputSchema>;
 type LoadInputFormProps = {
   onCalculate: (values: LoadInputFormValues) => void;
   initialValues?: LoadInputFormValues | null;
+  previewMode?: boolean;
 };
 
 export function LoadInputForm({

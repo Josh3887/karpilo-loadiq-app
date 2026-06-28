@@ -1,8 +1,11 @@
 import { AccessorialInputItem } from "@/types/accessorial";
 import { FuelPriceSource } from "@/types/fuel";
 import { RouteEstimate } from "@/types/route-intelligence";
+import type { LoadPulledReason, LoadRunStatus } from "@/lib/fuel-gauge";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
+export type PayCalculationBasis = "gross" | "gross_minus_fsc";
+export type PayPeriodMode = "by_load" | "weekly";
 
 export type PayStructure = {
   type: PayStructureType;
@@ -13,7 +16,54 @@ export type PayStructure = {
   dailyRate: number;
   includeFuelSurcharge: boolean;
   includeAccessorials: boolean;
+  payCalculationBasis: PayCalculationBasis;
+  payPeriodMode: PayPeriodMode;
 };
+
+export type ReserveAllocationMode = "flat" | "cpm" | "percent";
+
+export type RouteStopInput = {
+  id?: string;
+  stopType: "pickup" | "delivery";
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  milesFromPrevious: number;
+  stopRevenue: number;
+  stopExpense: number;
+  notes: string;
+};
+
+export type CalculationValueSource =
+  | "profile"
+  | "load_input"
+  | "temporary_override"
+  | "system";
+
+export type ProfileDerivedValues = {
+  dailyFixedOverhead: number;
+  operatingDaysPerWeek: number;
+  operatingDaysPerMonth: number;
+  dispatchPercent: number;
+  factoringPercent: number;
+  reserveAllocation: number;
+  maintenanceReserve: number;
+  tireReserve: number;
+  trailerFee: number;
+  insuranceAllocation: number;
+  variableCostPerMile: number;
+  fixedCostAllocation: number;
+  mpg: number;
+  targetTrueRpm: number;
+  incomeTargetDaily: number;
+  incomeTargetWeekly: number;
+  minimumHourlyProfitability: number;
+};
+
+export type TemporaryOverrides = Partial<
+  Record<keyof ProfileDerivedValues, number>
+>;
 
 export type LoadInput = {
   loadNumber: string;
@@ -21,13 +71,38 @@ export type LoadInput = {
   dispatcherReference: string;
 
   pickupZip: string;
+  pickupAddress: string;
   pickupCity: string;
   pickupState: string;
-  pickupAddress: string;
   deliveryZip: string;
+  deliveryAddress: string;
   deliveryCity: string;
   deliveryState: string;
-  deliveryAddress: string;
+
+  deadheadStartAddress: string;
+  deadheadStartCity: string;
+  deadheadStartState: string;
+  deadheadStartZip: string;
+  routeStops: RouteStopInput[];
+  estimatedLoadWeightLbs: number;
+
+  equipmentType: string;
+  atlasEquipmentPack: string;
+  combinationType: string;
+  trailerLengthFeet: number;
+  trailerWidthInches: number;
+  trailerHeightInches: number;
+  vehicleTareWeightLbs: number;
+  estimatedMaxGrossLbs: number;
+  maxPayloadLbs: number;
+  grossVehicleWeightRatingLbs: number;
+  axleCount: number;
+  hazmatCapable: boolean;
+  tankerCapable: boolean;
+  refrigeratedCapable: boolean;
+  specializedCapabilities: string[];
+  securementEquipment: string[];
+  routeRestrictionNotes: string;
 
   loadedMiles: number;
   deadheadMiles: number;
@@ -40,6 +115,15 @@ export type LoadInput = {
 
   dispatchDays: number;
   deadheadDays: number;
+  dispatchDate: string;
+  pickupDate: string;
+  deliveryDate: string;
+  deadheadStartDate: string;
+  deadheadEndDate: string;
+  payPeriodStartDate: string;
+  payPeriodEndDate: string;
+  loadRunStatus: LoadRunStatus;
+  loadPulledReason: LoadPulledReason;
 
   revenueInputMode: "rpm" | "gross";
   grossRevenue: number;
@@ -55,9 +139,17 @@ export type LoadInput = {
   fuelPriceExpiresAt: string;
   fuelPriceIsEstimate: boolean;
   mpg: number;
+  fuelTankCount: number;
+  fuelTankCapacityGallons: number;
+  startingFuelPercent: number;
 
   overhead: number;
+  profileDerivedValues: ProfileDerivedValues;
+  temporaryOverrides: TemporaryOverrides;
+  calculationSource: CalculationValueSource;
   accessorialItems: AccessorialInputItem[];
+  reserveAllocationMode: ReserveAllocationMode;
+  reserveAllocationValue: number;
   reserveAllocation: number;
   maintenanceReserve: number;
   tireReserve: number;
@@ -119,15 +211,32 @@ export type LoadResult = {
   accessorialRevenue: number;
   reimbursedRevenue: number;
   grossRevenue: number;
+  driverPayBase: number;
+  driverPercentagePay: number;
+  payCalculationBasis: PayCalculationBasis;
+  payPeriodMode: PayPeriodMode;
   payableRevenue: number;
   netRevenue: number;
   totalMiles: number;
+  routeStopCount: number;
+  stopOffCount: number;
+  estimatedLoadWeightLbs: number;
   fuelCost: number;
   trueRpm: number;
   rpmAfterDeadhead: number;
   dispatchCost: number;
   factoringCost: number;
   operationalCost: number;
+  loadOverheadApplied: number;
+  dailyFixedOverhead: number;
+  dispatchDays: number;
+  deadheadDays: number;
+  profitPerDay: number;
+  profitPerHour: number;
+  profitPerLoadedMile: number;
+  profitPerTotalMile: number;
+  targetRpm: number;
+  incomeTargetComparison: number;
   totalTripCost: number;
   estimatedNet: number;
   retainedEarnings: number;
@@ -138,6 +247,9 @@ export type LoadResult = {
   breakEvenRpm: number;
   dailyProfitability: number;
   hourlyProfitability: number;
+  reserveAllocationMode: ReserveAllocationMode;
+  reserveAllocationValue: number;
+  reserveAllocationResolved: number;
   profitabilityScore: number;
   profitabilityBand: ProfitabilityBand;
   costBreakdown: CostBreakdown;

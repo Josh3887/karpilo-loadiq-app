@@ -5,9 +5,18 @@ import { calculateLoadMetrics } from "@/services/load-calculator";
 
 type CalculatorDefaults = {
   overhead?: number;
+  operatingDaysPerWeek?: number;
+  operatingDaysPerMonth?: number;
+  incomeTargetDaily?: number;
+  incomeTargetWeekly?: number;
+  minimumHourlyProfitability?: number;
   targetTrueRpm?: number;
   defaultMpg?: number;
+  fuelTankCount?: number;
+  fuelTankCapacityGallons?: number;
+  equipmentProfile?: unknown;
   defaultPayStructure?: LoadInput["payStructure"];
+  reserveAllocation?: number;
   maintenanceReserve?: number;
   tireReserve?: number;
   trailerFee?: number;

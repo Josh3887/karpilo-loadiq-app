@@ -1,22 +1,20 @@
+import { BRAND } from "@/config/brand";
+
 export const APP_CONFIG = {
-  name: "Karpilo LoadIQ",
-  shortName: "K-LIQ",
-  tagline: "Freight profitability intelligence built by the mile.",
-  description:
-    "A tactical load profitability decision engine for owner-operators and small fleets.",
+  name: BRAND.productName,
+  shortName: BRAND.shortName,
+  tagline: BRAND.tagline,
+  description: BRAND.description,
   routes: {
     home: "/",
-    dashboard: "/dashboard",
-    login: "/auth/login",
-    register: "/auth/register",
+    dashboard: "/portal",
+    login: "/login",
+    register: "/request-access",
   },
 } as const;
 
-export const BRAND_COLORS = {
-  background: "#060B14",
-  panel: "#0B1220",
-  electricBlue: "#38BDF8",
-  telemetryRed: "#EF4444",
-  metallicSilver: "#CBD5E1",
-  offWhite: "#F8FAFC",
+export const BRAND_COLORS = BRAND.colors;
+
+export const APP_FEATURE_FLAGS = {
+  showAppCountdown: process.env.NEXT_PUBLIC_SHOW_APP_COUNTDOWN === "true",
 } as const;

@@ -9,6 +9,7 @@ export type AccessorialCategory =
   | "parking"
   | "detention"
   | "layover"
+  | "tarp_pay"
   | "tonu"
   | "extra_stop"
   | "permit"

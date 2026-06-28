@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { usePreviewMode } from "@/components/preview/preview-mode-provider";
 import { deleteLaneTemplate } from "@/services/lane-templates";
 
 type LaneTemplateDeleteButtonProps = {
@@ -12,10 +13,16 @@ type LaneTemplateDeleteButtonProps = {
 export function LaneTemplateDeleteButton({
   templateId,
 }: LaneTemplateDeleteButtonProps) {
+  const preview = usePreviewMode();
   const router = useRouter();
   const [status, setStatus] = useState("");
 
   async function handleDelete() {
+    if (preview.enabled) {
+      preview.explain("lane-template-delete");
+      return;
+    }
+
     try {
       setStatus("Deleting...");
       await deleteLaneTemplate(templateId);

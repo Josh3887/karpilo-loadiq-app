@@ -1,22 +1,22 @@
-import { resolveEntitlements } from "@/domains/billing/entitlement-service";
-import { PlanTier } from "@/domains/billing/plan-limits";
+import {
+  resolveEntitlements,
+  resolvePaymentAccess,
+} from "@/domains/billing/entitlement-service";
+import {
+  getInternalBillingTestHarnessSnapshot,
+  resolveInternalBillingTestSubscription,
+} from "@/domains/billing/internal-test-harness";
 import { createClient } from "@/lib/supabase-server";
 
-function normalizeTier(tier: unknown): PlanTier {
-  if (tier === "pro" || tier === "founder") return tier;
-  return "free";
-}
-
-export async function getServerEntitlements(userId: string) {
+async function getSubscriptionUsage(userId: string, userEmail?: string | null) {
   const supabase = await createClient();
 
   const [{ data: subscription }, calculationCount, savedLoadCount] =
     await Promise.all([
       supabase
         .from("subscriptions")
-        .select("tier,status,current_period_end")
+        .select("*")
         .eq("user_id", userId)
-        .in("status", ["active", "trialing"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
@@ -35,6 +35,51 @@ export async function getServerEntitlements(userId: string) {
     monthlyCalculations: calculationCount.count ?? 0,
     savedLoads: savedLoadCount.count ?? 0,
   };
+  const billingTestHarness =
+    await getInternalBillingTestHarnessSnapshot(userEmail);
+  const harnessSubscription =
+    resolveInternalBillingTestSubscription(billingTestHarness);
 
-  return resolveEntitlements(normalizeTier(subscription?.tier), usage);
+  return {
+    subscription: harnessSubscription ?? subscription,
+    usage,
+    billingTestHarness,
+  };
+}
+
+export async function getServerEntitlementState(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage, billingTestHarness } = await getSubscriptionUsage(
+    userId,
+    userEmail
+  );
+  const paymentAccess = resolvePaymentAccess(subscription, usage);
+
+  return {
+    usage,
+    paymentAccess,
+    entitlements: paymentAccess.entitlements,
+    billingTestHarness,
+  };
+}
+
+export async function getServerPaymentAccess(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
+  return resolvePaymentAccess(subscription, usage);
+}
+
+export async function getServerEntitlements(
+  userId: string,
+  userEmail?: string | null
+) {
+  const { subscription, usage } = await getSubscriptionUsage(userId, userEmail);
+  const paymentAccess = resolvePaymentAccess(subscription, usage);
+  return paymentAccess.hasActiveAccess
+    ? paymentAccess.entitlements
+    : resolveEntitlements("no_access", usage);
 }

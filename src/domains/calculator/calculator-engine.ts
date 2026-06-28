@@ -2,11 +2,15 @@ import {
   LoadInput,
   LoadResult,
   LoadWarning,
+  PayCalculationBasis,
+  PayPeriodMode,
   PayStructure,
   ProfitabilityBand,
+  ReserveAllocationMode,
 } from "@/types/load";
+import { roundFuelPrice } from "@/utils/format";
 
-export const CALCULATION_VERSION = "loadiq-v2";
+export const CALCULATION_VERSION = "loadiq-v1.1-profile-overhead";
 
 function round(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -43,6 +47,18 @@ function defaultPayStructure(): PayStructure {
     dailyRate: 0,
     includeFuelSurcharge: true,
     includeAccessorials: true,
+    payCalculationBasis: "gross",
+    payPeriodMode: "by_load",
+  };
+}
+
+function resolvePayStructure(input: LoadInput): PayStructure {
+  const structure = input.payStructure ?? defaultPayStructure();
+
+  return {
+    ...structure,
+    payCalculationBasis: structure.payCalculationBasis ?? "gross",
+    payPeriodMode: structure.payPeriodMode ?? "by_load",
   };
 }
 
@@ -54,35 +70,110 @@ function calculatePercentageMultiplier(percentageChain: number[]) {
   }, 1);
 }
 
-function calculatePayableRevenue(input: LoadInput, baseRevenue: number) {
-  const payStructure = input.payStructure ?? defaultPayStructure();
-  const accessorialRevenue = input.accessorialItems
-    .filter((item) => item.direction === "revenue")
-    .reduce((total, item) => total + Number(item.amount), 0);
-  const reimbursedRevenue = input.accessorialItems
-    .filter((item) => item.direction === "expense" && item.isReimbursed)
-    .reduce((total, item) => total + Number(item.amount), 0);
+function calculatePayableRevenue(
+  input: LoadInput,
+  baseRevenue: number,
+  payStructure: PayStructure,
+  accessorialRevenue: number,
+  reimbursedRevenue: number
+) {
+  const basis: PayCalculationBasis =
+    payStructure.payCalculationBasis ?? "gross";
+  const payPeriodMode: PayPeriodMode = payStructure.payPeriodMode ?? "by_load";
+  const includedAccessorials = payStructure.includeAccessorials
+    ? accessorialRevenue + reimbursedRevenue
+    : 0;
 
-  const eligibleRevenue =
+  const driverPayBase = Math.max(
     baseRevenue +
-    (payStructure.includeFuelSurcharge ? input.fuelSurcharge : 0) +
-    (payStructure.includeAccessorials
-      ? accessorialRevenue + reimbursedRevenue
-      : 0);
+      (basis === "gross" && payStructure.includeFuelSurcharge
+        ? input.fuelSurcharge
+        : 0) +
+      includedAccessorials,
+    0
+  );
 
   if (payStructure.type === "cpm") {
-    return input.loadedMiles * payStructure.cpmRate;
+    return {
+      payableRevenue: input.loadedMiles * payStructure.cpmRate,
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
   if (payStructure.type === "flat") {
-    return payStructure.flatAmount;
+    return {
+      payableRevenue: payStructure.flatAmount,
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
   if (payStructure.type === "daily") {
-    return payStructure.dailyRate * Math.max(input.dispatchDays, 1);
+    return {
+      payableRevenue: payStructure.dailyRate * Math.max(input.dispatchDays, 1),
+      driverPayBase: 0,
+      driverPercentagePay: 0,
+      payCalculationBasis: basis,
+      payPeriodMode,
+    };
   }
 
-  return eligibleRevenue * calculatePercentageMultiplier(payStructure.percentageChain);
+  const driverPercentagePay =
+    driverPayBase * calculatePercentageMultiplier(payStructure.percentageChain);
+
+  return {
+    payableRevenue: driverPercentagePay,
+    driverPayBase,
+    driverPercentagePay,
+    payCalculationBasis: basis,
+    payPeriodMode,
+  };
+}
+
+function resolveReserveAllocation(
+  input: LoadInput,
+  grossRevenue: number,
+  totalMiles: number
+) {
+  const mode: ReserveAllocationMode = input.reserveAllocationMode ?? "flat";
+  const baseValue = Number(
+    input.reserveAllocationValue ?? input.reserveAllocation ?? 0
+  );
+
+  if (!Number.isFinite(baseValue) || baseValue <= 0) {
+    return {
+      mode,
+      baseValue: 0,
+      resolvedAmount: 0,
+    };
+  }
+
+  if (mode === "cpm") {
+    return {
+      mode,
+      baseValue,
+      resolvedAmount: totalMiles * baseValue,
+    };
+  }
+
+  if (mode === "percent") {
+    return {
+      mode,
+      baseValue,
+      resolvedAmount: grossRevenue * (baseValue / 100),
+    };
+  }
+
+  return {
+    mode,
+    baseValue,
+    resolvedAmount: baseValue,
+  };
 }
 
 export function calculateLoadMetrics(input: LoadInput): LoadResult {
@@ -104,26 +195,47 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
 
   const linehaulRevenue = input.loadedMiles * input.ratePerMile;
   const fuelSurchargeRevenue = input.fuelSurcharge;
+  const payStructure = resolvePayStructure(input);
   const grossRevenue =
     linehaulRevenue +
     fuelSurchargeRevenue +
     accessorialRevenue +
     reimbursedRevenue;
-  const payableRevenue = calculatePayableRevenue(input, linehaulRevenue);
+  const payResolution = calculatePayableRevenue(
+    input,
+    linehaulRevenue,
+    payStructure,
+    accessorialRevenue,
+    reimbursedRevenue
+  );
+  const payableRevenue = payResolution.payableRevenue;
   const netRevenue = payableRevenue;
   const totalMiles = input.loadedMiles + input.deadheadMiles;
-  const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * input.fuelPrice : 0;
+  const stopOffCount = input.routeStops?.length ?? 0;
+  const routeStopCount = 2 + stopOffCount;
+  const fuelPrice = roundFuelPrice(input.fuelPrice);
+  const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * fuelPrice : 0;
   const variableCosts = totalMiles * input.variableCostPerMile;
   const trueRpm = totalMiles > 0 ? grossRevenue / totalMiles : 0;
   const rpmAfterDeadhead = trueRpm;
   const dispatchCost = grossRevenue * (input.dispatchPercent / 100);
   const factoringCost = grossRevenue * (input.factoringPercent / 100);
+  const reserveAllocation = resolveReserveAllocation(
+    input,
+    grossRevenue,
+    totalMiles
+  );
   const reserves =
-    input.reserveAllocation + input.maintenanceReserve + input.tireReserve;
+    reserveAllocation.resolvedAmount +
+    input.maintenanceReserve +
+    input.tireReserve;
+  const dispatchDays = Math.max(input.dispatchDays, 1);
+  const dailyFixedOverhead = Math.max(input.overhead, 0);
+  const loadOverheadApplied = dailyFixedOverhead * dispatchDays;
 
   const operationalCost =
     fuelCost +
-    input.overhead +
+    loadOverheadApplied +
     accessorialExpense +
     input.tolls +
     input.lumpers +
@@ -150,9 +262,14 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       ? (totalTripCost - fuelSurchargeRevenue - accessorialRevenue) /
         input.loadedMiles
       : 0;
-  const operatingDays = Math.max(input.dispatchDays + input.deadheadDays, 0.25);
+  const operatingDays = Math.max(dispatchDays + input.deadheadDays, 1);
   const dailyProfitability = estimatedNet / operatingDays;
   const hourlyProfitability = estimatedNet / (operatingDays * 11);
+  const profitPerLoadedMile =
+    input.loadedMiles > 0 ? estimatedNet / input.loadedMiles : 0;
+  const profitPerTotalMile = totalMiles > 0 ? estimatedNet / totalMiles : 0;
+  const incomeTargetComparison =
+    dailyProfitability - (input.profileDerivedValues?.incomeTargetDaily ?? 0);
 
   let profitabilityScore = 100;
 
@@ -224,21 +341,31 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
 
   const explanations = [
     estimatedNet > 0
-      ? `Estimated net is ${money(estimatedNet)} after modeled trip costs.`
+      ? `Estimated net is ${money(estimatedNet)} after modeled trip costs, giving a directional view of trip margin.`
       : `Estimated net is negative at ${money(estimatedNet)}, so the load needs repricing or cost relief.`,
-    `True RPM is ${money(trueRpm)}/mi across ${round(totalMiles)} total miles.`,
-    `Break-even linehaul RPM is approximately ${money(breakEvenRpm)}/mi before profit.`,
+    `True RPM is ${money(trueRpm)}/mi across ${round(totalMiles)} total miles, including deadhead exposure.`,
+    `Break-even linehaul RPM is approximately ${money(breakEvenRpm)}/mi before profit, which helps keep price discipline visible.`,
+    `${money(loadOverheadApplied)} of fixed overhead is assigned to this load using ${money(dailyFixedOverhead)}/day across ${round(dispatchDays)} dispatch day(s), so recurring costs are not hidden from the trip.`,
   ];
 
   if (fuelCost > 0) {
     explanations.push(
-      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(input.fuelPrice)}/gal.`
+      `Fuel is modeled at ${money(fuelCost)} using ${round(input.mpg)} MPG and ${money(fuelPrice)}/gal, giving visibility into pump-price and MPG variance.`
     );
   }
 
   if (reserves > 0) {
     explanations.push(
       `${money(reserves)} is being protected for reserve allocations before retained earnings.`
+    );
+  }
+
+  if (
+    payStructure.type === "percentage" &&
+    payResolution.payCalculationBasis === "gross_minus_fsc"
+  ) {
+    explanations.push(
+      `Driver percentage pay is modeled from ${money(payResolution.driverPayBase)} after fuel surcharge revenue is excluded from the pay base.`
     );
   }
 
@@ -249,15 +376,35 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     accessorialRevenue: round(accessorialRevenue),
     reimbursedRevenue: round(reimbursedRevenue),
     grossRevenue: round(grossRevenue),
+    driverPayBase: round(payResolution.driverPayBase),
+    driverPercentagePay: round(payResolution.driverPercentagePay),
+    payCalculationBasis: payResolution.payCalculationBasis,
+    payPeriodMode: payResolution.payPeriodMode,
     payableRevenue: round(payableRevenue),
     netRevenue: round(netRevenue),
     totalMiles: round(totalMiles),
+    routeStopCount,
+    stopOffCount,
+    estimatedLoadWeightLbs: Math.max(
+      Math.round(Number(input.estimatedLoadWeightLbs ?? 0)),
+      0
+    ),
     fuelCost: round(fuelCost),
     trueRpm: round(trueRpm),
     rpmAfterDeadhead: round(rpmAfterDeadhead),
     dispatchCost: round(dispatchCost),
     factoringCost: round(factoringCost),
     operationalCost: round(operationalCost),
+    loadOverheadApplied: round(loadOverheadApplied),
+    dailyFixedOverhead: round(dailyFixedOverhead),
+    dispatchDays: round(dispatchDays),
+    deadheadDays: round(input.deadheadDays),
+    profitPerDay: round(dailyProfitability),
+    profitPerHour: round(hourlyProfitability),
+    profitPerLoadedMile: round(profitPerLoadedMile),
+    profitPerTotalMile: round(profitPerTotalMile),
+    targetRpm: round(input.targetTrueRpm),
+    incomeTargetComparison: round(incomeTargetComparison),
     totalTripCost: round(totalTripCost),
     estimatedNet: round(estimatedNet),
     retainedEarnings: round(retainedEarnings),
@@ -268,6 +415,9 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     breakEvenRpm: round(breakEvenRpm),
     dailyProfitability: round(dailyProfitability),
     hourlyProfitability: round(hourlyProfitability),
+    reserveAllocationMode: reserveAllocation.mode,
+    reserveAllocationValue: round(reserveAllocation.baseValue),
+    reserveAllocationResolved: round(reserveAllocation.resolvedAmount),
     profitabilityScore,
     profitabilityBand: getProfitabilityBand(profitabilityScore),
     costBreakdown: {
@@ -278,10 +428,10 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
       lumpers: round(input.lumpers),
       dispatch: round(dispatchCost),
       factoring: round(factoringCost),
-      reserves: round(input.reserveAllocation),
+      reserves: round(reserveAllocation.resolvedAmount),
       maintenanceReserve: round(input.maintenanceReserve),
       tireReserve: round(input.tireReserve),
-      overhead: round(input.overhead),
+      overhead: round(loadOverheadApplied),
       trailerFee: round(input.trailerFee),
       insuranceAllocation: round(input.insuranceAllocation),
       variableCosts: round(variableCosts),

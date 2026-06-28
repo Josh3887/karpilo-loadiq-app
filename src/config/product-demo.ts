@@ -101,7 +101,7 @@ export type DemoCta = {
 };
 
 export const demoDisclaimer =
-  "Demo values are fictional examples for product illustration only. LoadIQ calculations are projections and do not guarantee profit, freight availability, or business outcomes.";
+  "Demo values are fictional examples for product illustration only. Karpilo LoadIQ calculations are projections and do not guarantee profit, freight availability, or business outcomes.";
 
 export const demoLoad = {
   loadNumber: "DEMO-2471",
@@ -206,7 +206,7 @@ export const demoSteps = [
   {
     title: "Apply your operating profile",
     description:
-      "LoadIQ layers in MPG, target income, overhead, reserves, and default pay assumptions from Settings.",
+      "Karpilo LoadIQ layers in MPG, target income, overhead, reserves, and default pay assumptions from Settings.",
   },
   {
     title: "Check fuel pressure",
@@ -229,7 +229,7 @@ export const demoCta = {
   eyebrow: "Try the workflow",
   title: "See the money before the wheels turn.",
   description:
-    "Use LoadIQ to model freight, pressure-test assumptions, and protect your operating margin before accepting a load.",
-  buttonLabel: "Launch LoadIQ",
+    "Use Karpilo LoadIQ to model freight, pressure-test assumptions, and understand operating margin before accepting a load.",
+  buttonLabel: "Launch Karpilo LoadIQ",
   href: "/dashboard",
 } satisfies DemoCta;

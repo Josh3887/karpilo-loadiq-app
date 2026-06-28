@@ -22,6 +22,11 @@ type ResultsPanelProps = {
   input: LoadInput | null;
   canSaveLoad?: boolean;
   canCompareScenarios?: boolean;
+  canUseWeatherProfitabilityRisk?: boolean;
+  canSaveWeatherProfitabilitySnapshot?: boolean;
+  aiDevEnabled?: boolean;
+  entitlementTier?: string;
+  previewMode?: boolean;
   onLoadSaved?: () => void;
 };
 
