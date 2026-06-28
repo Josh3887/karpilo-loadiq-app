@@ -41,6 +41,9 @@ export type LoadInput = {
   dispatchDays: number;
   deadheadDays: number;
 
+  revenueInputMode: "rpm" | "gross";
+  grossRevenue: number;
+  fuelSurchargeIncludedInGross: boolean;
   ratePerMile: number;
   fuelSurcharge: number;
   fuelPrice: number;

@@ -60,6 +60,11 @@ export function LoadInputForm({
     name: "loadedMiles",
   });
   const paidLoadedMiles = Number(watchedPaidLoadedMiles ?? 0);
+  const revenueInputMode =
+    useWatch({ control, name: "revenueInputMode" }) ?? "rpm";
+  const fuelSurchargeIncludedInGross = Boolean(
+    useWatch({ control, name: "fuelSurchargeIncludedInGross" })
+  );
   const routeMileageVariance = getRouteMileageVariance(
     routeEstimate,
     paidLoadedMiles
@@ -178,8 +183,30 @@ export function LoadInputForm({
       accessorialItems,
       routeEstimate: submittedRouteEstimate,
     });
+    const derivedLinehaulRevenue =
+      parsedValues.revenueInputMode === "gross"
+        ? Math.max(
+            parsedValues.grossRevenue -
+              (parsedValues.fuelSurchargeIncludedInGross
+                ? parsedValues.fuelSurcharge
+                : 0),
+            0
+          )
+        : parsedValues.loadedMiles * parsedValues.ratePerMile;
+    const derivedRatePerMile =
+      parsedValues.loadedMiles > 0
+        ? derivedLinehaulRevenue / parsedValues.loadedMiles
+        : parsedValues.ratePerMile;
+    const normalizedValues = {
+      ...parsedValues,
+      ratePerMile: Number(derivedRatePerMile.toFixed(4)),
+      grossRevenue:
+        parsedValues.revenueInputMode === "gross"
+          ? parsedValues.grossRevenue
+          : derivedLinehaulRevenue + parsedValues.fuelSurcharge,
+    };
 
-    onCalculate(parsedValues);
+    onCalculate(normalizedValues);
   }
 
   function handleManualFuelOverride() {
@@ -299,6 +326,7 @@ export function LoadInputForm({
       <input type="hidden" {...register("fuelPricePeriod")} />
       <input type="hidden" {...register("fuelPriceFetchedAt")} />
       <input type="hidden" {...register("fuelPriceExpiresAt")} />
+      <input type="hidden" {...register("revenueInputMode")} />
 
       <section className="space-y-4">
         <SectionTitle title="Load Identity" />
@@ -487,14 +515,43 @@ export function LoadInputForm({
       <section className="space-y-4">
         <SectionTitle title="Financial Inputs" />
 
-        <div className="grid grid-cols-2 gap-4">
-          <InputField
+        <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-[#060B14] p-1">
+          <RevenueModeButton
+            active={revenueInputMode === "rpm"}
             label="RPM"
-            type="number"
-            step="0.01"
-            error={errors.ratePerMile?.message}
-            {...register("ratePerMile")}
+            onClick={() => setValue("revenueInputMode", "rpm", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })}
           />
+          <RevenueModeButton
+            active={revenueInputMode === "gross"}
+            label="Load Gross"
+            onClick={() => setValue("revenueInputMode", "gross", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {revenueInputMode === "gross" ? (
+            <InputField
+              label="Load Gross"
+              type="number"
+              step="0.01"
+              error={errors.grossRevenue?.message}
+              {...register("grossRevenue")}
+            />
+          ) : (
+            <InputField
+              label="RPM"
+              type="number"
+              step="0.01"
+              error={errors.ratePerMile?.message}
+              {...register("ratePerMile")}
+            />
+          )}
 
           <InputField
             label="Fuel Surcharge"
@@ -505,7 +562,27 @@ export function LoadInputForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {revenueInputMode === "gross" && (
+          <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+              {...register("fuelSurchargeIncludedInGross")}
+            />
+            <span>
+              <span className="block font-semibold text-slate-200">
+                FSC is included in load gross
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                {fuelSurchargeIncludedInGross
+                  ? "Linehaul will be derived by subtracting FSC from the entered gross."
+                  : "Entered gross will be treated as linehaul, with FSC modeled separately."}
+              </span>
+            </span>
+          </label>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <InputField
             label="Fuel Price"
             type="number"
@@ -523,9 +600,9 @@ export function LoadInputForm({
           <div className="space-y-2 rounded-xl border border-sky-400/20 bg-sky-400/5 p-3 text-xs leading-5 text-slate-300">
             <p className="font-semibold text-sky-200">{fuelStatus}</p>
             <p className="text-slate-500">
-              Fuel estimates may utilize publicly available U.S. Energy
-              Information Administration (EIA) data. EIA data is provided for
-              informational estimation purposes only and does not imply
+              Fuel pricing uses the EIA diesel baseline when available. You can
+              override it with your actual purchase price. EIA data is provided
+              for informational estimation purposes only and does not imply
               endorsement.
             </p>
           </div>
@@ -577,6 +654,30 @@ function SectionTitle({ title }: { title: string }) {
     <div className="border-b border-slate-800 pb-2 text-xs font-bold uppercase tracking-[0.25em] text-sky-300">
       {title}
     </div>
+  );
+}
+
+function RevenueModeButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? "rounded-lg bg-sky-400 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#060B14]"
+          : "rounded-lg px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400 transition hover:bg-slate-900 hover:text-slate-200"
+      }
+    >
+      {label}
+    </button>
   );
 }
 

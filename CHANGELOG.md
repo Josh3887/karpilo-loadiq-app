@@ -15,6 +15,12 @@
   terms, provider boundaries, API shapes, persistence, security, and future
   tracking/odometer concepts.
 
+### Fixed
+
+- Restored calculator revenue basis controls for RPM versus load gross,
+  FSC-in-gross handling, linehaul derivation, EIA fuel context, and deterministic
+  LoadIQ intelligence output while preserving route mileage separation.
+
 ### Notes
 
 - `GOOGLE_MAPS_API_KEY` is required for live Google Address Validation and
