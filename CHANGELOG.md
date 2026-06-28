@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Reordered the calculator workflow around EIA fuel baseline, deadhead, pickup,
+  stops, delivery, load weight, financial inputs, and the operational
+  disclaimer while enforcing 24-hour schedule times.
 - Fixed calculator appointment-window time inputs to use valid 24-hour values
   and clarified open-ended windows as start/end date context.
 

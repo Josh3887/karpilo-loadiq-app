@@ -74,57 +74,61 @@ export function LoadInputForm({
     resolver: zodResolver(loadInputSchema),
     defaultValues: defaultLoadInputValues,
   });
-  const watchedPaidLoadedMiles = useWatch({
-    control,
-    name: "loadedMiles",
-  });
-  const paidLoadedMiles = Number(watchedPaidLoadedMiles ?? 0);
-  const watchedDeadheadMiles = Number(
-    useWatch({ control, name: "deadheadMiles" }) ?? 0
-  );
-  const watchedRouteLoadedMiles = Number(
-    useWatch({ control, name: "routeLoadedMiles" }) ?? 0
-  );
-  const watchedRouteDeadheadMiles = Number(
-    useWatch({ control, name: "routeDeadheadMiles" }) ?? 0
-  );
   const watchedDeadheadStartDate =
     toDateInputValue(useWatch({ control, name: "deadheadStartDate" }));
+  const rawDeadheadStartTime = toInputString(
+    useWatch({ control, name: "deadheadStartTime" })
+  );
   const watchedDeadheadStartTime =
-    toTimeInputValue(useWatch({ control, name: "deadheadStartTime" }));
+    normalizeMilitaryTimeValue(rawDeadheadStartTime);
   const watchedPickupDate = toDateInputValue(
     useWatch({ control, name: "pickupDate" })
   );
-  const watchedPickupTime = toTimeInputValue(
+  const rawPickupTime = toInputString(
     useWatch({ control, name: "pickupTime" })
   );
+  const watchedPickupTime = normalizeMilitaryTimeValue(rawPickupTime);
   const watchedPickupWindowStartDate = toDateInputValue(
     useWatch({ control, name: "pickupWindowStartDate" })
   );
+  const rawPickupWindowStart = toInputString(
+    useWatch({ control, name: "pickupWindowStart" })
+  );
   const watchedPickupWindowStart =
-    toTimeInputValue(useWatch({ control, name: "pickupWindowStart" }));
+    normalizeMilitaryTimeValue(rawPickupWindowStart);
   const watchedPickupWindowEndDate = toDateInputValue(
     useWatch({ control, name: "pickupWindowEndDate" })
   );
+  const rawPickupWindowEnd = toInputString(
+    useWatch({ control, name: "pickupWindowEnd" })
+  );
   const watchedPickupWindowEnd =
-    toTimeInputValue(useWatch({ control, name: "pickupWindowEnd" }));
+    normalizeMilitaryTimeValue(rawPickupWindowEnd);
   const watchedPickupWindowOpenEnded = Boolean(
     useWatch({ control, name: "pickupWindowOpenEnded" })
   );
   const watchedDeliveryDate =
     toDateInputValue(useWatch({ control, name: "deliveryDate" }));
-  const watchedDeliveryTime =
-    toTimeInputValue(useWatch({ control, name: "deliveryTime" }));
+  const rawDeliveryTime = toInputString(
+    useWatch({ control, name: "deliveryTime" })
+  );
+  const watchedDeliveryTime = normalizeMilitaryTimeValue(rawDeliveryTime);
   const watchedDeliveryWindowStartDate = toDateInputValue(
     useWatch({ control, name: "deliveryWindowStartDate" })
   );
+  const rawDeliveryWindowStart = toInputString(
+    useWatch({ control, name: "deliveryWindowStart" })
+  );
   const watchedDeliveryWindowStart =
-    toTimeInputValue(useWatch({ control, name: "deliveryWindowStart" }));
+    normalizeMilitaryTimeValue(rawDeliveryWindowStart);
   const watchedDeliveryWindowEndDate = toDateInputValue(
     useWatch({ control, name: "deliveryWindowEndDate" })
   );
+  const rawDeliveryWindowEnd = toInputString(
+    useWatch({ control, name: "deliveryWindowEnd" })
+  );
   const watchedDeliveryWindowEnd =
-    toTimeInputValue(useWatch({ control, name: "deliveryWindowEnd" }));
+    normalizeMilitaryTimeValue(rawDeliveryWindowEnd);
   const watchedDeliveryWindowOpenEnded = Boolean(
     useWatch({ control, name: "deliveryWindowOpenEnded" })
   );
@@ -137,19 +141,6 @@ export function LoadInputForm({
     []) as RouteStopInput[];
   const loadRunStatus =
     useWatch({ control, name: "loadRunStatus" }) ?? "planned";
-  const routeMileageVariance = getRouteMileageVariance(
-    routeEstimate,
-    paidLoadedMiles
-  );
-  const planningPreview = buildPlanningSuggestion(
-    {
-      loadedMiles: paidLoadedMiles,
-      deadheadMiles: watchedDeadheadMiles,
-      routeLoadedMiles: watchedRouteLoadedMiles,
-      routeDeadheadMiles: watchedRouteDeadheadMiles,
-    },
-    routeEstimate
-  );
   const applyDeadheadSuggestion = useCallback(
     (suggestion: DeadheadContinuitySuggestion) => {
       setValue("deadheadStartAddress", suggestion.address, {
@@ -685,6 +676,24 @@ export function LoadInputForm({
     );
   }
 
+  function setCalculatorTimeField(
+    field:
+      | "deadheadStartTime"
+      | "pickupTime"
+      | "pickupWindowStart"
+      | "pickupWindowEnd"
+      | "deliveryTime"
+      | "deliveryWindowStart"
+      | "deliveryWindowEnd",
+    value: string,
+    shouldValidate = false
+  ) {
+    setValue(field, value, {
+      shouldDirty: true,
+      shouldValidate,
+    });
+  }
+
   const fuelPriceField = register("fuelPrice");
   const deadheadPlanningHoursField = register("deadheadPlanningHours");
   const deadheadDaysField = register("deadheadDays");
@@ -702,47 +711,64 @@ export function LoadInputForm({
       <input type="hidden" {...register("revenueInputMode")} />
 
       <section className="space-y-4">
-        <SectionTitle title="Load Identity" />
+        <SectionTitle title="EIA Fuel Baseline" />
 
-        <InputField
-          label="Load Number"
-          error={errors.loadNumber?.message}
-          {...register("loadNumber")}
-        />
-      </section>
-
-      <section className="space-y-4">
-        <SectionTitle title="Load Weight" />
-
-        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+        <div className="space-y-4 rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <InputField
-            label="Cargo Weight (lb)"
-            type="number"
-            step="1"
-            min="0"
-            error={errors.estimatedLoadWeightLbs?.message}
-            {...register("estimatedLoadWeightLbs")}
+            label="Fuel Price"
+            type="text"
+            inputMode="decimal"
+            placeholder="4.00"
+            error={errors.fuelPrice?.message}
+            {...fuelPriceField}
+            onChange={(event) => {
+              void fuelPriceField.onChange(event);
+              handleManualFuelOverride();
+            }}
           />
 
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            Load weight is planning context only. It is not permit, legal,
-            bridge, axle, scale, or compliance authority.
-          </p>
+          <div className="space-y-2 rounded-lg border border-sky-400/20 bg-sky-400/5 p-3 text-xs leading-5 text-slate-300">
+            <p className="font-semibold text-sky-200">
+              {fuelStatus || "EIA diesel baseline loads when available."}
+            </p>
+            <p className="text-slate-500">
+              EIA is a public fuel-price reference baseline. User fuel price
+              overrides are allowed. Actual fuel purchases belong to load
+              actuals after the trip. This fuel price estimate is decision
+              support only.
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="space-y-4">
-        <SectionTitle title="Route Intelligence" />
+        <SectionTitle title="Deadhead Details" />
+
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+            Load Status
+          </span>
+          <select
+            {...register("loadRunStatus")}
+            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+          >
+            {LOAD_RUN_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-                Deadhead
+                Deadhead Origin
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Suggested deadhead origin from previous delivery is optional and
-                can be edited or cleared.
+                Start location, date, time, and mileage for the truck position
+                before pickup.
               </p>
             </div>
             {continuitySuggestion && (
@@ -789,310 +815,64 @@ export function LoadInputForm({
                 {...register("deadheadStartZip")}
               />
             </div>
-          </div>
-        </div>
 
-        <InputField
-          label="Pickup Address"
-          placeholder="Street, dock, or facility"
-          error={errors.pickupAddress?.message}
-          {...register("pickupAddress")}
-        />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <InputField
+                label="Deadhead Origin Date"
+                type="date"
+                error={errors.deadheadStartDate?.message}
+                {...register("deadheadStartDate", {
+                  setValueAs: toDateInputValue,
+                })}
+              />
 
-        <InputField
-          label="Delivery Address"
-          placeholder="Street, dock, or facility"
-          error={errors.deliveryAddress?.message}
-          {...register("deliveryAddress")}
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Pickup City"
-            error={errors.pickupCity?.message}
-            {...register("pickupCity")}
-          />
-
-          <InputField
-            label="Pickup State"
-            error={errors.pickupState?.message}
-            {...register("pickupState")}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Pickup ZIP"
-            error={errors.pickupZip?.message}
-            {...register("pickupZip")}
-          />
-
-          <InputField
-            label="Delivery ZIP"
-            error={errors.deliveryZip?.message}
-            {...register("deliveryZip")}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Delivery City"
-            error={errors.deliveryCity?.message}
-            {...register("deliveryCity")}
-          />
-
-          <InputField
-            label="Delivery State"
-            error={errors.deliveryState?.message}
-            {...register("deliveryState")}
-          />
-        </div>
-
-        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-                Ordered Stops
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Stops are routed in the order entered.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={addRouteStop}
-              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
-            >
-              + Add Stop
-            </button>
-          </div>
-
-          {routeStops.length === 0 ? (
-            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-500">
-              Add freight pickup or delivery stops only when they are part of
-              the planned loaded route. Fuel and DEF purchases belong in load
-              actuals.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {routeStops.map((stop, index) => (
-                <RouteStopEditor
-                  key={stop.id ?? index}
-                  index={index}
-                  stop={stop}
-                  onChange={(updates) => updateRouteStop(index, updates)}
-                  onRemove={() => removeRouteStop(index)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Paid loaded miles"
-            type="number"
-            error={errors.loadedMiles?.message}
-            {...register("loadedMiles")}
-          />
-
-          <InputField
-            label="Deadhead Miles"
-            type="number"
-            error={errors.deadheadMiles?.message}
-            {...register("deadheadMiles")}
-          />
-        </div>
-
-        <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-400">
-          Paid loaded miles are the miles you are paid on. Google estimated
-          miles are planning estimates only.
-        </p>
-
-        <button
-          type="button"
-          onClick={handleRouteEstimate}
-          disabled={isEstimatingRoute}
-          className="w-full rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-sky-300 transition hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
-        >
-          {isEstimatingRoute ? "Estimating Route" : "Estimate Route Miles"}
-        </button>
-
-        {(routeStatus || routeEstimate) && (
-          <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-slate-300">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="font-semibold text-sky-200">
-                Google estimate
-              </p>
-              {routeStatus && <p className="text-slate-400">{routeStatus}</p>}
+              <MilitaryTimeInput
+                label="Deadhead Origin Time"
+                value={rawDeadheadStartTime}
+                error={errors.deadheadStartTime?.message}
+                onChange={(value) =>
+                  setCalculatorTimeField("deadheadStartTime", value)
+                }
+                onBlur={(value) =>
+                  setCalculatorTimeField("deadheadStartTime", value, true)
+                }
+              />
             </div>
 
-            {routeEstimate && (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {routeEstimate.deadheadEstimate?.origin && (
-                    <RouteValue
-                      label="Deadhead origin verified"
-                      value={
-                        routeEstimate.deadheadEstimate.origin.formattedAddress
-                      }
-                    />
-                  )}
-                  <RouteValue
-                    label="Pickup verified"
-                    value={routeEstimate.origin.formattedAddress}
-                  />
-                  <RouteValue
-                    label="Delivery verified"
-                    value={routeEstimate.destination.formattedAddress}
-                  />
-                  <RouteValue
-                    label="Google estimated deadhead miles"
-                    value={formatOptionalMiles(
-                      routeEstimate.deadheadEstimate
-                        ?.estimatedDeadheadMiles ?? null
-                    )}
-                  />
-                  <RouteValue
-                    label="Google estimated loaded miles"
-                    value={formatOptionalMiles(
-                      routeEstimate.loadedEstimate?.estimatedLoadedMiles ??
-                        routeEstimate.estimatedMiles
-                    )}
-                  />
-                  <RouteValue
-                    label="Total Google estimated route miles"
-                    value={formatOptionalMiles(
-                      routeEstimate.totalEstimate?.estimatedMiles ??
-                        routeEstimate.estimatedMiles
-                    )}
-                  />
-                  <RouteValue
-                    label="Google estimated drive time"
-                    value={formatOptionalDuration(
-                      routeEstimate.totalEstimate?.estimatedDurationMinutes ??
-                        routeEstimate.estimatedDurationMinutes
-                    )}
-                  />
-                  <RouteValue
-                    label="Google planning hours"
-                    value={
-                      planningPreview.googleDurationQuarterHours > 0
-                        ? `${formatPlanningNumber(
-                            planningPreview.googleDurationQuarterHours
-                          )} hr`
-                        : "Unavailable"
-                    }
-                  />
-                  <RouteValue
-                    label="Mileage variance"
-                    value={
-                      routeMileageVariance === null
-                        ? "Enter paid miles"
-                        : formatSignedMiles(routeMileageVariance)
-                    }
-                  />
-                </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <InputField
+                label="Deadhead Miles"
+                type="number"
+                error={errors.deadheadMiles?.message}
+                {...register("deadheadMiles")}
+              />
 
-                {routeEstimate.routeLegs && routeEstimate.routeLegs.length > 0 && (
-                  <div className="rounded-lg border border-slate-800 bg-[#060B14] p-3">
-                    <p className="mb-2 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500">
-                      Route Legs
-                    </p>
-                    <div className="space-y-2">
-                      {routeEstimate.routeLegs.map((leg) => (
-                        <div
-                          key={`${leg.fromLabel}-${leg.toLabel}`}
-                          className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <span className="text-slate-400">
-                            {leg.fromLabel} to {leg.toLabel}
-                          </span>
-                          <span className="font-semibold text-slate-200">
-                            {formatOptionalMiles(leg.estimatedMiles)} ·{" "}
-                            {formatOptionalDuration(
-                              leg.estimatedDurationMinutes
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <InputField
+                label="Deadhead Planning Hours"
+                type="number"
+                step="0.25"
+                min="0"
+                error={errors.deadheadPlanningHours?.message}
+                {...deadheadPlanningHoursField}
+                onChange={(event) => {
+                  void deadheadPlanningHoursField.onChange(event);
+                  markPlanningOverride("deadheadPlanningHoursUserOverridden");
+                }}
+              />
 
-                {routeEstimate.estimatedMiles !== null && (
-                  <button
-                    type="button"
-                    onClick={handleUseEstimateAsPaidMiles}
-                    className="rounded-xl border border-slate-700 bg-[#060B14] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-300 transition hover:border-sky-400/40 hover:text-sky-200"
-                  >
-                    Use Estimate As Paid Miles
-                  </button>
-                )}
-
-                <RouteWarnings estimate={routeEstimate} />
-              </>
-            )}
-
-            <p className="font-semibold text-slate-300">
-              {routeEstimate?.disclaimer ?? GOOGLE_ROUTE_DISCLAIMER}
-            </p>
-            <p className="text-slate-500">
-              Google estimates are not truck-legal routing.
-            </p>
-            <p className="text-slate-500">{TRIMBLE_ROUTE_PLACEHOLDER}</p>
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <SectionTitle title="Schedule / Time Planning" />
-
-        <label className="block">
-          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
-            Load Status
-          </span>
-          <select
-            {...register("loadRunStatus")}
-            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
-          >
-            {LOAD_RUN_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
-          <div className="mb-3">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-              Deadhead Origin
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Start date and time for the truck position before pickup.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <InputField
-              label="Deadhead Origin Date"
-              type="date"
-              error={errors.deadheadStartDate?.message}
-              {...register("deadheadStartDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-
-            <InputField
-              label="Deadhead Origin Time"
-              type="time"
-              step="900"
-              error={errors.deadheadStartTime?.message}
-              {...register("deadheadStartTime", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
+              <InputField
+                label="Deadhead Planning Days"
+                type="number"
+                step="0.25"
+                min="0"
+                error={errors.deadheadDays?.message}
+                {...deadheadDaysField}
+                onChange={(event) => {
+                  void deadheadDaysField.onChange(event);
+                  markPlanningOverride("deadheadDaysUserOverridden");
+                }}
+              />
+            </div>
           </div>
 
           {hasBroadWindow(
@@ -1104,329 +884,6 @@ export function LoadInputForm({
               planning context, not an input error.
             </WindowContextNotice>
           )}
-        </div>
-
-        <EndpointWindowCard
-          title="Pickup Window"
-          appointmentDateField={
-            <InputField
-              label="Pickup Date"
-              type="date"
-              error={errors.pickupDate?.message}
-              {...register("pickupDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          appointmentTimeField={
-            <InputField
-              label="Pickup Time"
-              type="time"
-              step="900"
-              error={errors.pickupTime?.message}
-              {...register("pickupTime", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          windowStartDateField={
-            <InputField
-              label="Window Start Date"
-              type="date"
-              error={errors.pickupWindowStartDate?.message}
-              {...register("pickupWindowStartDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          windowStartTimeField={
-            <InputField
-              label="Window Start Time"
-              type="time"
-              step="900"
-              error={errors.pickupWindowStart?.message}
-              {...register("pickupWindowStart", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          windowEndDateField={
-            <InputField
-              label="Window End Date"
-              type="date"
-              error={errors.pickupWindowEndDate?.message}
-              {...register("pickupWindowEndDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          windowEndTimeField={
-            <InputField
-              label="Window End Time"
-              type="time"
-              step="900"
-              error={errors.pickupWindowEnd?.message}
-              {...register("pickupWindowEnd", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          openEndedField={
-            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
-                {...register("pickupWindowOpenEnded")}
-              />
-              <span>
-                <span className="block font-semibold text-slate-200">
-                  Open-ended pickup window
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  The appointment is flexible, but start and end dates still
-                  define the window context. Times may stay blank.
-                </span>
-              </span>
-            </label>
-          }
-          dwellField={
-            <InputField
-              label="Loading / Dwell Hours"
-              type="number"
-              step="0.25"
-              min="0"
-              error={errors.pickupDwellHours?.message}
-              {...register("pickupDwellHours")}
-            />
-          }
-          windowContextMessage={getWindowContextMessage({
-            appointmentDate: watchedPickupDate,
-            appointmentTime: watchedPickupTime,
-            windowStartDate: watchedPickupWindowStartDate,
-            windowStartTime: watchedPickupWindowStart,
-            windowEndDate: watchedPickupWindowEndDate,
-            windowEndTime: watchedPickupWindowEnd,
-            openEnded: watchedPickupWindowOpenEnded,
-          })}
-        />
-
-        <EndpointWindowCard
-          title="Delivery Window"
-          appointmentDateField={
-            <InputField
-              label="Delivery Date"
-              type="date"
-              error={errors.deliveryDate?.message}
-              {...register("deliveryDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          appointmentTimeField={
-            <InputField
-              label="Delivery Time"
-              type="time"
-              step="900"
-              error={errors.deliveryTime?.message}
-              {...register("deliveryTime", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          windowStartDateField={
-            <InputField
-              label="Window Start Date"
-              type="date"
-              error={errors.deliveryWindowStartDate?.message}
-              {...register("deliveryWindowStartDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          windowStartTimeField={
-            <InputField
-              label="Window Start Time"
-              type="time"
-              step="900"
-              error={errors.deliveryWindowStart?.message}
-              {...register("deliveryWindowStart", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          windowEndDateField={
-            <InputField
-              label="Window End Date"
-              type="date"
-              error={errors.deliveryWindowEndDate?.message}
-              {...register("deliveryWindowEndDate", {
-                setValueAs: toDateInputValue,
-              })}
-            />
-          }
-          windowEndTimeField={
-            <InputField
-              label="Window End Time"
-              type="time"
-              step="900"
-              error={errors.deliveryWindowEnd?.message}
-              {...register("deliveryWindowEnd", {
-                setValueAs: toTimeInputValue,
-              })}
-            />
-          }
-          openEndedField={
-            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
-                {...register("deliveryWindowOpenEnded")}
-              />
-              <span>
-                <span className="block font-semibold text-slate-200">
-                  Open-ended delivery window
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  The appointment is flexible, but start and end dates still
-                  define the window context. Times may stay blank.
-                </span>
-              </span>
-            </label>
-          }
-          dwellField={
-            <InputField
-              label="Unloading / Dwell Hours"
-              type="number"
-              step="0.25"
-              min="0"
-              error={errors.deliveryDwellHours?.message}
-              {...register("deliveryDwellHours")}
-            />
-          }
-          windowContextMessage={getWindowContextMessage({
-            appointmentDate: watchedDeliveryDate,
-            appointmentTime: watchedDeliveryTime,
-            windowStartDate: watchedDeliveryWindowStartDate,
-            windowStartTime: watchedDeliveryWindowStart,
-            windowEndDate: watchedDeliveryWindowEndDate,
-            windowEndTime: watchedDeliveryWindowEnd,
-            openEnded: watchedDeliveryWindowOpenEnded,
-          })}
-        />
-
-        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
-                Planning Benchmarks
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Google duration fills untouched fields when available. The 50
-                mph benchmark is the fallback comparison.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                applyPlanningSuggestions(routeEstimate);
-                setRouteStatus(
-                  "Planning suggestions refreshed from route duration or 50 mph benchmark."
-                );
-              }}
-              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
-            >
-              Apply Planning Suggestions
-            </button>
-          </div>
-
-          <div className="grid gap-3 text-sm sm:grid-cols-2">
-            <RouteValue
-              label="Google drive time"
-              value={
-                planningPreview.googleDurationHuman || "Unavailable"
-              }
-            />
-            <RouteValue
-              label="Google rounded hours"
-              value={
-                planningPreview.googleDurationQuarterHours > 0
-                  ? `${formatPlanningNumber(
-                      planningPreview.googleDurationQuarterHours
-                    )} hr`
-                  : "Unavailable"
-              }
-            />
-            <RouteValue
-              label="Deadhead 50 mph benchmark"
-              value={`${formatPlanningNumber(
-                planningPreview.deadheadBenchmarkHours
-              )} hr / ${formatPlanningNumber(
-                planningPreview.deadheadBenchmarkDays
-              )} day`}
-            />
-            <RouteValue
-              label="Loaded 50 mph benchmark"
-              value={`${formatPlanningNumber(
-                planningPreview.loadedBenchmarkHours
-              )} hr / ${formatPlanningNumber(
-                planningPreview.loadedBenchmarkDays
-              )} day`}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Deadhead Planning Hours"
-            type="number"
-            step="0.25"
-            min="0"
-            error={errors.deadheadPlanningHours?.message}
-            {...deadheadPlanningHoursField}
-            onChange={(event) => {
-              void deadheadPlanningHoursField.onChange(event);
-              markPlanningOverride("deadheadPlanningHoursUserOverridden");
-            }}
-          />
-
-          <InputField
-            label="Deadhead Planning Days"
-            type="number"
-            step="0.25"
-            min="0"
-            error={errors.deadheadDays?.message}
-            {...deadheadDaysField}
-            onChange={(event) => {
-              void deadheadDaysField.onChange(event);
-              markPlanningOverride("deadheadDaysUserOverridden");
-            }}
-          />
-
-          <InputField
-            label="Loaded Planning Hours"
-            type="number"
-            step="0.25"
-            min="0"
-            error={errors.loadedPlanningHours?.message}
-            {...loadedPlanningHoursField}
-            onChange={(event) => {
-              void loadedPlanningHoursField.onChange(event);
-              markPlanningOverride("loadedPlanningHoursUserOverridden");
-            }}
-          />
-
-          <InputField
-            label="Loaded Planning Days"
-            type="number"
-            step="0.25"
-            min="1"
-            error={errors.dispatchDays?.message}
-            {...dispatchDaysField}
-            onChange={(event) => {
-              void dispatchDaysField.onChange(event);
-              markPlanningOverride("loadedDaysUserOverridden");
-            }}
-          />
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
@@ -1487,7 +944,471 @@ export function LoadInputForm({
       </section>
 
       <section className="space-y-4">
+        <SectionTitle title="Pickup Details" />
+
+        <InputField
+          label="Pickup Address"
+          placeholder="Street, dock, or facility"
+          error={errors.pickupAddress?.message}
+          {...register("pickupAddress")}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <InputField
+            label="Pickup City"
+            error={errors.pickupCity?.message}
+            {...register("pickupCity")}
+          />
+
+          <InputField
+            label="Pickup State"
+            error={errors.pickupState?.message}
+            {...register("pickupState")}
+          />
+
+          <InputField
+            label="Pickup ZIP"
+            error={errors.pickupZip?.message}
+            {...register("pickupZip")}
+          />
+        </div>
+
+        <EndpointWindowCard
+          title="Pickup Window"
+          appointmentDateField={
+            <InputField
+              label="Pickup Date"
+              type="date"
+              error={errors.pickupDate?.message}
+              {...register("pickupDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          appointmentTimeField={
+            <MilitaryTimeInput
+              label="Pickup Time"
+              value={rawPickupTime}
+              error={errors.pickupTime?.message}
+              onChange={(value) => setCalculatorTimeField("pickupTime", value)}
+              onBlur={(value) =>
+                setCalculatorTimeField("pickupTime", value, true)
+              }
+            />
+          }
+          windowStartDateField={
+            <InputField
+              label="Window Start Date"
+              type="date"
+              error={errors.pickupWindowStartDate?.message}
+              {...register("pickupWindowStartDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowStartTimeField={
+            <MilitaryTimeInput
+              label="Window Start Time"
+              value={rawPickupWindowStart}
+              error={errors.pickupWindowStart?.message}
+              onChange={(value) =>
+                setCalculatorTimeField("pickupWindowStart", value)
+              }
+              onBlur={(value) =>
+                setCalculatorTimeField("pickupWindowStart", value, true)
+              }
+            />
+          }
+          windowEndDateField={
+            <InputField
+              label="Window End Date"
+              type="date"
+              error={errors.pickupWindowEndDate?.message}
+              {...register("pickupWindowEndDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowEndTimeField={
+            <MilitaryTimeInput
+              label="Window End Time"
+              value={rawPickupWindowEnd}
+              error={errors.pickupWindowEnd?.message}
+              onChange={(value) =>
+                setCalculatorTimeField("pickupWindowEnd", value)
+              }
+              onBlur={(value) =>
+                setCalculatorTimeField("pickupWindowEnd", value, true)
+              }
+            />
+          }
+          openEndedField={
+            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+                {...register("pickupWindowOpenEnded")}
+              />
+              <span>
+                <span className="block font-semibold text-slate-200">
+                  Open-ended pickup window
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  The appointment is flexible, but start and end dates still
+                  define the window context. Times may stay blank.
+                </span>
+              </span>
+            </label>
+          }
+          dwellField={
+            <InputField
+              label="Loading / Dwell Hours"
+              type="number"
+              step="0.25"
+              min="0"
+              error={errors.pickupDwellHours?.message}
+              {...register("pickupDwellHours")}
+            />
+          }
+          windowContextMessage={getWindowContextMessage({
+            appointmentDate: watchedPickupDate,
+            appointmentTime: watchedPickupTime,
+            windowStartDate: watchedPickupWindowStartDate,
+            windowStartTime: watchedPickupWindowStart,
+            windowEndDate: watchedPickupWindowEndDate,
+            windowEndTime: watchedPickupWindowEnd,
+            openEnded: watchedPickupWindowOpenEnded,
+          })}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle title="Stop Details" />
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                Ordered Stops
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Stops are routed in the order entered.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addRouteStop}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
+            >
+              + Add Stop
+            </button>
+          </div>
+
+          {routeStops.length === 0 ? (
+            <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-500">
+              Add freight pickup or delivery stops only when they are part of
+              the planned loaded route. Fuel and DEF purchases belong in load
+              actuals.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {routeStops.map((stop, index) => (
+                <RouteStopEditor
+                  key={stop.id ?? index}
+                  index={index}
+                  stop={stop}
+                  onChange={(updates) => updateRouteStop(index, updates)}
+                  onRemove={() => removeRouteStop(index)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle title="Delivery Details" />
+
+        <InputField
+          label="Delivery Address"
+          placeholder="Street, dock, or facility"
+          error={errors.deliveryAddress?.message}
+          {...register("deliveryAddress")}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <InputField
+            label="Delivery City"
+            error={errors.deliveryCity?.message}
+            {...register("deliveryCity")}
+          />
+
+          <InputField
+            label="Delivery State"
+            error={errors.deliveryState?.message}
+            {...register("deliveryState")}
+          />
+
+          <InputField
+            label="Delivery ZIP"
+            error={errors.deliveryZip?.message}
+            {...register("deliveryZip")}
+          />
+        </div>
+
+        <EndpointWindowCard
+          title="Delivery Window"
+          appointmentDateField={
+            <InputField
+              label="Delivery Date"
+              type="date"
+              error={errors.deliveryDate?.message}
+              {...register("deliveryDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          appointmentTimeField={
+            <MilitaryTimeInput
+              label="Delivery Time"
+              value={rawDeliveryTime}
+              error={errors.deliveryTime?.message}
+              onChange={(value) =>
+                setCalculatorTimeField("deliveryTime", value)
+              }
+              onBlur={(value) =>
+                setCalculatorTimeField("deliveryTime", value, true)
+              }
+            />
+          }
+          windowStartDateField={
+            <InputField
+              label="Window Start Date"
+              type="date"
+              error={errors.deliveryWindowStartDate?.message}
+              {...register("deliveryWindowStartDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowStartTimeField={
+            <MilitaryTimeInput
+              label="Window Start Time"
+              value={rawDeliveryWindowStart}
+              error={errors.deliveryWindowStart?.message}
+              onChange={(value) =>
+                setCalculatorTimeField("deliveryWindowStart", value)
+              }
+              onBlur={(value) =>
+                setCalculatorTimeField("deliveryWindowStart", value, true)
+              }
+            />
+          }
+          windowEndDateField={
+            <InputField
+              label="Window End Date"
+              type="date"
+              error={errors.deliveryWindowEndDate?.message}
+              {...register("deliveryWindowEndDate", {
+                setValueAs: toDateInputValue,
+              })}
+            />
+          }
+          windowEndTimeField={
+            <MilitaryTimeInput
+              label="Window End Time"
+              value={rawDeliveryWindowEnd}
+              error={errors.deliveryWindowEnd?.message}
+              onChange={(value) =>
+                setCalculatorTimeField("deliveryWindowEnd", value)
+              }
+              onBlur={(value) =>
+                setCalculatorTimeField("deliveryWindowEnd", value, true)
+              }
+            />
+          }
+          openEndedField={
+            <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#0B1220] p-4 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-400"
+                {...register("deliveryWindowOpenEnded")}
+              />
+              <span>
+                <span className="block font-semibold text-slate-200">
+                  Open-ended delivery window
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">
+                  The appointment is flexible, but start and end dates still
+                  define the window context. Times may stay blank.
+                </span>
+              </span>
+            </label>
+          }
+          dwellField={
+            <InputField
+              label="Unloading / Dwell Hours"
+              type="number"
+              step="0.25"
+              min="0"
+              error={errors.deliveryDwellHours?.message}
+              {...register("deliveryDwellHours")}
+            />
+          }
+          windowContextMessage={getWindowContextMessage({
+            appointmentDate: watchedDeliveryDate,
+            appointmentTime: watchedDeliveryTime,
+            windowStartDate: watchedDeliveryWindowStartDate,
+            windowStartTime: watchedDeliveryWindowStart,
+            windowEndDate: watchedDeliveryWindowEndDate,
+            windowEndTime: watchedDeliveryWindowEnd,
+            openEnded: watchedDeliveryWindowOpenEnded,
+          })}
+        />
+
+        <div className="space-y-4 rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                Route Intelligence Actions
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Estimate route miles and duration for operational intelligence.
+                Estimated miles and benchmarks render in results, not as
+                primary calculator inputs.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRouteEstimate}
+              disabled={isEstimatingRoute}
+              className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
+            >
+              {isEstimatingRoute ? "Estimating Route" : "Estimate Route Miles"}
+            </button>
+          </div>
+
+          {(routeStatus || routeEstimate) && (
+            <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-slate-300">
+              <p className="font-semibold text-sky-200">
+                {routeStatus ||
+                  "Route estimate loaded. Mileage, duration, variance, and benchmark context appear in results after analysis."}
+              </p>
+
+              {routeEstimate && (
+                <>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        applyPlanningSuggestions(routeEstimate);
+                        setRouteStatus(
+                          "Planning suggestions refreshed from route duration or 50 mph benchmark."
+                        );
+                      }}
+                      className="rounded-xl border border-sky-400/30 bg-[#060B14] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/10"
+                    >
+                      Apply Planning Suggestions
+                    </button>
+
+                    {routeEstimate.estimatedMiles !== null && (
+                      <button
+                        type="button"
+                        onClick={handleUseEstimateAsPaidMiles}
+                        className="rounded-xl border border-slate-700 bg-[#060B14] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-300 transition hover:border-sky-400/40 hover:text-sky-200"
+                      >
+                        Use Estimate As Paid Miles
+                      </button>
+                    )}
+                  </div>
+
+                  <RouteWarnings estimate={routeEstimate} />
+                </>
+              )}
+
+              <p className="font-semibold text-slate-300">
+                {routeEstimate?.disclaimer ?? GOOGLE_ROUTE_DISCLAIMER}
+              </p>
+              <p className="text-slate-500">
+                Google estimates are not truck-legal routing.
+              </p>
+              <p className="text-slate-500">{TRIMBLE_ROUTE_PLACEHOLDER}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InputField
+            label="Loaded Planning Hours"
+            type="number"
+            step="0.25"
+            min="0"
+            error={errors.loadedPlanningHours?.message}
+            {...loadedPlanningHoursField}
+            onChange={(event) => {
+              void loadedPlanningHoursField.onChange(event);
+              markPlanningOverride("loadedPlanningHoursUserOverridden");
+            }}
+          />
+
+          <InputField
+            label="Loaded Planning Days"
+            type="number"
+            step="0.25"
+            min="1"
+            error={errors.dispatchDays?.message}
+            {...dispatchDaysField}
+            onChange={(event) => {
+              void dispatchDaysField.onChange(event);
+              markPlanningOverride("loadedDaysUserOverridden");
+            }}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle title="Load Weight" />
+
+        <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
+          <InputField
+            label="Cargo Weight (lb)"
+            type="number"
+            step="1"
+            min="0"
+            error={errors.estimatedLoadWeightLbs?.message}
+            {...register("estimatedLoadWeightLbs")}
+          />
+
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            Load weight is planning context only. It is not permit, legal,
+            bridge, axle, scale, or compliance authority.
+          </p>
+        </div>
+      </section>
+
+      <section className="space-y-4">
         <SectionTitle title="Financial Inputs" />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InputField
+            label="Load Number"
+            error={errors.loadNumber?.message}
+            {...register("loadNumber")}
+          />
+
+          <InputField
+            label="Paid Loaded Miles"
+            type="number"
+            error={errors.loadedMiles?.message}
+            {...register("loadedMiles")}
+          />
+        </div>
+
+        <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-400">
+          Paid loaded miles are the miles you are paid on. Google estimated
+          route miles remain separate Route Intelligence context and are copied
+          into paid miles only by explicit user action.
+        </p>
 
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-[#060B14] p-1">
           <RevenueModeButton
@@ -1555,38 +1476,17 @@ export function LoadInputForm({
             </span>
           </label>
         )}
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            label="Fuel Price"
-            type="text"
-            inputMode="decimal"
-            placeholder="4.00"
-            error={errors.fuelPrice?.message}
-            {...fuelPriceField}
-            onChange={(event) => {
-              void fuelPriceField.onChange(event);
-              handleManualFuelOverride();
-            }}
-          />
-        </div>
-
-        {fuelStatus && (
-          <div className="space-y-2 rounded-xl border border-sky-400/20 bg-sky-400/5 p-3 text-xs leading-5 text-slate-300">
-            <p className="font-semibold text-sky-200">{fuelStatus}</p>
-            <p className="text-slate-500">
-              Fuel pricing uses the EIA diesel baseline when available. You can
-              override it with your actual purchase price. EIA data is provided
-              for informational estimation purposes only and does not imply
-              endorsement.
-            </p>
-          </div>
-        )}
-
+      <section className="space-y-4">
+        <SectionTitle title="Operational Disclaimer" />
         <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
-          Operational overhead, pay template, MPG, reserves, dispatch, factoring,
-          and target profitability come from Settings. Accessorials, tolls, and
-          lumpers are captured as saved-load actuals after the trip.
+          Operational overhead, pay template, MPG, reserves, dispatch,
+          factoring, and target profitability come from Settings. Accessorials,
+          tolls, fuel purchases, DEF purchases, and lumpers are captured as
+          saved-load actuals after the trip. Calculator output is decision
+          support only and does not replace settlement, tax, legal, ELD, permit,
+          scale, or compliance records.
         </p>
       </section>
 
@@ -1631,6 +1531,45 @@ function RevenueModeButton({
     >
       {label}
     </button>
+  );
+}
+
+function MilitaryTimeInput({
+  label,
+  value,
+  error,
+  onChange,
+  onBlur,
+}: {
+  label: string;
+  value: string;
+  error?: string;
+  onChange: (value: string) => void;
+  onBlur: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+        {label}
+      </span>
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder="HH:mm"
+        maxLength={5}
+        pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+        value={value}
+        onChange={(event) =>
+          onChange(normalizeMilitaryTimeDraft(event.target.value))
+        }
+        onBlur={(event) =>
+          onBlur(normalizeMilitaryTimeValue(event.currentTarget.value))
+        }
+        aria-invalid={Boolean(error)}
+        className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+      />
+      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+    </label>
   );
 }
 
@@ -1805,14 +1744,11 @@ function RouteStopEditor({
               onChange({ appointmentDate: toDateInputValue(value) })
             }
           />
-          <ControlledTextField
+          <MilitaryTimeInput
             label="Stop Time"
-            type="time"
-            step="900"
-            value={toTimeInputValue(stop.appointmentTime)}
-            onChange={(value) =>
-              onChange({ appointmentTime: toTimeInputValue(value) })
-            }
+            value={toInputString(stop.appointmentTime)}
+            onChange={(value) => onChange({ appointmentTime: value })}
+            onBlur={(value) => onChange({ appointmentTime: value })}
           />
           <ControlledTextField
             label="Window Start Date"
@@ -1822,14 +1758,11 @@ function RouteStopEditor({
               onChange({ appointmentWindowStartDate: toDateInputValue(value) })
             }
           />
-          <ControlledTextField
+          <MilitaryTimeInput
             label="Window Start Time"
-            type="time"
-            step="900"
-            value={toTimeInputValue(stop.appointmentWindowStart)}
-            onChange={(value) =>
-              onChange({ appointmentWindowStart: toTimeInputValue(value) })
-            }
+            value={toInputString(stop.appointmentWindowStart)}
+            onChange={(value) => onChange({ appointmentWindowStart: value })}
+            onBlur={(value) => onChange({ appointmentWindowStart: value })}
           />
           <ControlledTextField
             label="Window End Date"
@@ -1839,14 +1772,11 @@ function RouteStopEditor({
               onChange({ appointmentWindowEndDate: toDateInputValue(value) })
             }
           />
-          <ControlledTextField
+          <MilitaryTimeInput
             label="Window End Time"
-            type="time"
-            step="900"
-            value={toTimeInputValue(stop.appointmentWindowEnd)}
-            onChange={(value) =>
-              onChange({ appointmentWindowEnd: toTimeInputValue(value) })
-            }
+            value={toInputString(stop.appointmentWindowEnd)}
+            onChange={(value) => onChange({ appointmentWindowEnd: value })}
+            onBlur={(value) => onChange({ appointmentWindowEnd: value })}
           />
           <ControlledNumberField
             label="Dwell Hours"
@@ -1938,19 +1868,6 @@ function ControlledNumberField({
   );
 }
 
-function RouteValue({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500">
-        {label}
-      </div>
-      <div className="mt-1 break-words font-semibold text-slate-200">
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function getRouteMileageVariance(
   estimate: RouteEstimate | null,
   paidLoadedMiles: number
@@ -1968,26 +1885,6 @@ function getRouteMileageVariance(
   }
 
   return Number((estimatedLoadedMiles - paidLoadedMiles).toFixed(1));
-}
-
-function formatOptionalMiles(value: number | null | undefined) {
-  if (value === null || value === undefined) return "Unavailable";
-
-  return `${value.toLocaleString()} mi`;
-}
-
-function formatOptionalDuration(value: number | null | undefined) {
-  if (value === null || value === undefined) return "Unavailable";
-
-  return minutesToHumanDuration(value);
-}
-
-function formatSignedMiles(value: number) {
-  if (value === 0) return "0 mi";
-
-  const prefix = value > 0 ? "+" : "";
-
-  return `${prefix}${value.toLocaleString()} mi`;
 }
 
 type PlanningSuggestion = {
@@ -2077,8 +1974,74 @@ function positivePlanningNumber(value: unknown) {
   return numeric;
 }
 
-function formatPlanningNumber(value: number) {
-  return Number.isFinite(value) ? value.toFixed(2) : "0.00";
+function toInputString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function normalizeMilitaryTimeDraft(value: string) {
+  const trimmed = value.trim();
+
+  if (trimmed.includes(":")) {
+    const [hoursValue = "", minutesValue = ""] = trimmed.split(":");
+    const hours = hoursValue.replace(/\D/g, "").slice(0, 2);
+    const minutes = minutesValue.replace(/\D/g, "").slice(0, 2);
+
+    return hours ? `${hours}:${minutes}` : "";
+  }
+
+  const digits = trimmed.replace(/\D/g, "").slice(0, 4);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  const hourLength = digits.length === 3 ? 1 : 2;
+
+  return `${digits.slice(0, hourLength)}:${digits.slice(hourLength)}`;
+}
+
+function normalizeMilitaryTimeValue(value: unknown) {
+  if (value instanceof Date) {
+    return toTimeInputValue(value);
+  }
+
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const timeOnly = /^(\d{1,2}):(\d{2})$/.exec(trimmed);
+  if (timeOnly) {
+    return formatMilitaryTimeParts(timeOnly[1], timeOnly[2]);
+  }
+
+  const compactTime = /^(\d{1,2})(\d{2})$/.exec(trimmed);
+  if (compactTime) {
+    return formatMilitaryTimeParts(compactTime[1], compactTime[2]);
+  }
+
+  return "";
+}
+
+function formatMilitaryTimeParts(hoursValue: string, minutesValue: string) {
+  const hours = Number(hoursValue);
+  const minutes = Number(minutesValue);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return "";
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}`;
 }
 
 function hasBroadWindow(

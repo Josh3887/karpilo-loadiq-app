@@ -29,6 +29,26 @@ The calculator must preserve:
 - LoadIQ Intelligence explanation
 - saved-load and actuals separation
 
+## Calculator Workflow Order
+
+The primary calculator input flow is organized around the trucking workflow:
+
+1. EIA Fuel Baseline
+2. Deadhead Details
+3. Pickup Details
+4. Stop Details
+5. Delivery Details
+6. Load Weight
+7. Financial Inputs
+8. Operational Disclaimer
+9. Analyze
+
+The EIA fuel baseline appears at the top with the manual fuel-price override and
+fuel disclaimer. The disclaimer must state that EIA is a public fuel-price
+reference baseline, user fuel-price overrides are allowed, actual fuel purchases
+belong to load actuals after the trip, and fuel price estimates are decision
+support only.
+
 ## Revenue Inputs
 
 The calculator must support revenue modeling from both RPM and gross-revenue
@@ -92,9 +112,11 @@ user narrows it. If no date exists, the calculator must not silently invent a
 schedule. It should show missing-schedule intelligence and let the user enter
 dates.
 
-Time inputs use browser-valid military/24-hour `HH:mm` values such as `00:00`,
-`07:30`, `13:45`, and `23:59`. AM/PM text, full datetime strings, and malformed
-time values must not be passed into visible time inputs.
+Time inputs use military/24-hour `HH:mm` values such as `00:00`, `07:30`,
+`13:45`, and `23:59`. Calculator schedule fields must render in 24-hour
+format regardless of browser, device, locale, or user time preference. AM/PM
+text, 12-hour labels, full datetime strings, and malformed time values must not
+be passed into visible time inputs.
 
 Open-ended appointment windows still require start and end date context. Blank
 start/end times are allowed when the appointment is a broad date-window context,
@@ -127,6 +149,13 @@ route time in human-readable form, such as `11h 59m`.
 Google time may be converted into `0.25` hour increments for planning
 suggestions. Google time is not forced truth, and the user can override
 planning hours or planning days.
+
+Estimated route miles, Google drive time, planning benchmark hours, and planning
+benchmark days are operational intelligence context. They should render in the
+results/readout context instead of cluttering the primary calculator input
+flow. Paid loaded miles remain a user-entered revenue input, and Google
+estimated miles remain separate unless the user explicitly copies an estimate
+into paid loaded miles.
 
 Example:
 
