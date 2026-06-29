@@ -3,6 +3,10 @@ import { FuelPriceSource } from "@/types/fuel";
 import { RouteEstimate, RouteStopKind } from "@/types/route-intelligence";
 import { OdometerValidation } from "@/types/trip-validation";
 import type { LoadPulledReason, LoadRunStatus } from "@/lib/fuel-gauge";
+import type {
+  FscSourceMode,
+  KarpiloFscIntelligence,
+} from "@/services/fsc-intelligence";
 
 export type PayStructureType = "percentage" | "cpm" | "flat" | "daily";
 export type PayCalculationBasis = "gross" | "gross_minus_fsc";
@@ -170,6 +174,7 @@ export type LoadInput = {
 
   revenueInputMode: "rpm" | "gross";
   grossRevenue: number;
+  fscSourceMode: FscSourceMode;
   fuelSurchargeIncludedInGross: boolean;
   ratePerMile: number;
   fuelSurcharge: number;
@@ -293,6 +298,7 @@ export type LoadResult = {
   reserveAllocationMode: ReserveAllocationMode;
   reserveAllocationValue: number;
   reserveAllocationResolved: number;
+  fscIntelligence: KarpiloFscIntelligence;
   profitabilityScore: number;
   profitabilityBand: ProfitabilityBand;
   costBreakdown: CostBreakdown;

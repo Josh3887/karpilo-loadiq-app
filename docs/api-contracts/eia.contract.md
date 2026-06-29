@@ -14,6 +14,11 @@ LoadIQ uses EIA Open Data for a national diesel baseline displayed as planning
 context. It is not a guaranteed fuel price, carrier settlement record,
 tax/accounting advice, broker/load-board/rate-board behavior, or fuel purchase
 receipt system.
+
+Karpilo FSC Intelligence reuses this existing diesel baseline to compare fuel
+surcharge coverage against modeled fuel exposure. It does not add a new EIA
+client, request path, environment variable, cache path, or provider contract.
+
 ## Authentication
 - Auth method required by provider docs: EIA API key query parameter.
 - Env var names used in app: `EIA_API_KEY`, optional `EIA_BASE_URL`.
@@ -84,6 +89,7 @@ Include:
 | `src/services/fuel/fuel-normalizer.ts` | `normalizeEiaDieselPrice` | Normalize EIA row. | none | Adds 12 hour expiry. |
 | `src/services/fuel/fuel-service.ts` | `getLatestDieselFuelPrice` | Cache/fallback orchestration. | `SUPABASE_SERVICE_ROLE_KEY`, `EIA_API_KEY` | Uses Supabase cache before/after provider call. |
 | `src/app/api/fuel/eia/route.ts` | `GET` | Fuel API route. | `EIA_API_KEY` | Route details should be reviewed before behavior change. |
+| `src/services/fsc-intelligence.ts` | `calculateFscIntelligence` | Reuses calculator diesel price after the existing EIA/manual fuel path resolves. | none | No provider call, cache write, or env read. |
 ## Tests / validation
 List existing or needed tests:
 - unit tests: needed for normalization and latest-row selection.

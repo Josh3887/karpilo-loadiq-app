@@ -478,6 +478,7 @@ Responsibilities:
 - fixed vs variable cost education
 - fuel cost education
 - FSC explanation
+- Karpilo FSC Intelligence coverage explanation
 - margin explanation
 - broker question guidance
 - detention/accessorial explanation
@@ -1011,7 +1012,8 @@ The single readout should include:
 1. Decision Summary
 2. Revenue Basis
 3. Mileage & Route Exposure
-4. Fuel & Cost Exposure
+4. Fuel & Cost Exposure, including Karpilo FSC Intelligence when calculator
+   inputs support it
 5. Time & Schedule Pressure
 6. Freight Fit
 7. Weather / External Risk when available and entitled
@@ -1026,6 +1028,13 @@ Output should be concise, non-redundant, and driver-useful.
 The readout may combine Karpilo LoadIQ calculations, route/fuel/weather provider
 context, user-owned operating context, and Karpilo Atlas intelligence. It must
 label each source of output accurately.
+
+Karpilo FSC Intelligence belongs inside the existing Fuel & Cost Exposure
+section. It may explain actual FSC, estimated FSC built into gross revenue,
+separate-missing FSC, effective FSC CPM, EIA-indexed fuel CPM, coverage ratio,
+and fuel budget delta. It must not create a second top-level readout or imply
+carrier, broker, accounting, tax, legal, dispatch, or guaranteed-profit
+authority.
 
 Example structure:
 

@@ -197,6 +197,14 @@ export const loadInputSchema = z.object({
 
   revenueInputMode: z.enum(["rpm", "gross"]).default("rpm"),
   grossRevenue: numberField.refine((value) => value >= 0),
+  fscSourceMode: z
+    .enum([
+      "actual_fsc_entered",
+      "fsc_built_into_gross",
+      "fsc_separate_missing",
+      "unknown",
+    ])
+    .default("actual_fsc_entered"),
   fuelSurchargeIncludedInGross: z.boolean().optional().default(false),
   ratePerMile: numberField.refine((value) => value >= 0),
   fuelSurcharge: numberField.refine((value) => value >= 0),
@@ -462,6 +470,7 @@ export const defaultLoadInputValues: LoadInputFormValues = {
 
   revenueInputMode: "rpm",
   grossRevenue: 0,
+  fscSourceMode: "actual_fsc_entered",
   fuelSurchargeIncludedInGross: false,
   ratePerMile: 0,
   fuelSurcharge: 0,

@@ -34,6 +34,7 @@ import {
   TRIMBLE_ROUTE_PLACEHOLDER,
 } from "@/types/route-intelligence";
 import { RouteStopInput } from "@/types/load";
+import type { FscSourceMode } from "@/services/fsc-intelligence";
 
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
 
@@ -46,6 +47,15 @@ type LoadInputFormProps = {
 const BENCHMARK_MPH = 50;
 const PLANNING_HOURS_PER_DAY = 10;
 const DEFAULT_STOP_DWELL_HOURS = 2;
+const FSC_SOURCE_MODE_OPTIONS: Array<{
+  value: FscSourceMode;
+  label: string;
+}> = [
+  { value: "actual_fsc_entered", label: "Enter actual FSC" },
+  { value: "fsc_built_into_gross", label: "Included in gross" },
+  { value: "fsc_separate_missing", label: "Separate, amount missing" },
+  { value: "unknown", label: "Unknown" },
+];
 
 export function LoadInputForm({
   onCalculate,
@@ -137,6 +147,9 @@ export function LoadInputForm({
   const fuelSurchargeIncludedInGross = Boolean(
     useWatch({ control, name: "fuelSurchargeIncludedInGross" })
   );
+  const fscSourceMode =
+    (useWatch({ control, name: "fscSourceMode" }) as FscSourceMode) ??
+    "actual_fsc_entered";
   const routeStops = (useWatch({ control, name: "routeStops" }) ??
     []) as RouteStopInput[];
   const loadRunStatus =
@@ -309,6 +322,17 @@ export function LoadInputForm({
 
   function submit(values: LoadInputRawValues) {
     const paidMiles = Number(values.loadedMiles ?? 0);
+    const submittedFscSourceMode = normalizeFscSourceMode(
+      values.fscSourceMode
+    );
+    const submittedFuelSurchargeIncludedInGross =
+      submittedFscSourceMode === "fsc_built_into_gross" ||
+      (submittedFscSourceMode === "actual_fsc_entered" &&
+        Boolean(values.fuelSurchargeIncludedInGross));
+    const submittedFuelSurcharge =
+      submittedFscSourceMode === "actual_fsc_entered"
+        ? Number(values.fuelSurcharge ?? 0)
+        : 0;
     const runningStatus = isRunningLoadStatus(
       String(values.loadRunStatus ?? "planned")
     );
@@ -335,6 +359,9 @@ export function LoadInputForm({
     const parsedValues = normalizeScheduleInputValues(
       loadInputSchema.parse({
         ...values,
+        fscSourceMode: submittedFscSourceMode,
+        fuelSurchargeIncludedInGross: submittedFuelSurchargeIncludedInGross,
+        fuelSurcharge: submittedFuelSurcharge,
         originOdometer: submittedOriginOdometer,
         endOdometer: 0,
         accessorialItems: [],
@@ -362,6 +389,9 @@ export function LoadInputForm({
     const normalizedValues = {
       ...parsedValues,
       ratePerMile: Number(derivedRatePerMile.toFixed(4)),
+      fscSourceMode: submittedFscSourceMode,
+      fuelSurchargeIncludedInGross: submittedFuelSurchargeIncludedInGross,
+      fuelSurcharge: submittedFuelSurcharge,
       grossRevenue:
         parsedValues.revenueInputMode === "gross"
           ? parsedValues.grossRevenue
@@ -1448,16 +1478,47 @@ export function LoadInputForm({
             />
           )}
 
-          <InputField
-            label="Fuel Surcharge"
-            type="number"
-            step="0.01"
-            error={errors.fuelSurcharge?.message}
-            {...register("fuelSurcharge")}
-          />
+          <label className="block">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+              FSC Treatment
+            </span>
+            <select
+              {...register("fscSourceMode")}
+              className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+            >
+              {FSC_SOURCE_MODE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        {revenueInputMode === "gross" && (
+        {fscSourceMode === "actual_fsc_entered" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <InputField
+              label="Fuel Surcharge"
+              type="number"
+              step="0.01"
+              error={errors.fuelSurcharge?.message}
+              {...register("fuelSurcharge")}
+            />
+
+            <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-5 text-slate-500">
+              Enter actual FSC when it is listed on the load paperwork.
+              Karpilo FSC Intelligence still compares it against the EIA-indexed
+              baseline model for education.
+            </div>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-6 text-sky-100">
+            {getFscModeHelpText(fscSourceMode)}
+          </p>
+        )}
+
+        {revenueInputMode === "gross" &&
+          fscSourceMode === "actual_fsc_entered" && (
           <label className="flex items-start gap-3 rounded-xl border border-slate-800 bg-[#060B14] p-4 text-sm text-slate-300">
             <input
               type="checkbox"
@@ -1476,6 +1537,13 @@ export function LoadInputForm({
             </span>
           </label>
         )}
+
+        <p className="rounded-xl border border-slate-800 bg-[#060B14] p-4 text-xs leading-6 text-slate-500">
+          Fuel surcharge rules vary by carrier, broker, customer, contract, and
+          individual load. When actual FSC is not provided, Karpilo LoadIQ uses
+          an adopted baseline FSC model for estimation and education only.
+          Actual user-entered FSC remains the source of truth when provided.
+        </p>
       </section>
 
       <section className="space-y-4">
@@ -2195,6 +2263,35 @@ function normalizeWindowDates({
     startDate: normalizedStartDate,
     endDate: normalizedEndDate,
   };
+}
+
+function normalizeFscSourceMode(value: unknown): FscSourceMode {
+  if (
+    value === "actual_fsc_entered" ||
+    value === "fsc_built_into_gross" ||
+    value === "fsc_separate_missing" ||
+    value === "unknown"
+  ) {
+    return value;
+  }
+
+  return "actual_fsc_entered";
+}
+
+function getFscModeHelpText(mode: FscSourceMode) {
+  if (mode === "fsc_built_into_gross") {
+    return "Karpilo FSC Intelligence will estimate the FSC portion built into the entered gross and separate it from estimated linehaul for decision support.";
+  }
+
+  if (mode === "fsc_separate_missing") {
+    return "Karpilo FSC Intelligence will estimate separate FSC and add it to the revenue model because the actual FSC amount is missing.";
+  }
+
+  if (mode === "unknown") {
+    return "FSC treatment is unknown. The calculator will keep the load conservative and show education-only FSC context in the readout.";
+  }
+
+  return "User-entered FSC is treated as the source of truth.";
 }
 
 function RouteWarnings({ estimate }: { estimate: RouteEstimate }) {
