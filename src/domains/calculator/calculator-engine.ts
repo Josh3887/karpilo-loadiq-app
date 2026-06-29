@@ -8,6 +8,10 @@ import {
   ProfitabilityBand,
   ReserveAllocationMode,
 } from "@/types/load";
+import {
+  calculateFscIntelligence,
+  type KarpiloFscIntelligence,
+} from "@/services/fsc-intelligence";
 import { roundFuelPrice } from "@/utils/format";
 
 export const CALCULATION_VERSION = "loadiq-v1.1-profile-overhead";
@@ -73,6 +77,7 @@ function calculatePercentageMultiplier(percentageChain: number[]) {
 function calculatePayableRevenue(
   input: LoadInput,
   baseRevenue: number,
+  fuelSurchargeRevenue: number,
   payStructure: PayStructure,
   accessorialRevenue: number,
   reimbursedRevenue: number
@@ -87,7 +92,7 @@ function calculatePayableRevenue(
   const driverPayBase = Math.max(
     baseRevenue +
       (basis === "gross" && payStructure.includeFuelSurcharge
-        ? input.fuelSurcharge
+        ? fuelSurchargeRevenue
         : 0) +
       includedAccessorials,
     0
@@ -133,6 +138,102 @@ function calculatePayableRevenue(
     payCalculationBasis: basis,
     payPeriodMode,
   };
+}
+
+function getOutOfRouteMiles(input: LoadInput) {
+  const estimatedLoadedMiles =
+    input.routeEstimate?.loadedEstimate?.estimatedLoadedMiles ??
+    input.routeEstimate?.estimatedMiles ??
+    (input.routeLoadedMiles > 0 ? input.routeLoadedMiles : null);
+
+  if (
+    estimatedLoadedMiles === null ||
+    estimatedLoadedMiles === undefined ||
+    input.loadedMiles <= 0
+  ) {
+    return null;
+  }
+
+  return Math.max(estimatedLoadedMiles - input.loadedMiles, 0);
+}
+
+function resolveFuelSurchargeRevenue(
+  input: LoadInput,
+  fscIntelligence: KarpiloFscIntelligence
+) {
+  if (input.fscSourceMode === "actual_fsc_entered") {
+    return Math.max(input.fuelSurcharge, 0);
+  }
+
+  if (
+    input.fscSourceMode === "fsc_built_into_gross" ||
+    input.fscSourceMode === "fsc_separate_missing"
+  ) {
+    return Math.max(fscIntelligence.fscRevenue ?? 0, 0);
+  }
+
+  return Math.max(input.fuelSurcharge, 0);
+}
+
+function resolveLinehaulRevenue(input: LoadInput, fuelSurchargeRevenue: number) {
+  if (input.revenueInputMode !== "gross") {
+    const bookedRevenue = input.loadedMiles * input.ratePerMile;
+
+    return input.fscSourceMode === "fsc_built_into_gross"
+      ? Math.max(bookedRevenue - fuelSurchargeRevenue, 0)
+      : bookedRevenue;
+  }
+
+  const loadGross = Math.max(input.grossRevenue, 0);
+
+  if (
+    input.fscSourceMode === "fsc_built_into_gross" ||
+    input.fuelSurchargeIncludedInGross
+  ) {
+    return Math.max(loadGross - fuelSurchargeRevenue, 0);
+  }
+
+  return loadGross;
+}
+
+function resolveGrossRevenue(
+  input: LoadInput,
+  linehaulRevenue: number,
+  fuelSurchargeRevenue: number,
+  accessorialRevenue: number,
+  reimbursedRevenue: number
+) {
+  if (input.revenueInputMode === "gross") {
+    const loadGross = Math.max(input.grossRevenue, 0);
+    const loadGrossIncludesFsc =
+      input.fscSourceMode === "fsc_built_into_gross" ||
+      input.fuelSurchargeIncludedInGross;
+
+    return (
+      loadGross +
+      (loadGrossIncludesFsc ? 0 : fuelSurchargeRevenue) +
+      accessorialRevenue +
+      reimbursedRevenue
+    );
+  }
+
+  return (
+    linehaulRevenue +
+    fuelSurchargeRevenue +
+    accessorialRevenue +
+    reimbursedRevenue
+  );
+}
+
+function getFscScoreAdjustment(fscIntelligence: KarpiloFscIntelligence) {
+  const ratio = fscIntelligence.fscCoverageRatio;
+
+  if (ratio === null) return 0;
+  if (ratio >= 1) return 5;
+  if (ratio >= 0.9) return 2;
+  if (ratio >= 0.75) return -3;
+
+  return -8;
 }
 
 function resolveReserveAllocation(
@@ -193,27 +294,48 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     .filter((item) => item.direction === "expense" && item.isReimbursed)
     .reduce((total, item) => total + Number(item.amount), 0);
 
-  const linehaulRevenue = input.loadedMiles * input.ratePerMile;
-  const fuelSurchargeRevenue = input.fuelSurcharge;
   const payStructure = resolvePayStructure(input);
-  const grossRevenue =
-    linehaulRevenue +
-    fuelSurchargeRevenue +
-    accessorialRevenue +
-    reimbursedRevenue;
+  const totalMiles = input.loadedMiles + input.deadheadMiles;
+  const fuelPrice = roundFuelPrice(input.fuelPrice);
+  const fscIntelligence = calculateFscIntelligence({
+    fscSourceMode: input.fscSourceMode,
+    grossRevenue:
+      input.revenueInputMode === "gross"
+        ? input.grossRevenue
+        : input.loadedMiles * input.ratePerMile + input.fuelSurcharge,
+    actualFscRevenue: input.fuelSurcharge,
+    paidLoadedMiles: input.loadedMiles,
+    deadheadMiles: input.deadheadMiles,
+    outOfRouteMiles: getOutOfRouteMiles(input),
+    mpg: input.mpg,
+    dieselPrice: fuelPrice,
+    dieselPriceSource: input.fuelPriceSource,
+    dieselPriceFallbackUsed: input.fuelPriceSource !== "EIA",
+  });
+  const fuelSurchargeRevenue = resolveFuelSurchargeRevenue(
+    input,
+    fscIntelligence
+  );
+  const linehaulRevenue = resolveLinehaulRevenue(input, fuelSurchargeRevenue);
+  const grossRevenue = resolveGrossRevenue(
+    input,
+    linehaulRevenue,
+    fuelSurchargeRevenue,
+    accessorialRevenue,
+    reimbursedRevenue
+  );
   const payResolution = calculatePayableRevenue(
     input,
     linehaulRevenue,
+    fuelSurchargeRevenue,
     payStructure,
     accessorialRevenue,
     reimbursedRevenue
   );
   const payableRevenue = payResolution.payableRevenue;
   const netRevenue = payableRevenue;
-  const totalMiles = input.loadedMiles + input.deadheadMiles;
   const stopOffCount = input.routeStops?.length ?? 0;
   const routeStopCount = 2 + stopOffCount;
-  const fuelPrice = roundFuelPrice(input.fuelPrice);
   const fuelCost = totalMiles > 0 ? (totalMiles / input.mpg) * fuelPrice : 0;
   const variableCosts = totalMiles * input.variableCostPerMile;
   const trueRpm = totalMiles > 0 ? grossRevenue / totalMiles : 0;
@@ -257,6 +379,8 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
   const profitMarginPercent =
     grossRevenue > 0 ? (estimatedNet / grossRevenue) * 100 : 0;
   const costPerMile = totalMiles > 0 ? totalTripCost / totalMiles : 0;
+  const linehaulRpm =
+    input.loadedMiles > 0 ? linehaulRevenue / input.loadedMiles : 0;
   const breakEvenRpm =
     input.loadedMiles > 0
       ? (totalTripCost - fuelSurchargeRevenue - accessorialRevenue) /
@@ -279,8 +403,9 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
   if (deadheadPercent > 15) profitabilityScore -= 10;
   if (deadheadPercent > 25) profitabilityScore -= 15;
   if (trueRpm < input.targetTrueRpm) profitabilityScore -= 20;
-  if (input.ratePerMile < breakEvenRpm) profitabilityScore -= 20;
+  if (linehaulRpm < breakEvenRpm) profitabilityScore -= 20;
   if (fuelPercentOfGross > 35) profitabilityScore -= 10;
+  profitabilityScore += getFscScoreAdjustment(fscIntelligence);
 
   profitabilityScore = clamp(Math.round(profitabilityScore), 0, 100);
 
@@ -316,11 +441,23 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     });
   }
 
-  if (input.ratePerMile < breakEvenRpm) {
+  if (linehaulRpm < breakEvenRpm) {
     warnings.push({
       type: "break_even",
       severity: "danger",
       message: "Booked RPM is below estimated break-even RPM.",
+    });
+  }
+
+  if (
+    fscIntelligence.fscCoverageRatio !== null &&
+    fscIntelligence.fscCoverageRatio < 0.75
+  ) {
+    warnings.push({
+      type: "fuel",
+      severity: "warning",
+      message:
+        "FSC coverage is weak against modeled EIA-indexed fuel exposure.",
     });
   }
 
@@ -418,6 +555,7 @@ export function calculateLoadMetrics(input: LoadInput): LoadResult {
     reserveAllocationMode: reserveAllocation.mode,
     reserveAllocationValue: round(reserveAllocation.baseValue),
     reserveAllocationResolved: round(reserveAllocation.resolvedAmount),
+    fscIntelligence,
     profitabilityScore,
     profitabilityBand: getProfitabilityBand(profitabilityScore),
     costBreakdown: {

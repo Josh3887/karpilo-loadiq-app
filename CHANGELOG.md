@@ -8,6 +8,9 @@
   Weather, OpenWeather, and NWS/weather.gov provider clients, normalized
   weather types, load-window alignment, route-weather risk scaffolding, and
   provider-aligned API contract updates.
+- Added Karpilo FSC Intelligence to estimate fuel surcharge coverage against
+  EIA-indexed diesel cost, expose effective FSC CPM, and surface fuel budget
+  delta in the Karpilo Atlas Intelligence Readout.
 
 ### Fixed
 

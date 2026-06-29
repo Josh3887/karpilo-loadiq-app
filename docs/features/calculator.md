@@ -61,6 +61,8 @@ Required revenue inputs:
 - linehaul revenue
 - fuel surcharge amount
 - whether fuel surcharge is included in gross
+- FSC treatment/source mode for actual, built-in, separate-missing, or
+  unknown fuel surcharge handling
 
 When the user chooses RPM mode, linehaul revenue is derived from paid loaded
 miles multiplied by RPM. When the user chooses gross mode, load gross is the
@@ -70,6 +72,29 @@ modeled inside or outside linehaul.
 Accessorials, tolls, lumpers, fuel purchases, and DEF purchases belong to
 saved-load and post-trip actuals unless a later approved branch explicitly
 reintroduces them as planning inputs.
+
+## Karpilo FSC Intelligence
+
+The calculator includes Karpilo FSC Intelligence as additive financial-literacy
+and fuel-purchasing discipline context. It estimates whether fuel surcharge
+coverage offsets projected fuel exposure, using the existing EIA diesel
+baseline already loaded by the calculator.
+
+Karpilo FSC Intelligence supports:
+
+- user-entered actual FSC as the source of truth
+- estimated FSC built into gross revenue
+- estimated separate FSC when the separate amount is missing
+- unknown FSC treatment with reduced confidence
+
+FSC revenue is based on paid loaded miles. Fuel burn is based on total projected
+miles, including loaded miles, deadhead miles, and existing Route Intelligence
+out-of-route variance only when that variance is already available.
+
+Karpilo FSC Intelligence is education and decision support only. Fuel surcharge
+rules vary by carrier, broker, customer, contract, and load. It is not carrier
+contract authority, broker authority, dispatch authority, accounting advice, tax
+advice, legal advice, or a guaranteed profitability model.
 
 ## Mileage Inputs
 

@@ -184,6 +184,7 @@ export const demoLoadInput: LoadInput = {
   loadPulledReason: "",
   revenueInputMode: "rpm",
   grossRevenue: 0,
+  fscSourceMode: "actual_fsc_entered",
   fuelSurchargeIncludedInGross: false,
   ratePerMile: 2.7,
   fuelSurcharge: 345,

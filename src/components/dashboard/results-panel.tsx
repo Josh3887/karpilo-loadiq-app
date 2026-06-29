@@ -310,6 +310,26 @@ export function ResultsPanel({
                     label="Fuel Surcharge"
                     value={formatCurrency(result.fuelSurchargeRevenue)}
                   />
+                  {result.fscIntelligence.estimatedLinehaulRevenue !==
+                    undefined &&
+                    result.fscIntelligence.estimatedLinehaulRevenue !== null && (
+                    <BreakdownRow
+                      label="Estimated Linehaul"
+                      value={formatCurrency(
+                        result.fscIntelligence.estimatedLinehaulRevenue
+                      )}
+                    />
+                  )}
+                  {result.fscIntelligence.estimatedTotalRevenue !==
+                    undefined &&
+                    result.fscIntelligence.estimatedTotalRevenue !== null && (
+                    <BreakdownRow
+                      label="Estimated Total"
+                      value={formatCurrency(
+                        result.fscIntelligence.estimatedTotalRevenue
+                      )}
+                    />
+                  )}
                   <BreakdownRow
                     label="Gross Paid RPM"
                     value={formatRpm(grossPaidRpm)}
@@ -382,6 +402,42 @@ export function ResultsPanel({
                     value={formatCurrency(result.fuelCost)}
                   />
                   <BreakdownRow
+                    label="FSC Treatment"
+                    value={formatFscSourceMode(
+                      result.fscIntelligence.fscSourceMode
+                    )}
+                  />
+                  <BreakdownRow
+                    label="FSC Revenue"
+                    value={formatNullableCurrency(
+                      result.fscIntelligence.fscRevenue
+                    )}
+                  />
+                  <BreakdownRow
+                    label="Fuel Budget Delta"
+                    value={formatNullableSignedCurrency(
+                      result.fscIntelligence.fuelBudgetDelta
+                    )}
+                  />
+                  <BreakdownRow
+                    label="FSC Coverage"
+                    value={formatCoverageRatio(
+                      result.fscIntelligence.fscCoverageRatio
+                    )}
+                  />
+                  <BreakdownRow
+                    label="Effective FSC CPM"
+                    value={formatNullableCpm(
+                      result.fscIntelligence.effectiveFscCpm
+                    )}
+                  />
+                  <BreakdownRow
+                    label="EIA Fuel CPM"
+                    value={formatNullableCpm(
+                      result.fscIntelligence.eiaFuelCpm
+                    )}
+                  />
+                  <BreakdownRow
                     label="Operational Cost"
                     value={formatCurrency(result.operationalCost)}
                   />
@@ -395,6 +451,10 @@ export function ResultsPanel({
                   Fuel pricing uses the EIA diesel baseline when available,
                   unless the user overrides it with actual purchase price.
                   {formatFuelTimestamp(input)}
+                </p>
+
+                <p className="mt-3 text-xs leading-5 text-slate-400">
+                  {result.fscIntelligence.explanatoryMessage}
                 </p>
               </ReadoutSection>
 
@@ -545,6 +605,55 @@ export function ResultsPanel({
                     value={formatRpm(result.breakEvenRpm)}
                   />
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-[#060B14] p-5">
+                <PanelTitle>Karpilo FSC Intelligence</PanelTitle>
+
+                <div className="space-y-3 text-sm">
+                  <BreakdownRow
+                    label="Baseline FSC CPM"
+                    value={formatNullableCpm(
+                      result.fscIntelligence.estimatedFscCpm
+                    )}
+                  />
+                  <BreakdownRow
+                    label="Projected Miles"
+                    value={
+                      result.fscIntelligence.totalProjectedMiles === null
+                        ? "Unavailable"
+                        : `${formatNumber(
+                            result.fscIntelligence.totalProjectedMiles
+                          )} mi`
+                    }
+                  />
+                  <BreakdownRow
+                    label="Estimated Gallons"
+                    value={
+                      result.fscIntelligence.estimatedGallons === null
+                        ? "Unavailable"
+                        : `${formatNumber(
+                            result.fscIntelligence.estimatedGallons
+                          )} gal`
+                    }
+                  />
+                  <BreakdownRow
+                    label="Confidence"
+                    value={formatBand(result.fscIntelligence.fscConfidence)}
+                  />
+                </div>
+
+                {result.fscIntelligence.warnings.length > 0 && (
+                  <ul className="mt-4 space-y-2 text-xs leading-5 text-amber-100">
+                    {result.fscIntelligence.warnings.map((warning) => (
+                      <li key={warning}>- {warning}</li>
+                    ))}
+                  </ul>
+                )}
+
+                <p className="mt-4 text-xs leading-5 text-slate-500">
+                  {result.fscIntelligence.disclaimerMessage}
+                </p>
               </div>
 
               {missingInputs.length > 0 && (
@@ -868,12 +977,17 @@ function getProfitConfidence(
 
   if (
     missingInputs.length > 0 ||
+    result.fscIntelligence.fscConfidence === "low" ||
     result.warnings.some((warning) => warning.severity === "danger")
   ) {
     return "Low";
   }
 
-  if (result.warnings.length > 0 || routeMileageVariance === null) {
+  if (
+    result.warnings.length > 0 ||
+    routeMileageVariance === null ||
+    result.fscIntelligence.fscConfidence === "moderate"
+  ) {
     return "Moderate";
   }
 
@@ -1093,7 +1207,54 @@ function formatFuelTimestamp(input: LoadInput) {
   return ` Baseline fetched ${timestamp.toLocaleDateString()}.`;
 }
 
+function formatNullableCurrency(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return formatCurrency(value);
+}
+
+function formatNullableSignedCurrency(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+  if (value === 0) return formatCurrency(0);
+
+  const prefix = value > 0 ? "+" : "-";
+
+  return `${prefix}${formatCurrency(Math.abs(value))}`;
+}
+
+function formatNullableCpm(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return `${formatCurrency(value)}/mi`;
+}
+
+function formatCoverageRatio(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Unavailable";
+
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatFscSourceMode(mode: LoadInput["fscSourceMode"]) {
+  if (mode === "actual_fsc_entered") return "Actual FSC entered";
+  if (mode === "fsc_built_into_gross") return "Estimated inside gross";
+  if (mode === "fsc_separate_missing") return "Estimated separate FSC";
+
+  return "Unknown";
+}
+
 function getFscTreatment(input: LoadInput) {
+  if (input.fscSourceMode === "fsc_built_into_gross") {
+    return "FSC is treated as built into the entered revenue, so Karpilo LoadIQ estimates the FSC portion and separates it from linehaul for education.";
+  }
+
+  if (input.fscSourceMode === "fsc_separate_missing") {
+    return "FSC is expected separate from linehaul but the amount is missing, so Karpilo LoadIQ estimates FSC and adds it to modeled total revenue.";
+  }
+
+  if (input.fscSourceMode === "unknown") {
+    return "FSC treatment is unknown, so the readout keeps FSC context education-only and avoids treating missing FSC as guaranteed revenue.";
+  }
+
   if (input.revenueInputMode !== "gross") {
     return "RPM mode derives linehaul from paid loaded miles multiplied by booked RPM.";
   }
@@ -1114,6 +1275,7 @@ function buildLoadIqInsights(
   const insights = [
     `${getFscTreatment(input)} Linehaul is ${formatCurrency(result.linehaulRevenue)} and FSC is ${formatCurrency(result.fuelSurchargeRevenue)}.`,
     `Fuel is modeled at ${formatFuelPrice(input.fuelPrice)} from ${formatFuelSource(input)} across ${formatNumber(input.mpg)} MPG.`,
+    result.fscIntelligence.explanatoryMessage,
   ];
 
   if (routeMileageVariance !== null) {
