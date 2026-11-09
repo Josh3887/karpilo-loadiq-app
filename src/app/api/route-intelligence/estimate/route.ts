@@ -14,18 +14,18 @@ const routeStopKindValues: [RouteStopKind, ...RouteStopKind[]] = [
 
 const routeStopSchema = z.object({
   id: z.string().optional(),
-  address: z.string().trim().min(3),
+  address: z.string().trim().min(3).max(500),
   kind: z.enum(routeStopKindValues).default("pickup"),
   sequence: z.coerce.number().int().positive().optional(),
 });
 
 const estimateRouteRequestSchema = z.object({
-  origin: z.string().trim().optional(),
-  destination: z.string().trim().optional(),
-  deadheadOrigin: z.string().trim().optional(),
-  pickupAddress: z.string().trim().optional(),
-  deliveryAddress: z.string().trim().optional(),
-  stops: z.array(routeStopSchema).optional().default([]),
+  origin: z.string().trim().max(500).optional(),
+  destination: z.string().trim().max(500).optional(),
+  deadheadOrigin: z.string().trim().max(500).optional(),
+  pickupAddress: z.string().trim().max(500).optional(),
+  deliveryAddress: z.string().trim().max(500).optional(),
+  stops: z.array(routeStopSchema).max(10).optional().default([]),
   provider: z.enum(["google_estimate", "trimble_truck"]).default("google_estimate"),
 }).superRefine((value, context) => {
   const pickupAddress = value.pickupAddress ?? value.origin ?? "";
@@ -118,20 +118,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const response = await estimateRoute({
-    deadheadOrigin: parsed.data.deadheadOrigin,
-    pickupAddress: parsed.data.pickupAddress ?? parsed.data.origin,
-    deliveryAddress: parsed.data.deliveryAddress ?? parsed.data.destination,
-    stops: parsed.data.stops.map((stop, index) => ({
-      ...stop,
-      sequence: stop.sequence ?? index + 1,
-    })),
-    provider: parsed.data.provider,
-  });
+  try {
+    const response = await estimateRoute({
+      deadheadOrigin: parsed.data.deadheadOrigin,
+      pickupAddress: parsed.data.pickupAddress ?? parsed.data.origin,
+      deliveryAddress: parsed.data.deliveryAddress ?? parsed.data.destination,
+      stops: parsed.data.stops.map((stop, index) => ({
+        ...stop,
+        sequence: stop.sequence ?? index + 1,
+      })),
+      provider: parsed.data.provider,
+    });
 
-  return NextResponse.json(response, {
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    return NextResponse.json({
+      status: "unavailable", provider: parsed.data.provider, estimate: null,
+      message: "Route estimate unavailable. Manual mileage entry remains active.",
+      warnings: ["The routing service could not complete this request."],
+    }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 }

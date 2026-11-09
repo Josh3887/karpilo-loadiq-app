@@ -62,6 +62,8 @@ export type RouteEstimateRequest = {
 };
 
 export type RouteEstimate = {
+  requestKey?: string;
+  estimatedAt?: string;
   provider: RouteProvider;
   origin: VerifiedAddress;
   destination: VerifiedAddress;
@@ -135,7 +137,7 @@ export type FutureTrimbleRouteInputs = {
 };
 
 export const GOOGLE_ROUTE_DISCLAIMER =
-  "Mileage estimate only. Not truck-legal routing.";
+  "Estimated mileage only—not guaranteed. Does not account for commercial truck routing restrictions, including height, weight, hazmat, or truck access. Not truck navigation.";
 
 export const TRIMBLE_ROUTE_PLACEHOLDER =
   "Truck-specific routing planned after launch.";

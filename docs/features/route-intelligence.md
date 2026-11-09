@@ -252,3 +252,39 @@ workflow from this document.
   product decisions.
 - Add first-class schema columns for route estimates, odometer validation, and
   fuel/DEF purchase analytics only after a separate schema branch is approved.
+
+## Saved facility addresses and mileage (2026-11-09)
+
+Shipper and receiver searches now include the authenticated driver's latest 500
+saved-load input snapshots and the configured facility seed directory. Facility
+names persist in optional `pickupFacilityName` / `deliveryFacilityName` snapshot
+fields; older loads still work. Only driver-entered address fields are indexed;
+Google formatted addresses, coordinates, notes, appointments, and reference
+numbers are not copied into this address search. Exact normalized name/address
+matches are deduplicated; unit numbers and branches remain distinct.
+
+Selecting a facility fills editable street/city/state/ZIP fields used by the
+existing Google route request. Saving a load makes its addresses reusable within
+the bounded search window. This is an integration with existing saved records,
+not a dedicated master address database: deleting a load removes that source,
+and records older than the search window are excluded. The dedicated AWS
+facility database, nationwide OpenStreetMap import, Google Places business
+search, and shared contribution validation are NOT implemented by this branch.
+No new Supabase schema or infrastructure is introduced.
+
+The calculator displays estimated loaded, deadhead, and total mileage beside
+the action. It always displays: “Estimated mileage only—not guaranteed. Does not
+account for commercial truck routing restrictions, including height, weight,
+hazmat, or truck access. Not truck navigation.” Paid miles and actual miles stay
+separate. The provider still uses DRIVE, with no commercial vehicle attributes.
+
+Changing pickup, delivery, deadhead, or ordered stop addresses clears both the
+estimate snapshot and numeric estimate fields, aborts the client request, and
+rejects late responses. Failed requests cannot reuse an earlier estimate. An
+empty added stop must be filled or removed, never silently skipped. Derived
+planning suggestions fall back to entered mileage benchmarks while explicit
+user planning overrides remain intact. New estimate snapshots carry a request
+key and timestamp; older snapshots are checked against their input addresses.
+
+Validation: `node --test tests/facility-mileage.test.cjs` and TypeScript checking.
+Live Google, database, and rendered app checks must be reported independently.

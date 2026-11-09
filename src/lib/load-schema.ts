@@ -83,6 +83,8 @@ export const loadInputSchema = z.object({
   carrierLoadId: z.string().optional().default(""),
   dispatcherReference: z.string().optional().default(""),
 
+  pickupFacilityName: z.string().trim().max(200).optional().default(""),
+  deliveryFacilityName: z.string().trim().max(200).optional().default(""),
   pickupZip: z.string().min(5),
   pickupAddress: z.string().optional().default(""),
   pickupCity: z.string().optional().default(""),
@@ -377,6 +379,8 @@ export const defaultLoadInputValues: LoadInputFormValues = {
   carrierLoadId: "",
   dispatcherReference: "",
 
+  pickupFacilityName: "",
+  deliveryFacilityName: "",
   pickupZip: "",
   pickupAddress: "",
   pickupCity: "",
