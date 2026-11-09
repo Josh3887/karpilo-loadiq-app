@@ -83,6 +83,8 @@ export type LoadInput = {
   carrierLoadId: string;
   dispatcherReference: string;
 
+  pickupFacilityName?: string;
+  deliveryFacilityName?: string;
   pickupZip: string;
   pickupAddress: string;
   pickupCity: string;

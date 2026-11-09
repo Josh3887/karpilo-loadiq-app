@@ -36,6 +36,9 @@ import {
 import { RouteStopInput } from "@/types/load";
 import type { FscSourceMode } from "@/services/fsc-intelligence";
 
+import { FacilitySearch } from "./facility-search";
+import { buildAddressRouteRequest, estimateMatchesRequest, routeRequestKey } from "@/services/route-intelligence/route-input";
+
 type LoadInputRawValues = z.input<typeof loadInputSchema>;
 
 type LoadInputFormProps = {
@@ -71,6 +74,8 @@ export function LoadInputForm({
     useState<DeadheadContinuitySuggestion | null>(null);
   const [isEstimatingRoute, setIsEstimatingRoute] = useState(false);
   const userOverrodeFuelPrice = useRef(false);
+  const routeRequestSequence = useRef(0);
+  const routeController = useRef<AbortController | null>(null);
 
   const {
     register,
@@ -79,11 +84,52 @@ export function LoadInputForm({
     getValues,
     reset,
     control,
+    watch,
     formState: { errors },
   } = useForm<LoadInputRawValues>({
     resolver: zodResolver(loadInputSchema),
     defaultValues: defaultLoadInputValues,
   });
+  const clearRouteEstimate = useCallback(() => {
+    routeRequestSequence.current += 1;
+    routeController.current?.abort();
+    setIsEstimatingRoute(false);
+    setRouteEstimate(null);
+    setValue("routeEstimate", null, { shouldDirty: true });
+    setValue("routeLoadedMiles", 0, { shouldDirty: true });
+    setValue("routeDeadheadMiles", 0, { shouldDirty: true });
+    setValue("googleRouteDurationHuman", "", { shouldDirty: true });
+    setValue("googleRouteDurationQuarterHours", 0, { shouldDirty: true });
+    const values = getValues();
+    const planning = buildPlanningSuggestion({ ...values, routeLoadedMiles: 0, routeDeadheadMiles: 0 }, null);
+    setValue("deadheadBenchmarkHours", planning.deadheadBenchmarkHours);
+    setValue("loadedBenchmarkHours", planning.loadedBenchmarkHours);
+    setValue("deadheadBenchmarkDays", planning.deadheadBenchmarkDays);
+    setValue("loadedBenchmarkDays", planning.loadedBenchmarkDays);
+    if (!values.deadheadPlanningHoursUserOverridden) setValue("deadheadPlanningHours", planning.deadheadPlanningHours);
+    if (!values.deadheadDaysUserOverridden) setValue("deadheadDays", planning.deadheadPlanningDays);
+    if (!values.loadedPlanningHoursUserOverridden) setValue("loadedPlanningHours", planning.loadedPlanningHours);
+    if (!values.loadedDaysUserOverridden) setValue("dispatchDays", Math.max(planning.loadedPlanningDays, 1));
+  }, [setValue, getValues]);
+
+  useEffect(() => {
+    let previousKey = routeRequestKey(buildAddressRouteRequest(getValues()));
+    const subscription = watch((_values, { name }) => {
+      const key = routeRequestKey(buildAddressRouteRequest(getValues()));
+      if (key === previousKey) return;
+      previousKey = key;
+      // Form reset restores its own saved snapshot in the initialValues effect.
+      if (!name) return;
+      clearRouteEstimate();
+      setRouteStatus("Addresses changed. Estimate mileage again for this route.");
+    });
+    return () => {
+      subscription.unsubscribe();
+      routeRequestSequence.current += 1;
+      routeController.current?.abort();
+    };
+  }, [watch, getValues, clearRouteEstimate]);
+
   const watchedDeadheadStartDate =
     toDateInputValue(useWatch({ control, name: "deadheadStartDate" }));
   const rawDeadheadStartTime = toInputString(
@@ -265,7 +311,15 @@ export function LoadInputForm({
   useEffect(() => {
     if (!initialValues) return;
 
-    reset(normalizeScheduleInputValues(initialValues));
+    clearRouteEstimate();
+    const restoredEstimate = estimateMatchesRequest(initialValues.routeEstimate, buildAddressRouteRequest(initialValues))
+      ? initialValues.routeEstimate : null;
+    reset(normalizeScheduleInputValues({
+      ...initialValues,
+      routeEstimate: restoredEstimate,
+      routeLoadedMiles: restoredEstimate ? initialValues.routeLoadedMiles : 0,
+      routeDeadheadMiles: restoredEstimate ? initialValues.routeDeadheadMiles : 0,
+    }));
     if (initialValues.fuelPriceSource === "USER_OVERRIDE") {
       userOverrodeFuelPrice.current = true;
       queueMicrotask(() => {
@@ -280,9 +334,9 @@ export function LoadInputForm({
     }
 
     queueMicrotask(() => {
-      setRouteEstimate(initialValues.routeEstimate ?? null);
+      setRouteEstimate(restoredEstimate);
     });
-  }, [initialValues, reset]);
+  }, [initialValues, reset, clearRouteEstimate]);
 
   useEffect(() => {
     if (previewMode || initialValues) return;
@@ -347,7 +401,7 @@ export function LoadInputForm({
             warnings: [],
           }
         : null;
-    const submittedRouteEstimate = routeEstimate
+    const submittedRouteEstimate = estimateMatchesRequest(routeEstimate, buildAddressRouteRequest(values)) && routeEstimate
       ? {
           ...routeEstimate,
           routeMileageVariance: getRouteMileageVariance(
@@ -368,6 +422,8 @@ export function LoadInputForm({
         tolls: 0,
         lumpers: 0,
         routeEstimate: submittedRouteEstimate,
+        routeLoadedMiles: submittedRouteEstimate ? values.routeLoadedMiles : 0,
+        routeDeadheadMiles: submittedRouteEstimate ? values.routeDeadheadMiles : 0,
         actualTotalMiles: 0,
         odometerValidation: submittedOdometerValidation,
       })
@@ -406,50 +462,6 @@ export function LoadInputForm({
     setValue("fuelPriceSource", "USER_OVERRIDE");
     setValue("fuelPriceIsEstimate", false);
     setFuelStatus("User override · actual fuel price");
-  }
-
-  function buildRouteAddress(values: LoadInputRawValues, type: "pickup" | "delivery") {
-    const parts =
-      type === "pickup"
-        ? [
-            values.pickupAddress,
-            values.pickupCity,
-            values.pickupState,
-            values.pickupZip,
-          ]
-        : [
-            values.deliveryAddress,
-            values.deliveryCity,
-            values.deliveryState,
-            values.deliveryZip,
-          ];
-
-    return parts
-      .filter((part): part is string => typeof part === "string")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  function buildDeadheadAddress(values: LoadInputRawValues) {
-    return [
-      values.deadheadStartAddress,
-      values.deadheadStartCity,
-      values.deadheadStartState,
-      values.deadheadStartZip,
-    ]
-      .filter((part): part is string => typeof part === "string")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  function buildStopAddress(stop: RouteStopInput) {
-    return [stop.address, stop.city, stop.state, stop.zip]
-      .filter(Boolean)
-      .map((part) => String(part).trim())
-      .filter(Boolean)
-      .join(", ");
   }
 
   function addRouteStop() {
@@ -597,95 +609,55 @@ export function LoadInputForm({
   }
 
   async function handleRouteEstimate() {
-    const values = getValues();
-    const pickupAddress = buildRouteAddress(values, "pickup");
-    const deliveryAddress = buildRouteAddress(values, "delivery");
-    const deadheadOrigin = buildDeadheadAddress(values);
-    const stops = routeStops
-      .map((stop, index) => ({
-        id: stop.id,
-        address: buildStopAddress(stop),
-        kind: stop.stopType,
-        sequence: index + 1,
-      }))
-      .filter((stop) => stop.address.length >= 3);
-
-    if (pickupAddress.length < 3 || deliveryAddress.length < 3) {
-      setRouteStatus(
-        "Enter pickup and delivery address details before estimating mileage."
-      );
+    const request = buildAddressRouteRequest(getValues());
+    clearRouteEstimate();
+    if ((request.stops?.length ?? 0) > 10) {
+      setRouteStatus("Mileage estimates support up to 10 additional stops.");
       return;
     }
-
+    if ((request.pickupAddress?.length ?? 0) < 3 || (request.deliveryAddress?.length ?? 0) < 3 ||
+        request.stops?.some((stop) => stop.address.length < 3)) {
+      setRouteStatus("Enter pickup, delivery, and every added stop address before estimating mileage.");
+      return;
+    }
+    const sequence = routeRequestSequence.current;
+    const requestKey = routeRequestKey(request);
+    const controller = new AbortController();
+    routeController.current = controller;
+    const isCurrent = () => !controller.signal.aborted && sequence === routeRequestSequence.current &&
+      requestKey === routeRequestKey(buildAddressRouteRequest(getValues()));
     try {
       setIsEstimatingRoute(true);
-      setRouteStatus("Estimating route with Google...");
-
+      setRouteStatus("Estimating address-to-address mileage with Google Maps…");
       const response = await fetch("/api/route-intelligence/estimate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          deadheadOrigin: deadheadOrigin || undefined,
-          pickupAddress,
-          deliveryAddress,
-          stops,
-          provider: "google_estimate",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: controller.signal,
       });
       const payload = (await response.json()) as RouteEstimateResponse;
-      const estimate = payload.estimate;
-
-      setRouteStatus(payload.message);
+      if (!isCurrent()) return;
+      const estimate = response.ok && payload.status === "available" && payload.estimate
+        ? { ...payload.estimate, requestKey, estimatedAt: new Date().toISOString(), truckSpecific: false, disclaimer: GOOGLE_ROUTE_DISCLAIMER }
+        : null;
+      setRouteStatus(estimate ? "Estimated address-to-address mileage from Google Maps. Actual miles may differ." :
+        (payload.message || "Route estimate unavailable. Manual mileage entry remains active."));
       setRouteEstimate(estimate);
-      setValue("routeEstimate", estimate, {
-        shouldDirty: true,
-      });
-
-      if (
-        response.ok &&
-        payload.status === "available" &&
-        estimate?.loadedEstimate?.estimatedLoadedMiles !== null &&
-        estimate?.loadedEstimate?.estimatedLoadedMiles !== undefined
-      ) {
-        setValue("routeLoadedMiles", estimate.loadedEstimate.estimatedLoadedMiles, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-      }
-
-      if (
-        response.ok &&
-        estimate?.deadheadEstimate?.estimatedDeadheadMiles !== null &&
-        estimate?.deadheadEstimate?.estimatedDeadheadMiles !== undefined
-      ) {
-        setValue(
-          "routeDeadheadMiles",
-          estimate.deadheadEstimate.estimatedDeadheadMiles,
-          {
-            shouldDirty: true,
-            shouldValidate: true,
-          }
-        );
-      }
-
+      setValue("routeEstimate", estimate, { shouldDirty: true });
+      setValue("routeLoadedMiles", estimate?.loadedEstimate?.estimatedLoadedMiles ?? estimate?.estimatedMiles ?? 0, { shouldDirty: true });
+      setValue("routeDeadheadMiles", estimate?.deadheadEstimate?.estimatedDeadheadMiles ?? 0, { shouldDirty: true });
       applyPlanningSuggestions(estimate);
     } catch {
-      setRouteStatus(
-        "Route estimate unavailable. Manual mileage entry remains active."
-      );
-      setRouteEstimate(null);
-      setValue("routeEstimate", null, {
-        shouldDirty: true,
-      });
+      if (!isCurrent()) return;
+      setRouteStatus("Route estimate unavailable. Manual mileage entry remains active.");
       applyPlanningSuggestions(null);
     } finally {
-      setIsEstimatingRoute(false);
+      if (isCurrent()) setIsEstimatingRoute(false);
     }
   }
 
   function handleUseEstimateAsPaidMiles() {
+    if (!estimateMatchesRequest(routeEstimate, buildAddressRouteRequest(getValues()))) return;
     const estimatedLoadedMiles =
       routeEstimate?.loadedEstimate?.estimatedLoadedMiles ??
       routeEstimate?.estimatedMiles;
@@ -975,6 +947,28 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Pickup Details" />
+        {!previewMode && (
+          <FacilitySearch
+            label="Search for a shipper"
+            onSelect={(facility) => {
+              const options = { shouldDirty: true, shouldValidate: true };
+              setValue("pickupFacilityName", facility.name, options);
+              setValue("pickupAddress", facility.address, options);
+              setValue("pickupCity", facility.city, options);
+              setValue("pickupState", facility.state, options);
+              setValue("pickupZip", facility.zip, options);
+              clearRouteEstimate();
+              setRouteStatus("Facility address selected. Estimate mileage for this route.");
+            }}
+          />
+        )}
+
+        <InputField
+          label="Shipper / Facility Name"
+          placeholder="Saved with this load for future address searches"
+          error={errors.pickupFacilityName?.message}
+          {...register("pickupFacilityName")}
+        />
 
         <InputField
           label="Pickup Address"
@@ -1158,6 +1152,28 @@ export function LoadInputForm({
 
       <section className="space-y-4">
         <SectionTitle title="Delivery Details" />
+        {!previewMode && (
+          <FacilitySearch
+            label="Search for a receiver"
+            onSelect={(facility) => {
+              const options = { shouldDirty: true, shouldValidate: true };
+              setValue("deliveryFacilityName", facility.name, options);
+              setValue("deliveryAddress", facility.address, options);
+              setValue("deliveryCity", facility.city, options);
+              setValue("deliveryState", facility.state, options);
+              setValue("deliveryZip", facility.zip, options);
+              clearRouteEstimate();
+              setRouteStatus("Facility address selected. Estimate mileage for this route.");
+            }}
+          />
+        )}
+
+        <InputField
+          label="Receiver / Facility Name"
+          placeholder="Saved with this load for future address searches"
+          error={errors.deliveryFacilityName?.message}
+          {...register("deliveryFacilityName")}
+        />
 
         <InputField
           label="Delivery Address"
@@ -1314,9 +1330,22 @@ export function LoadInputForm({
               disabled={isEstimatingRoute}
               className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300 transition hover:bg-sky-400/20"
             >
-              {isEstimatingRoute ? "Estimating Route" : "Estimate Route Miles"}
+              {isEstimatingRoute ? "Estimating Route" : "Estimate Address-to-Address Miles"}
             </button>
           </div>
+
+          <p className="text-xs leading-5 text-slate-400">{GOOGLE_ROUTE_DISCLAIMER}</p>
+          {routeEstimate && (
+            <dl className="grid gap-3 rounded-xl border border-slate-700 p-4 text-sm sm:grid-cols-3" aria-label="Estimated mileage from Google Maps">
+              {[
+                ["Estimated loaded miles", routeEstimate.loadedEstimate?.estimatedLoadedMiles ?? routeEstimate.estimatedMiles],
+                ["Estimated deadhead miles", routeEstimate.deadheadEstimate?.estimatedDeadheadMiles],
+                ["Estimated total miles", routeEstimate.totalEstimate?.estimatedMiles],
+              ].map(([label, miles]) => (
+                <div key={String(label)}><dt className="text-slate-400">{label}</dt><dd className="text-lg font-semibold">{typeof miles === "number" ? `${miles.toLocaleString(undefined, { maximumFractionDigits: 1 })} mi` : "Not available"}</dd></div>
+              ))}
+            </dl>
+          )}
 
           {(routeStatus || routeEstimate) && (
             <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 text-xs leading-5 text-slate-300">

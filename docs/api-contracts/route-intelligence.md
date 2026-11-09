@@ -231,3 +231,31 @@ components. Do not create `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` or any other
 - No GPS or live location tracking.
 - No IFTA filing compliance claim.
 - No fuel gauge recovery in this task.
+
+## Address directory integration update — 2026-11-09
+
+`POST /api/facilities` accepts `{query: string}` (3–100 characters), requires
+session authentication, and returns at most eight normalized facility records
+plus non-sensitive warnings. It uses an explicit `user_id` filter and existing
+RLS to read only the driver's latest 500 saved-load snapshots. The configured
+`LOADIQ_FACILITY_DIRECTORY_JSON` seed allows at most 1,000 validated records.
+The response is `Cache-Control: private, no-store`; browser storage is not used.
+Driver-owned results take precedence over duplicate seed records. No cross-user
+publishing, schema changes, or new write permissions are added. Auth failures
+return 401, malformed queries 400, and unavailable history with no seed 503.
+An empty but functioning directory returns 200 and an empty result set.
+
+Optional seed `source` is `directory`, `openstreetmap`, or `driver_saved`.
+OpenStreetMap-sourced visible results carry an attribution link. Seed provenance
+and redistribution rights must be reviewed before loading production data; this
+branch does not import external datasets or retain Google lookup content as a
+facility master. Private names and raw entered addresses remain in existing
+load input snapshots and follow saved-load retention/deletion behavior.
+
+Estimate requests now bound each address to 500 characters and stops to 10.
+Google requests have a 15-second timeout per provider call; there are no retries
+or new provider caches. Network/timeout exceptions return a normalized 503
+unavailable response without vendor error details. In-flight client requests
+are aborted on route changes; late results cannot overwrite a different route.
+Provider usage remains explicit button-driven, not one request per keystroke.
+A distributed per-user rate limiter remains a production follow-up.

@@ -4,6 +4,14 @@
 
 ### Added
 
+- Search the driver's latest 500 saved loads for reusable shipper/receiver
+  addresses, retain optional facility names, and combine results with the
+  configured directory without exposing other users' load history.
+- Show address-to-address estimated loaded, deadhead, and total mileage with
+  an explicit non-guarantee and commercial truck routing limitation.
+
+- Added calculator shipper and receiver lookup for a configured sandbox directory.
+
 - Added the server-side Karpilo Weather Intelligence foundation with Google
   Weather, OpenWeather, and NWS/weather.gov provider clients, normalized
   weather types, load-window alignment, route-weather risk scaffolding, and
@@ -13,6 +21,11 @@
   delta in the Karpilo Atlas Intelligence Readout.
 
 ### Fixed
+
+- Clear stale route mileage and reject late route responses when addresses or
+  ordered stops change; preserve paid mileage and explicit planning overrides.
+- Bound route request size and stop count, timeout Google requests, and return
+  a normalized unavailable state on network failures.
 
 - Hardened Google Weather endpoint construction so a base URL configured with a
   trailing `/v1` does not produce double-version request paths, and classified

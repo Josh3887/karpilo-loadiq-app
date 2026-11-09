@@ -449,3 +449,22 @@ on a separate approved branch.
 - fuel gauge recovery
 - GPS/location tracking
 - Karpilo Atlas generated AI schedule and window explanations
+
+## Facility address lookup
+
+Set the server-only `LOADIQ_FACILITY_DIRECTORY_JSON` environment variable
+to a JSON array with up to 1,000 approved U.S. facility records. Each record
+has a unique string `id` and string fields `name`, `address`, `city`,
+`state` (two characters), and `zip` (five digits or ZIP+4).
+Use approved public facility data
+and record its source and any required attribution before loading it.
+
+The authenticated calculator searches after three characters. Selecting a
+facility fills the corresponding address fields, which remain editable.
+Manual entry works when the seed is absent, search fails, or no result
+matches. The search combines the configured seed with addresses from the authenticated
+driver's latest 500 saved-load snapshots. Optional shipper/receiver names are
+saved with those snapshots. Search makes no external map-provider requests.
+See [Route Intelligence](route-intelligence.md#saved-facility-addresses-and-mileage-2026-11-09)
+for persistence boundaries, mileage estimate behavior, and pending AWS directory
+work.

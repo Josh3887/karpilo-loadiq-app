@@ -2,7 +2,7 @@
 ## Status
 - App status: implemented
 - Contract status: verified against provider docs
-- Last verified against provider docs: 2026-06-28
+- Last verified against provider docs: 2026-11-09 (DRIVE, request fields, field mask)
 ## Official provider documentation
 - Primary docs: https://developers.google.com/maps/documentation/routes
 - API reference: https://developers.google.com/maps/documentation/routes/compute_route_directions
@@ -60,7 +60,7 @@ Include:
 - Auth failures: returned as unavailable with provider message or HTTP status.
 - Validation failures: missing coordinates prevents provider call.
 - Quota/rate-limit failures: returned as unavailable; no retry loop exists.
-- Timeout/network failure behavior: no custom timeout/backoff in this provider.
+- Timeout/network failure behavior: 15-second timeout per provider request; estimate endpoint returns normalized unavailable on network/timeout exceptions. No retries.
 - App fallback behavior: returns unavailable route leg with warnings.
 - User-safe error message: provider message or generic Google Routes text.
 - Internal logging behavior: no provider secret logging allowed.
@@ -114,3 +114,25 @@ List anything likely to break:
 - [x] Confirm error handling
 - [ ] Confirm tests/mocks
 - [x] Confirm no secrets are exposed
+
+## Address-to-address estimate update — 2026-11-09
+
+Rechecked official references:
+- https://developers.google.com/maps/documentation/routes/reference/rest/v2/RouteTravelMode
+- https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes
+- https://developers.google.com/maps/documentation/routes/policies
+
+LoadIQ explicitly sends `DRIVE` (passenger car), not `TRUCK`. Current Google docs
+also describe a separate TRUCK mode; this branch does not activate it or claim
+commercial routing support. Distance and duration remain estimates, never a
+guarantee. A disclaimer is visible before requesting a route and with results.
+
+No Google business/address database is built here. Existing provider response
+snapshot retention needs separate review against applicable Google terms before
+production expansion; this branch does not extend permitted storage rights.
+Driver-entered addresses are the only saved-load fields reused for facility
+search. Do not bulk copy Google content into the directory.
+
+Mock contract tests cover DRIVE requests, loaded/deadhead/total distance,
+missing routes, and the non-commercial-routing disclaimer. Live credentials
+and production calls are not implied by these tests.

@@ -359,6 +359,7 @@ async function estimateGoogleLeg(
   const response = await fetch(url, {
     method: "POST",
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
     headers: {
       "Content-Type": "application/json",
       "X-Goog-FieldMask":
@@ -530,6 +531,7 @@ export async function validateGoogleAddress(
   const response = await fetch(url, {
     method: "POST",
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
     headers: {
       "Content-Type": "application/json",
     },
