@@ -26,7 +26,15 @@ CloudWatch dashboard: `Karpilo-LoadIQ-Isolated-Maintenance`.
 Alarms: `LoadIQ-Isolated-RDS-LowFreeStorage`, `LoadIQ-Isolated-RDS-HighCPU`, and the existing application rollback alarm.
 SNS topic: `karpilo-loadiq-isolated-maintenance-alerts`.
 
-## Pending for maintenance Step 2
-- Confirm delivery of the test SNS email in both inboxes.
-- Execute and document an isolated restoration drill, after reviewing cost and temporary resource safeguards.
-- Implement a genuine daily health report with current metrics and a persistent execution history. A static scheduled email is not a valid health report.
+## Verified execution — 2026-11-14
+- Both SNS recipients confirmed; alert delivery and first daily health email independently verified in both Gmail inboxes.
+- Daily Lambda `KarpiloLoadIQIsolatedDailyHealth` deployed via CloudFormation stack `karpilo-loadiq-isolated-daily-health`; EventBridge rule enabled for 03:00 UTC daily.
+- Function invoked successfully and reported healthy with zero findings. Lambda log retention set to 30 days.
+- Added `LoadIQ-Isolated-DailyHealth-FunctionErrors` and `LoadIQ-Isolated-DailyHealth-MissingRun` alarms. Missing-run alarm uses a 24-hour metric-math window; validate its real behavior after a full scheduled cycle.
+- Restored 2026-11-14 automated snapshot to temporary private encrypted instance `karpilo-isolated-restore-drill-20261114`; RDS provisioned an endpoint. Temporary instance was subsequently deleted and verified absent.
+- **Recovery qualification:** SQL connectivity, schema integrity and record consistency on restored copy were NOT verified. Do not mark full data-integrity recovery complete.
+
+## Remaining Step 2 verification
+1. Confirm the first *scheduled* daily invocation and absence of false missing-run alarms.
+2. Perform a fresh temporary restoration with read-only SQL verification using an isolated VPC-connected client, then delete it and document recovery time and data freshness.
+3. Keep recovery credentials in AWS Secrets Manager; do not embed them in reports, repository files, or logs.
