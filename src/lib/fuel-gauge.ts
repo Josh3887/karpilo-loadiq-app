@@ -1,6 +1,7 @@
-export type LoadRunStatus = "planned" | "running" | "completed" | "rejected";
+export type LoadRunStatus = "planned" | "running" | "completed" | "rejected" | "booked" | "dispatched" | "pulled" | "ran" | "test";
+export type CanonicalLoadRunStatus = "planned" | "running" | "completed" | "rejected";
 
-export function normalizeLoadRunStatus(status: string | null | undefined): LoadRunStatus {
+export function normalizeLoadRunStatus(status: string | null | undefined): CanonicalLoadRunStatus {
   switch (status) {
     case "running": case "booked": case "dispatched": return "running";
     case "completed": case "ran": return "completed";
@@ -38,7 +39,7 @@ export type FuelGaugeResult = {
   shouldAlert: boolean;
 };
 
-export const LOAD_RUN_STATUS_OPTIONS: Array<{value:LoadRunStatus;label:string;description:string}> = [
+export const LOAD_RUN_STATUS_OPTIONS: Array<{value:CanonicalLoadRunStatus;label:string;description:string}> = [
   {value:"planned",label:"Planned",description:"Intend to run this load."},
   {value:"running",label:"Running",description:"Load is active."},
   {value:"completed",label:"Completed",description:"Load finished."},
