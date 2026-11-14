@@ -120,13 +120,11 @@ export async function saveLoad({
     loadiq_load_number: loadiqLoadNumber,
     driver_load_number: input.loadNumber || null,
     load_outcome:
-      input.loadRunStatus === "test"
-        ? "test_calculation"
-        : input.loadRunStatus,
+      input.loadRunStatus,
     load_run_status: input.loadRunStatus,
     was_run_status: input.loadRunStatus,
     load_status_reason:
-      input.loadRunStatus === "pulled" ? input.loadPulledReason || null : null,
+      null,
     pickup_zip: input.pickupZip,
     pickup_city: input.pickupCity,
     pickup_state: input.pickupState,
