@@ -250,6 +250,9 @@ export async function updateSavedLoadActuals(
     .from("saved_loads")
     .update({
       status: "completed",
+      load_run_status: "completed",
+      was_run_status: "completed",
+      load_outcome: "ran",
       actual_net: actualNet,
       actual_fuel_price:
         normalizedActuals.actualFuelPrice > 0
