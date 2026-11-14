@@ -8,6 +8,7 @@ import {
   duplicateSavedLoad,
   updateSavedLoadActuals,
   updateSavedLoadOutcome,
+  updateSavedLoadRunStatus,
 } from "@/services/saved-load-actions";
 import { createLaneTemplateFromSavedLoad } from "@/services/lane-templates";
 import {
@@ -30,6 +31,7 @@ import {
   PostTripExpenseCategory,
   SavedLoadActuals,
 } from "@/types/saved-load";
+import { LOAD_RUN_STATUS_OPTIONS, normalizeLoadRunStatus, type LoadRunStatus } from "@/lib/fuel-gauge";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { formatCurrency, formatRpm } from "@/utils/format";
 
@@ -79,7 +81,8 @@ export function SavedLoadActions({
   );
   const [outcome, setOutcome] = useState("unknown");
   const [status, setStatus] = useState("");
-  const effectiveRunStatus = loadRunStatus || loadStatus || "";
+  const [currentRunStatus, setCurrentRunStatus] = useState<LoadRunStatus>(() => normalizeLoadRunStatus(loadRunStatus || loadStatus));
+  const effectiveRunStatus = currentRunStatus;
   const odometerEditable = isRunningLoadStatus(effectiveRunStatus);
   const odometerLocked = isCompletedLoadStatus(effectiveRunStatus);
   const odometerValidation = buildOdometerValidation({
@@ -179,6 +182,18 @@ export function SavedLoadActions({
           ? error.message
           : "Unable to save lane template."
       );
+    }
+  }
+
+  async function handleRunStatus(next: LoadRunStatus) {
+    try {
+      setStatus("Updating load status...");
+      await updateSavedLoadRunStatus(loadId, next);
+      setCurrentRunStatus(next);
+      setStatus("Load status updated.");
+      router.refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to update load status.");
     }
   }
 
@@ -454,25 +469,17 @@ export function SavedLoadActions({
         </button>
 
         <div className="mt-6 border-t border-slate-800 pt-5">
-          <ThemedSelect
-            label="What happened with this load?"
-            value={outcome}
-            onChange={setOutcome}
-            options={[
-              { label: "Ran this load", value: "ran" },
-              { label: "Did not run this load", value: "did_not_run" },
-              { label: "Lost load", value: "lost" },
-              { label: "Declined load", value: "declined" },
-              { label: "Unknown", value: "unknown" },
-            ]}
-          />
-          <button
-            type="button"
-            onClick={handleSaveOutcome}
-            className="mt-4 rounded-xl border border-slate-700 bg-[#060B14] px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-300 transition hover:border-sky-400 hover:text-sky-300"
-          >
-            Save Outcome
-          </button>
+          <h3 className="mb-3 text-sm font-bold text-slate-100">Load workflow status</h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {LOAD_RUN_STATUS_OPTIONS.map((option) => (
+              <button key={option.value} type="button" aria-pressed={currentRunStatus === option.value}
+                onClick={() => handleRunStatus(option.value)}
+                className={`rounded-lg border px-3 py-3 text-xs font-bold ${currentRunStatus === option.value ? "border-sky-400 bg-sky-400/20 text-sky-100" : "border-slate-700 text-slate-300"}`}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Planned: intend to run · Running: active · Completed: finished · Rejected: did not run.</p>
         </div>
       </div>
 
