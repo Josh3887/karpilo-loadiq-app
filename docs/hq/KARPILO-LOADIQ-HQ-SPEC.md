@@ -124,3 +124,40 @@ Reuse existing LoadIQ address intelligence requirements: pickup, delivery, multi
 
 ### Private networking
 Previous VPN/tunnel product identity is **unverified**. Do not silently substitute Cloudflare Tunnel, Zero Trust or Tailscale; investigate prior project records, provider billing and configuration before linking. Track it in the same cost, security, access and health registry when identified.
+
+
+## Cross-repository integration audit — November 14, 2026
+Sources inspected: app `docs/operations/data-propagation-map.md`, `docs/operations/core-flow-circuit-map.md`, `docs/operations/feature-state-classification.md`, `src/services/operational-profile.ts`, `src/services/overhead-items.ts`, `docs/product/tier-entitlements.md`, `docs/api-contracts/google-address-validation.contract.md`; website `src/app/api/contact/route.ts`, `src/app/api/newsletter/route.ts`, `src/app/api/waitlist/route.ts`, `src/app/api/account/deletion-request/route.ts`, `src/config/email.ts`. This is repository-level evidence, not a live database reconciliation.
+
+### HQ gaps identified
+1. **Unified account-holder master index**: canonical authenticated `users.id`/auth UUID, email and company identity, created/updated, account status, deletion state, enrollment/cohort, subscription/entitlement status and activity. Resolve website reservations/newsletter/contact records to a user only when a verified identity match exists. Never join by unverified display name.
+2. **Address book index**: account-scoped, multiple named business/shipper/consignee/pickup/delivery addresses, contacts, place ID, normalized address, coordinates, validation result and date, usage count, duplicates, account lock/retention, inactive/archived/deletion status, verification provenance, access log. Existing Google address validation route is implemented; do not rebuild it. The source audit does not establish a complete persistent address-book table; schema audit required.
+3. **Vehicle profile index**: one account → many truck/trailer/equipment records where supported; current operational-profile service has make/model/year/engine/odometer, tanks, MPG, trailer dimensions, axle count, weight limits, capabilities and restrictions. Capture active/default/inactive/archived profile status and schema completeness. Live audit identifies missing `truck_profiles.fuel_tank_count`, `truck_profiles.fuel_tank_capacity_gallons`, optional equipment fields and saved-load equipment snapshots; **no live migration without reconciliation**.
+4. **Expense profile index**: account-scoped `user_overhead_items` with item category, frequency, amount type (flat/CPM/percent), payer responsibility, active state, and effective cost period; operating defaults and pay templates are related but distinct. Exclude duplicate system-generated subscription expense from totals. Record snapshot version and history.
+5. **Subscription/entitlement index**: distinguish account status, trial/five-run usage, enrollment status, billing status, payment provider, commercial tier, entitlement gates, data lifecycle and workflow case status. Do not collapse into one ambiguous `status`. Current repository governance and legacy code conflict on tiers; reconcile against current approved billing rules before allowing HQ edits.
+6. **Website intake indexes**: `support_intake` and `contact_inquiries` can both be written by one contact form submission; deduplicate into one HQ case with source IDs. `newsletter_subscribers` holds consent and signup source; `website_reservations` holds requested/assigned cohort and reservation state; `account_deletion_requests` holds deletion request status but does **not** establish deletion completion. Map them to distinct HQ queues.
+7. **Email identity drift**: website `src/config/email.ts` uses `@karpiloloadiq.com` addresses while connected operational mailboxes and some Resend identities use `@karpilo-liq.com` and `@karpiloendeavortechnologies.com`. Before enabling two-way send or routing, audit actual verified domains, aliases, MX and Resend senders. Never assume these are interchangeable.
+8. **Profile propagation health**: existing app audit reports duplicate calculator-default loading, partially connected Fit Check/Vehicle Intelligence and missing optional snapshots. HQ needs per-circuit health, schema drift warnings, last successful sync, and immutable data-change history.
+9. **Billing and data-quality separation**: website newsletter subscription is not paid LoadIQ membership. Waitlist reservation is not an activated account. Support-case status is not account status. Closed support case is not account deletion. Mark source and last verified timestamp.
+
+### Canonical HQ account-holder relationship model
+```
+account_holder (auth user ID; identity verification; account_status)
+  ├─ enrollment / reservations / activation keys / cohort
+  ├─ subscriptions / invoices / entitlements / usage / billing_status
+  ├─ address_book[] (verification_status, record_status)
+  ├─ vehicle_profiles[] (vehicle_status, completeness_status)
+  ├─ expense_profiles[] / overhead_items[] (effective dates, active flags)
+  ├─ pay_templates[] / operating_profile snapshots
+  ├─ saved_loads[] / fuel and equipment snapshots
+  ├─ support_cases[] / email_threads[] / historical_audit[]
+  ├─ newsletter_preferences / consent_history
+  └─ privacy_requests / deletion_lifecycle
+```
+HQ must read existing app/website source-of-truth records via least-privilege server-side adapters or approved shared views, not clone or overwrite customer records. Do not expose sensitive account data in public preview. Founder writes require MFA, authorization, confirmation and audit.
+
+### Next integration gates
+- Reconcile actual Supabase tables/columns, RLS and source-of-truth project(s) across app and website.
+- Confirm account-holder join keys, website intake deduplication and email verified-domain map.
+- Create secure read-only paginated account-holder, vehicle, expense and address indexes with status filters, missing-data indicators and audit provenance.
+- Add mutations only after permissions, validation and recovery testing.
