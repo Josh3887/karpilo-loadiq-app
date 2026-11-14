@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLoadRunStatusLabel } from "@/lib/fuel-gauge";
 import { redirect } from "next/navigation";
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
@@ -274,7 +275,7 @@ function LoadHistoryContent({
                         {load.profitability_band}
                       </td>
                       <td className="py-4 capitalize text-slate-400">
-                        {load.status ?? "estimated"}
+                        {getLoadRunStatusLabel(load.load_run_status ?? load.was_run_status ?? (load.status === "completed" ? "completed" : "planned"))}
                         {load.load_outcome && load.load_outcome !== "unknown" && (
                           <div className="mt-1 text-xs text-slate-500">
                             {load.load_outcome.replaceAll("_", " ")}

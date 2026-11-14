@@ -1,12 +1,14 @@
-export type LoadRunStatus =
-  | "planned"
-  | "booked"
-  | "dispatched"
-  | "running"
-  | "rejected"
-  | "pulled"
-  | "ran"
-  | "test";
+export type LoadRunStatus = "planned" | "running" | "completed" | "rejected" | "booked" | "dispatched" | "pulled" | "ran" | "test";
+export type CanonicalLoadRunStatus = "planned" | "running" | "completed" | "rejected";
+
+export function normalizeLoadRunStatus(status: string | null | undefined): CanonicalLoadRunStatus {
+  switch (status) {
+    case "running": case "booked": case "dispatched": return "running";
+    case "completed": case "ran": return "completed";
+    case "rejected": case "pulled": return "rejected";
+    default: return "planned";
+  }
+}
 
 export type LoadPulledReason = "breach" | "accident" | "breakdown" | "other" | "";
 
@@ -37,51 +39,11 @@ export type FuelGaugeResult = {
   shouldAlert: boolean;
 };
 
-export const LOAD_RUN_STATUS_OPTIONS: Array<{
-  value: LoadRunStatus;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "planned",
-    label: "Planned",
-    description: "Scenario or offer under review. Fuel gauge stays inactive.",
-  },
-  {
-    value: "booked",
-    label: "Booked",
-    description: "Accepted load. Fuel gauge can evaluate range pressure.",
-  },
-  {
-    value: "dispatched",
-    label: "Dispatched",
-    description: "Assigned to the truck. Fuel gauge can evaluate range pressure.",
-  },
-  {
-    value: "running",
-    label: "Running",
-    description: "Load is active. Fuel gauge can alert on range pressure.",
-  },
-  {
-    value: "rejected",
-    label: "Rejected",
-    description: "Load was declined. Fuel tracking stays off.",
-  },
-  {
-    value: "pulled",
-    label: "Pulled",
-    description: "Load was pulled after acceptance. Select a reason below.",
-  },
-  {
-    value: "test",
-    label: "Test calculation",
-    description: "Internal scenario only. Fuel tracking stays off.",
-  },
-  {
-    value: "ran",
-    label: "Completed / ran",
-    description: "Historical completed load. Use post-trip actuals for receipts.",
-  },
+export const LOAD_RUN_STATUS_OPTIONS: Array<{value:CanonicalLoadRunStatus;label:string;description:string}> = [
+  {value:"planned",label:"Planned",description:"Intend to run this load."},
+  {value:"running",label:"Running",description:"Load is active."},
+  {value:"completed",label:"Completed",description:"Load finished."},
+  {value:"rejected",label:"Rejected",description:"Load did not run."},
 ];
 
 export const LOAD_PULLED_REASON_OPTIONS: Array<{
@@ -96,7 +58,7 @@ export const LOAD_PULLED_REASON_OPTIONS: Array<{
 ];
 
 export function isFuelGaugeTrackedStatus(status: LoadRunStatus) {
-  return status === "booked" || status === "dispatched" || status === "running";
+  return normalizeLoadRunStatus(status) === "running";
 }
 
 export function isFuelGaugeEntitledTier(tier: string | null | undefined) {
@@ -111,7 +73,7 @@ export function isFuelGaugeEntitledTier(tier: string | null | undefined) {
 
 export function getLoadRunStatusLabel(status: LoadRunStatus | string | null | undefined) {
   return (
-    LOAD_RUN_STATUS_OPTIONS.find((option) => option.value === status)?.label ??
+    LOAD_RUN_STATUS_OPTIONS.find((option) => option.value === normalizeLoadRunStatus(status))?.label ??
     "Planned"
   );
 }

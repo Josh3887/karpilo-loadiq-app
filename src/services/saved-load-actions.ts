@@ -250,6 +250,9 @@ export async function updateSavedLoadActuals(
     .from("saved_loads")
     .update({
       status: "completed",
+      load_run_status: "completed",
+      was_run_status: "completed",
+      load_outcome: "ran",
       actual_net: actualNet,
       actual_fuel_price:
         normalizedActuals.actualFuelPrice > 0
@@ -297,4 +300,19 @@ export async function updateSavedLoadOutcome(
   if (error) {
     throw new Error(formatSupabaseError(error));
   }
+}
+
+export async function updateSavedLoadRunStatus(loadId: string, nextStatus: "planned" | "running" | "completed" | "rejected") {
+  const supabase = createClient();
+  const userId = await getCurrentUserId();
+  const { data: existing, error: lookupError } = await supabase.from("saved_loads")
+    .select("id,load_run_status,was_run_status,status").eq("id",loadId).eq("user_id",userId).single();
+  if (lookupError || !existing) throw new Error(formatSupabaseError(lookupError));
+  const { error } = await supabase.from("saved_loads").update({
+    load_run_status: nextStatus,
+    was_run_status: nextStatus,
+    load_outcome: nextStatus === "completed" ? "ran" : nextStatus === "rejected" ? "did_not_run" : "unknown",
+    status: nextStatus === "completed" ? "completed" : nextStatus === "rejected" ? "archived" : "saved",
+  }).eq("id",loadId).eq("user_id",userId);
+  if (error) throw new Error(formatSupabaseError(error));
 }
