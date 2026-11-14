@@ -31,7 +31,7 @@ import {
   PostTripExpenseCategory,
   SavedLoadActuals,
 } from "@/types/saved-load";
-import { LOAD_RUN_STATUS_OPTIONS, normalizeLoadRunStatus, type LoadRunStatus } from "@/lib/fuel-gauge";
+import { LOAD_RUN_STATUS_OPTIONS, normalizeLoadRunStatus, type CanonicalLoadRunStatus } from "@/lib/fuel-gauge";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { formatCurrency, formatRpm } from "@/utils/format";
 
@@ -81,7 +81,7 @@ export function SavedLoadActions({
   );
   const [outcome, setOutcome] = useState("unknown");
   const [status, setStatus] = useState("");
-  const [currentRunStatus, setCurrentRunStatus] = useState<LoadRunStatus>(() => normalizeLoadRunStatus(loadRunStatus || loadStatus));
+  const [currentRunStatus, setCurrentRunStatus] = useState<CanonicalLoadRunStatus>(() => normalizeLoadRunStatus(loadRunStatus || loadStatus));
   const effectiveRunStatus = currentRunStatus;
   const odometerEditable = isRunningLoadStatus(effectiveRunStatus);
   const odometerLocked = isCompletedLoadStatus(effectiveRunStatus);
@@ -185,7 +185,7 @@ export function SavedLoadActions({
     }
   }
 
-  async function handleRunStatus(next: LoadRunStatus) {
+  async function handleRunStatus(next: CanonicalLoadRunStatus) {
     try {
       setStatus("Updating load status...");
       await updateSavedLoadRunStatus(loadId, next);
