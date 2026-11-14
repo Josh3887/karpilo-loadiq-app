@@ -40,6 +40,18 @@ Three logical communication streams, each with its own index, routing, permissio
 - **Manual business operations:** two-way correspondence for both business identities `j.karpilo@karpilo-liq.com` and `josh.karpilo@karpiloendeavortechnologies.com`, with original account attribution maintained.
 - **Customer-originated communication:** separate support/recommendations/reviews/feature feedback/complaints queue plus dedicated request-access queue. Keep customer messages and service notifications separately classified; escalation and conversion to tracked cases.
 
+
+### Serviceable email case workflow — status vs audit
+Every actionable incoming or outgoing email that requires follow-up is indexed as a service case with these **operational statuses only**:
+1. **Open** — newly received/unassigned or ready for action.
+2. **Pending** — waiting for a customer, internal response, provider, or scheduled dependency.
+3. **Investigating** — active fact-finding, troubleshooting or resolution work.
+4. **Closed** — resolved with documented outcome, closure time and responsible actor; reopenable with history retained.
+
+**Review is NOT a case status.** Review means a separate **historical audit** of all correspondence and case handling, including complete thread chronology, message content and metadata, original and changed statuses, actor and timestamps, assignments, internal notes, decisions, attachments, escalations, replies, provider delivery evidence, reopening, and closure rationale. It must be filterable by period, owner, mailbox, case, customer, provider and outcome. Review/audit must not alter case status by itself. If a reviewer finds an issue, they explicitly reopen or assign the case, with an audited action.
+
+Keep **message delivery state** (queued, sent, delivered, bounced, failed) separate from **case workflow state** (open, pending, investigating, closed). Customer-support queues and manual business mail share the case model; routine automated alerts become cases only if actionable or escalated.
+
 **Two-way mail is required for all appropriate queues:** read, compose, reply, reply-all, forward, save/edit drafts, send, attach files, quote/review full thread, search, filter, mark unread, archive, route/assign, snooze/follow-up and show send/delivery/bounce/failure history. Allow replies from the exact authorized business address/alias only; do not spoof an address or conflate multiple providers. Preserve Message-ID, In-Reply-To, References, recipients/CC, sent timestamps, attachment metadata, external provider IDs, threaded history, read receipts when genuinely supported and correlation to support cases.
 
 **Provider architecture:** Existing Google Workspace/Gmail mailboxes must retain mail custody; HQ presents their indexed, permissioned two-way views via server-side OAuth/API. Resend is the outbound transactional/template delivery and automated notification pipeline, not assumed to be the mailbox host. Distinct sending identity, verified domain and reply-to policy per stream. Inbound intake may use Gmail/Workspace routing or verified dedicated receiving subdomains; never change primary MX records casually. Confirm provider receiving API before enabling new inboxes. A Resend account audit found **no native Resend inboxes** as of November 14, 2026; don't claim they exist.
