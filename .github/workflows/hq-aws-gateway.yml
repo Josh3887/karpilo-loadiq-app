@@ -1,0 +1,34 @@
+name: HQ AWS gateway contract
+on:
+  pull_request:
+    paths:
+      - 'aws/hq-customer-gateway/**'
+      - 'hq-web/**'
+      - '.github/workflows/hq-aws-gateway.yml'
+  workflow_dispatch:
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aws/hq-customer-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts
+      - run: npm test
+  hq-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hq-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts
+      - run: npm test
+      - run: npm run build
