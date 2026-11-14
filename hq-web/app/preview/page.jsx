@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import '../hq.css';
-const nav=['Overview','Providers','Communications','Subscribers','Address Book','Vehicle Profiles','Expense Profiles','Workflows','Data Center','Freight Intelligence','Newsletter Studio','Resend Library','Notifications','Argus','Version Control','Usage & Billing','Address Verification','README'];
+const nav=['Overview','Providers','Communications','Subscribers','Address Book','Vehicle Profiles','Expense Profiles','Profit Profiles','Load Lifecycle','Workflows','Data Center','Freight Intelligence','Newsletter Studio','Resend Library','Notifications','Argus','Version Control','Usage & Billing','Address Verification','README'];
 const services=['Twilio','PostHog','Sentry','Redis','Vercel','Cloudflare','AWS','GitHub','Resend','Termly','Gemini / Google','EIA'];
 const templates=['Enrollment & Verification','Billing & Subscription','Security & Access','Customer Support','System & Maintenance','Data Privacy & Deletion','Marketing & Referral','Newsletter & Market Intelligence','Internal Operations'];
 const inboxes=['Automation','Karpilo LoadIQ Business','Karpilo Endeavor Business','Customer Support','Request Access'];
@@ -19,6 +19,9 @@ return <div className="shell"><aside className="sidebar"><div className="brand">
 {tab==='Address Book'&&panel('Account-holder address book',<><p className="muted">Account ID · contact · shipper/consignee · pickup/delivery · Google verification · last checked · record status · provenance.</p>{empty('No private address records are exposed in preview.')}</>)}
 {tab==='Vehicle Profiles'&&panel('Account-holder vehicle and equipment index',<><p className="muted">Account ID · tractor/trailer · equipment dimensions · capacity · fuel assumptions · active/default/archived status · schema completeness.</p>{empty('Protected vehicle profiles are not available in preview.')}</>)}
 {tab==='Expense Profiles'&&panel('Account-holder expense and overhead index',<><p className="muted">Account ID · overhead category · flat/CPM/percent · billing frequency · payer responsibility · effective period · active status.</p>{empty('Protected expense records are not available in preview.')}</>)}
+
+{tab==='Profit Profiles'&&panel('Account-holder profit profiles',<><p className="muted">Income targets · minimum true RPM · margin · break-even · projected profit · actual profit · profit per mile · profile history.</p>{empty('No customer profitability records are exposed in preview.')}</>)}
+{tab==='Load Lifecycle'&&panel('Account-holder load lifecycle index',<><div className="chips">{['Planned','Booked','Dispatched','Running','Rejected','Pulled','Ran','Test'].map(s=><span className="state" key={s}>{s}</span>)}</div><p className="muted">Operational load_run_status is separate from saved record status: calculated, saved, accepted, completed, archived or estimated.</p>{empty('Load records require account-scoped authenticated database access. No sample loads are presented as real.')}</>)}
 {tab==='Workflows'&&panel('Lifecycle workflow command',<div className="providergrid">{['Enrollment','Verification','Activation','Billing and trial','Refunds and disputes','Support','Privacy and deletion','Deployment and rollback'].map(x=><div className="provider" key={x}><strong>{x}</strong><span className="state unconfigured">integration pending</span></div>)}</div>)}
 {tab==='Notifications'&&panel('System notification center',<><p>Events → severity → correlation → acknowledgement → Resend → resolution.</p>{empty('Live notifications require founder authentication and event ingestion.')}</>)}
 {tab==='Argus'&&panel('Argus entry and exit',empty('Argus remains separate. Authenticated session handoff and scoped access must be verified before activation.'))}
