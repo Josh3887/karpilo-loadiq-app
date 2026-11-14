@@ -192,3 +192,22 @@ A bypass is a **scoped, time-limited exception** to an operational feature gate,
 Workflow: request → specify feature/account/justification/expiry → simulate eligibility, affected customers, quota and billable API cost → enforce role separation/MFA → record approval and audit → publish AWS policy with revision/compare-and-swap → verify enforcement on AWS API → observe usage → automatically expire/revoke → reconcile and audit. Emergency close is a denial and may take priority over any allow exception. Rollback restores a previously approved policy, not stale grants. A maintenance exception cannot override failed critical dependencies. Never bypass identity, ownership, tenant isolation, privacy deletion/holds or payment security. No bypass grant through public preview or frontend-only toggles.
 
 Version 1 implementation status: policy evaluator and design contract committed; persistent AWS storage, approvals, enforcement, expiry scheduler and test suite pending. Fail closed until verified.
+
+
+### Customer-facing feature bypass and continuity (founder clarification)
+The **primary purpose** of the four-state feature gate is to preserve the customer app's functional purpose when an optional **calculator or application feature** is unavailable. This is NOT an administrator's access-control bypass. The separate audited admin exception mechanism remains independent.
+
+Each feature requires: `feature_id`, `state` (open/restricted/closed/maintenance), `core_or_optional`, `dependency_list`, `fallback_workflow`, `fallback_input_requirements`, `fallback_data_quality_label`, `restoration_criteria`, `entitlement_requirement` and `verified_test_cases`. A feature gate changes optional enhancement behavior; it must not disable unrelated core calculator inputs, calculations, result display or permitted save actions.
+
+| Customer feature unavailable | Customer workflow that must remain usable |
+| --- | --- |
+| Vehicle profile/Vehicle Intelligence | Manual truck, equipment and MPG inputs without saved-profile autofill |
+| Expense Profiles/Expense Intelligence | Manual fixed/variable expense assumptions with visible manual-source labeling |
+| Profit Profiles/targets | Per-load revenue, cost, break-even and profit calculation without reusable targets |
+| Address Book | Manual pickup/delivery entry |
+| Address validation or Route Intelligence | Manual origin/destination and loaded/deadhead miles; mark mileage unverified |
+| Atlas or advanced analysis | Deterministic base calculator and results |
+| Saved-load enhancements (templates, reports, comparisons) | Core calculation remains available; do not promise persistence if save backend is unavailable |
+| Optional weather or fuel benchmark | Manual fuel price and no weather enhancement; label missing reference data |
+
+**State behavior**: Open = normal feature path; Restricted = eligible users get feature, others get approved fallback; Closed = all customers use fallback; Maintenance = temporarily use fallback with notice and restoration check. Do not grant unauthorized paid entitlements or write customer records outside permitted workflows. A fallback must be validated in AWS isolated testing, including correct math, missing-input handling, no fabricated estimates, and no data loss. If the core calculator engine itself is unavailable, do not pretend a successful calculation; show a clear recoverable error and preserve input locally where safe.
