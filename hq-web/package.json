@@ -17,6 +17,7 @@
     "@aws-sdk/client-lambda": "^3.800.0",
     "@aws-sdk/client-cloudwatch": "^3.800.0",
     "@aws-sdk/client-eventbridge": "^3.800.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.800.0"
+    "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
+    "@aws-sdk/client-cost-explorer": "^3.800.0"
   }
 }
