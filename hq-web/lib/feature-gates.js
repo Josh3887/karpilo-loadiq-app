@@ -25,3 +25,20 @@ export function describeGate(gate){
  if(!gate.enforcementVerified)return {effective:"closed",reason:"AWS API enforcement not verified"};
  return {effective:gate.state,reason:gate.reason||"Eligibility must be checked server-side"};
 }
+
+export const BYPASS_TYPES=Object.freeze(["account_exception","cohort_exception","maintenance_operator","emergency_close","rollback"]);
+export const NON_BYPASSABLE=Object.freeze(["authentication","authorization","account_ownership","data_isolation","legal_hold","verified_deletion","payment_processing_security"]);
+export function evaluateFeatureGate({gate,account,exception,now=Date.now()}){
+ const base=describeGate(gate);
+ if(!account?.authenticated||!account?.authorized)return {allowed:false,reason:"Identity and authorization required",source:"security"};
+ if(account?.suspended||account?.deletionRestricted)return {allowed:false,reason:"Account safety restriction",source:"security"};
+ if(gate?.state==="open"&&gate.enforcementVerified&&account.entitled)return {allowed:true,reason:"Eligible account",source:"gate"};
+ if(!exception)return {allowed:false,reason:base.reason,source:"gate"};
+ if(!BYPASS_TYPES.includes(exception.type)||exception.type==="emergency_close")return {allowed:false,reason:"Exception cannot grant access",source:"exception"};
+ if(exception.featureId!==gate?.featureId||exception.accountId!==account.id)return {allowed:false,reason:"Exception scope mismatch",source:"exception"};
+ if(!exception.approved||!exception.enforcementVerified||exception.revokedAt||!Number.isFinite(Date.parse(exception.expiresAt))||Date.parse(exception.expiresAt)<=now)return {allowed:false,reason:"Exception not active and verified",source:"exception"};
+ if(!exception.reason||!exception.auditId||!exception.approverId)return {allowed:false,reason:"Missing approval or audit evidence",source:"exception"};
+ if(gate?.state==="maintenance"&&!exception.maintenanceSafe)return {allowed:false,reason:"Maintenance dependency unsafe",source:"gate"};
+ if(gate?.state==="closed"&&!exception.allowClosed)return {allowed:false,reason:"Closed feature not authorized for exception",source:"gate"};
+ return {allowed:true,reason:"Scoped, time-limited approved exception",source:"exception"};
+}
