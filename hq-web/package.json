@@ -10,6 +10,10 @@
   "dependencies": {
     "next": "^15.5.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "@aws-sdk/client-sts": "^3.800.0",
+    "@aws-sdk/client-ecs": "^3.800.0",
+    "@aws-sdk/client-rds": "^3.800.0",
+    "@aws-sdk/client-lambda": "^3.800.0"
   }
 }
