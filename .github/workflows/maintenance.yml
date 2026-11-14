@@ -21,6 +21,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Offline billing safety tests
+        run: node --test tests/billing-safety.test.mjs
       - name: Lint
         run: npm run lint
       - name: Production build
