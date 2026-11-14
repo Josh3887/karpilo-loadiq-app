@@ -48,6 +48,24 @@ Three logical communication streams, each with its own index, routing, permissio
 
 **Notification center:** provider event ingestion → normalized severity and correlation IDs → dedupe/digest → in-app alert and optional Resend mail → acknowledgement, escalation, owner, retry and resolution. Separate transactional notices from marketing and respect opt-outs where applicable.
 
+## Serviceable Email Case Management — Required
+Every inbound email that requires human or automated service action must be convertible to a **service case** without losing the original mail, thread or provider message IDs. This includes both business accounts, customer support, access requests, suggestions, reviews, complaints, provider issues and operational incidents. Routine non-actionable notification traffic may stay in the indexed automation stream until triaged.
+
+**Canonical service-case statuses (exact labels):**
+1. **Open** — newly received, validated and actionable; awaiting triage or assignment.
+2. **Pending** — awaiting external information, customer response, provider action or a scheduled dependency; includes next follow-up due.
+3. **Investigating** — assigned and actively being analyzed or worked.
+4. **Subject to Review** — resolution, proposed change, risk, billing decision or response awaiting authorized review/approval; this is **not** closed.
+5. **Closed** — resolution completed, recorded and communicated as required. Reopen restores actionability with full history.
+
+Allow authorized transition among statuses based on explicit rules, including reopen, and preserve time spent in each state. Distinguish **mail delivery status** (sent, delivered, bounced, failed) from **service-case status**; they are never interchangeable.
+
+**Case index and controls:** case/reference ID; account/mailbox; sender; subject; original message + thread identifiers; service/provider; category/subcategory; severity/priority; status; assignee/team; customer or subscriber ID when grounded; created/updated timestamps; first response due and actual; next action/follow-up; SLA clock and breached indicator; linked incident/PR/ticket/billing/deletion record; internal notes; attachments; full correspondence and status-change history; closure reason; reviewer identity and approval result. Filters and saved views for each canonical status, provider, mailbox, owner, severity and aging. Thread replies, drafts, forwarding and customer communication are available directly on each case, using the correct authorized sender.
+
+**Routing:** automation-originated incidents may automatically create or update cases using verified source events, with correlation/deduplication; customer-originated items are routed into the separate support/request-access triage. Automated acknowledgement is permissible with a safe approved template, but never auto-close cases on the basis of sending an email. Human review required for refunds, account/access changes, destructive operations, legal/privacy requests, sensitive security actions and production releases.
+
+**Metrics:** open backlog, case count by status, first-response latency, investigation duration, time-to-resolution, pending-aging, review bottlenecks, reopen rate, SLA breaches and communication delivery success. Report per mailbox/provider and for the consolidated command center; record the query window and timezone.
+
 ## Provider API adapter contract
 Per provider define: `providerId`, display name, region/environment, endpoint/service type, available scopes, account, auth status, read/write capability, polling/webhook strategy, current connection state, provider event ID, `lastSuccessfulSyncAt`, source timestamp, metrics and units, security findings, rate/quota and cost, retries/backoff, version/SDK, health SLO, monitoring thresholds, human approval requirements, references/runbooks. All records carry provenance and freshness indicators. Read-only initially; guarded approval for privileged writes.
 
