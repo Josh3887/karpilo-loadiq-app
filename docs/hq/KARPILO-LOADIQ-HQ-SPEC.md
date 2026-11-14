@@ -177,3 +177,18 @@ HQ must read existing app/website source-of-truth records via least-privilege se
 - Enforcement: AWS application endpoints enforce feature eligibility server-side. UI only reflects decisions. Never trust client-supplied account ID, tier, role, or gate state. Cache policy with short TTL and invalidation; define fail-closed behavior on policy outage, while avoiding accidental denial of unrelated core capabilities. Keep direct provider access for recovery.
 - Safety: No toggles in public preview; read-only HQ gate registry is design-only until AWS control plane, secure identity, persistent policy store, integration tests and rollback are verified. No claim that a storefront switch currently changes customer access.
 - Distinguish feature gate from product release version: all prelaunch work remains Version 1.
+
+
+### Four-state gate workflow bypass mechanics
+A bypass is a **scoped, time-limited exception** to an operational feature gate, not an authentication or data-access override. Store exception records in the AWS policy store with feature ID, account/cohort scope, gate state, reason, ticket, requester, approver, issued time, expiration, revoked time, prior policy revision and immutable audit event ID.
+
+| Gate | Default | Permitted exception |
+| --- | --- | --- |
+| Open | Available to eligible accounts | Explicit deny / emergency close, or temporary narrower eligibility; no bypass required to grant access |
+| Restricted | Eligible accounts/cohorts only | Founder-approved account/cohort allowlist with expiry, entitlement check unless an explicitly authorized commercial trial override exists |
+| Closed | Unavailable | Founder-approved short-lived account-level testing exception, only when backend feature and dependencies are safe; global open requires normal publish workflow |
+| Maintenance | Unavailable | Authorized operator/test-account access only after maintenance safety check; never route real customers into unsafe dependencies |
+
+Workflow: request → specify feature/account/justification/expiry → simulate eligibility, affected customers, quota and billable API cost → enforce role separation/MFA → record approval and audit → publish AWS policy with revision/compare-and-swap → verify enforcement on AWS API → observe usage → automatically expire/revoke → reconcile and audit. Emergency close is a denial and may take priority over any allow exception. Rollback restores a previously approved policy, not stale grants. A maintenance exception cannot override failed critical dependencies. Never bypass identity, ownership, tenant isolation, privacy deletion/holds or payment security. No bypass grant through public preview or frontend-only toggles.
+
+Version 1 implementation status: policy evaluator and design contract committed; persistent AWS storage, approvals, enforcement, expiry scheduler and test suite pending. Fail closed until verified.
