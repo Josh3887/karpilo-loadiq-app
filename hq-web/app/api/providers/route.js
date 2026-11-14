@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 export const dynamic='force-dynamic';
 const specs=[
- {name:'AWS',env:['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_REGION'],usage:'Cost Explorer / CloudWatch',billing:'Cost Explorer'},
+ {name:'AWS',env:['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_REGION'],url:null,usage:'ECS / RDS / Lambda / CloudWatch',billing:'Cost Explorer'},
  {name:'GitHub',env:['GITHUB_TOKEN'],url:'https://api.github.com/user',headers:()=>({Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','User-Agent':'Karpilo-LoadIQ-HQ'}),usage:'Actions and API usage',billing:'Billing API'},
  {name:'Vercel',env:['VERCEL_TOKEN'],url:'https://api.vercel.com/v9/projects?limit=1',headers:()=>({Authorization:'Bearer '+process.env.VERCEL_TOKEN}),usage:'Deployments and observability',billing:'Usage and invoices'},
  {name:'Resend',env:['RESEND_API_KEY'],url:'https://api.resend.com/domains',headers:()=>({Authorization:'Bearer '+process.env.RESEND_API_KEY}),usage:'Email delivery and templates',billing:'Email quotas and invoices'},
@@ -23,7 +23,7 @@ async function check(spec){
  const base={name:spec.name,usageCategory:spec.usage,billingCategory:spec.billing,usageValue:null,billedAmount:null,currency:null,lastBillingSync:null};
  if(!spec.env.length)return {...base,status:'unidentified',checkedAt:null};
  if(missing.length)return {...base,status:'unconfigured',missingCredentials:missing,checkedAt:null};
- if(!spec.url)return {...base,status:'credentials-present',checkedAt:null,note:'Adapter and billing scopes not yet verified'};
+ if(!spec.url)return {...base,status:'credentials-present',checkedAt:null,note:'Use dedicated AWS API for live operational verification'};
  try{
   const url=typeof spec.url==='function'?spec.url():spec.url;
   const response=await fetch(url,{headers:spec.headers(),cache:'no-store',signal:AbortSignal.timeout(6000),redirect:'error'});
