@@ -298,3 +298,18 @@ export async function updateSavedLoadOutcome(
     throw new Error(formatSupabaseError(error));
   }
 }
+
+export async function updateSavedLoadRunStatus(loadId: string, nextStatus: "planned" | "running" | "completed" | "rejected") {
+  const supabase = createClient();
+  const userId = await getCurrentUserId();
+  const { data: existing, error: lookupError } = await supabase.from("saved_loads")
+    .select("id,load_run_status,was_run_status,status").eq("id",loadId).eq("user_id",userId).single();
+  if (lookupError || !existing) throw new Error(formatSupabaseError(lookupError));
+  const { error } = await supabase.from("saved_loads").update({
+    load_run_status: nextStatus,
+    was_run_status: nextStatus,
+    load_outcome: nextStatus === "completed" ? "ran" : nextStatus === "rejected" ? "did_not_run" : "unknown",
+    status: nextStatus === "completed" ? "completed" : nextStatus === "rejected" ? "archived" : "saved",
+  }).eq("id",loadId).eq("user_id",userId);
+  if (error) throw new Error(formatSupabaseError(error));
+}
