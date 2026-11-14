@@ -352,22 +352,6 @@ export const loadInputSchema = z.object({
     });
   }
 
-  if (value.loadRunStatus === "pulled" && !value.loadPulledReason) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Select why the load was pulled.",
-      path: ["loadPulledReason"],
-    });
-  }
-
-  if (value.loadRunStatus !== "pulled" && value.loadPulledReason) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Pulled reason is only used when the load status is pulled.",
-      path: ["loadPulledReason"],
-    });
-  }
-
 });
 
 export type LoadInputFormValues = z.infer<typeof loadInputSchema>;
