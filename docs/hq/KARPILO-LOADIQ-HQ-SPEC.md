@@ -161,3 +161,10 @@ HQ must read existing app/website source-of-truth records via least-privilege se
 - Confirm account-holder join keys, website intake deduplication and email verified-domain map.
 - Create secure read-only paginated account-holder, vehicle, expense and address indexes with status filters, missing-data indicators and audit provenance.
 - Add mutations only after permissions, validation and recovery testing.
+
+
+### Profit profile and saved-load lifecycle index (code-verified)
+- **Profit Profiles**: index account-specific operating income targets, minimum true RPM, minimum hourly profitability, target profit margin, break-even RPM, cost assumptions, forecasted profit and historical profile snapshots. Join calculator `input_snapshot`/`result_snapshot`, `profitability_score`, `profitability_band`, `actualNetProfit` and `actualProfitPerMile` only with verified source IDs. Distinguish target vs forecast vs post-trip actual. Keep cost/financial data account-private.
+- **Load Lifecycle**: `saved_loads.load_run_status` and `was_run_status` accept exactly `planned`, `booked`, `dispatched`, `running`, `rejected`, `pulled`, `ran`, `test` according to migration `20260616031812_expand_saved_load_run_statuses.sql`. `pulled` has a reason field. The separate saved record `status` type accepts `calculated`, `saved`, `accepted`, `completed`, `archived`, `estimated`. HQ must not replace these with informal synonyms or collapse the two dimensions.
+- **Load index columns**: account ID, load ID, route/lane, pickup/delivery, timestamps, equipment snapshot, run status, saved-record status, status reason, gross revenue, loaded/deadhead/total miles, estimated vs actual costs/profit, score/band, outcome and full audit. Filter by status, date, account, lane, vehicle and profitability; group planned, active (booked/dispatched/running), rejected/pulled, ran, test and completed records without overwriting the source states.
+- **Billing gate**: five-free-ran-load rule must count actual qualifying `ran` events according to the existing billing lifecycle, not simply every saved/planned/rejected load. Verify against current billing code before computing HQ counters.
