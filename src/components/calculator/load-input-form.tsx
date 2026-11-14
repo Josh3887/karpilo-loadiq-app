@@ -774,21 +774,18 @@ export function LoadInputForm({
       <section className="space-y-4">
         <SectionTitle title="Deadhead Details" />
 
-        <label className="block">
-          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
-            Load Status
-          </span>
-          <select
-            {...register("loadRunStatus")}
-            className="h-12 w-full rounded-xl border border-slate-800 bg-[#060B14] px-4 text-base text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
-          >
+        <fieldset className="space-y-3">
+          <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Load Status — select one</legend>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {LOAD_RUN_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+              <label key={option.value} className={`cursor-pointer rounded-xl border p-3 text-center transition ${loadRunStatus === option.value ? "border-sky-400 bg-sky-400/15 text-sky-100" : "border-slate-700 bg-[#060B14] text-slate-300"}`}>
+                <input type="radio" value={option.value} {...register("loadRunStatus")} className="sr-only" />
+                <span className="block text-sm font-bold">{option.label}</span>
+                <span className="mt-1 block text-[10px]">{option.description}</span>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
         <div className="rounded-xl border border-slate-800 bg-[#060B14] p-4">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -959,7 +956,7 @@ export function LoadInputForm({
                 saved-load post-trip actuals workflow.
               </p>
             </div>
-          ) : loadRunStatus === "ran" ? (
+          ) : loadRunStatus === "completed" ? (
             <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
               Completed loads show locked odometer values only when they were
               captured during the running load workflow.
@@ -967,7 +964,7 @@ export function LoadInputForm({
           ) : (
             <p className="rounded-lg border border-slate-800 bg-[#0B1220] p-3 text-xs leading-5 text-slate-400">
               Odometer input is available only when the load status is Running.
-              Planned, booked, and dispatched loads do not allow odometer input.
+              Planned and rejected loads do not allow odometer input.
             </p>
           )}
         </div>
