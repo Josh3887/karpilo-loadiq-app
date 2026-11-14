@@ -1,5 +1,14 @@
 import crypto from 'node:crypto';
-const INDEXES = Object.freeze({subscribers:'hq_subscribers',subscriptions:'hq_subscriptions',vehicles:'hq_vehicles',expenses:'hq_expenses',profit_profiles:'hq_profit_profiles',saved_loads:'hq_saved_loads'});
+// Verified against isolated-test PostgreSQL information_schema on 2026-11-14.
+// Only non-secret operational columns; no arbitrary JSON blobs, payment identifiers or contact PII.
+const INDEXES=Object.freeze({
+ subscribers:'SELECT owner_id AS id, updated_at FROM karpilo.profiles',
+ subscriptions:'SELECT owner_id AS id, updated_at FROM karpilo.billing_access',
+ vehicles:'SELECT id, owner_id, updated_at FROM karpilo.vehicles',
+ expenses:'SELECT id, owner_id, updated_at FROM karpilo.expenses',
+ profit_profiles:'SELECT owner_id AS id, updated_at FROM karpilo.goals',
+ saved_loads:'SELECT id, owner_id, status, created_at FROM karpilo.loads'
+});
 const PAGE_SIZE=100;
 const respond=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
 const validToken=(header,secret)=>{if(!secret||secret.length<32||typeof header!=='string'||!header.startsWith('Bearer '))return false;const a=Buffer.from(header.slice(7));const b=Buffer.from(secret);return a.length===b.length&&crypto.timingSafeEqual(a,b);};
@@ -13,7 +22,7 @@ export function createGatewayHandler({query,token,logger=console}){
   if(!Object.hasOwn(INDEXES,index)||url.searchParams.getAll('index').length!==1)return respond(res,400,{error:'Invalid index'});
   let offset;try{if(url.searchParams.getAll('cursor').length>1)throw Error('cursor');offset=decode(url.searchParams.get('cursor'))}catch{return respond(res,400,{error:'Invalid cursor'})}
   try{
-   const rows=await query({text:`SELECT * FROM "${INDEXES[index]}" ORDER BY id LIMIT $1 OFFSET $2`,values:[PAGE_SIZE+1,offset]});
+   const rows=await query({text:`SELECT * FROM (${INDEXES[index]}) AS hq_index ORDER BY id LIMIT $1 OFFSET $2`,values:[PAGE_SIZE+1,offset]});
    if(!Array.isArray(rows.rows))throw Error('bad result');
    return respond(res,200,{records:rows.rows.slice(0,PAGE_SIZE),nextCursor:rows.rows.length>PAGE_SIZE?Buffer.from(String(offset+PAGE_SIZE)).toString('base64url'):null});
   }catch(e){logger.error('HQ gateway query failure',{index,code:e.code||'unknown'});return respond(res,503,{error:'Data source unavailable'})}
