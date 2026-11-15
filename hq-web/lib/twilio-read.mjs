@@ -1,14 +1,22 @@
 import {readJSON, connectionStatus} from './provider-read.mjs';
+export function twilioMissingCredentials(env={}) {
+  const required=['TWILIO_ACCOUNT_SID',...(env.TWILIO_API_KEY_SID||env.TWILIO_API_KEY_SECRET||!env.TWILIO_AUTH_TOKEN?['TWILIO_API_KEY_SID','TWILIO_API_KEY_SECRET']:['TWILIO_AUTH_TOKEN'])];
+  return required.filter(key=>!env[key]);
+}
 export async function readTwilio(env = process.env, fetcher = fetch) {
   const checkedAt = new Date().toISOString();
   const keys = ['account', 'usage', 'messages', 'verifyServices'];
   const empty = {checkedAt, account: null, usage: null, messages: null, verifyServices: null, pagination: {}};
-  const sid = env.TWILIO_ACCOUNT_SID, token = env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token) return {...empty, status: 'unconfigured', coverage: Object.fromEntries(keys.map(k => [k, 'pending-key'])), reason: 'Twilio account SID and auth token are missing from the HQ server configuration.'};
+  const sid = env.TWILIO_ACCOUNT_SID;
+  const useKey=Boolean(env.TWILIO_API_KEY_SID||env.TWILIO_API_KEY_SECRET);
+  const username=useKey?env.TWILIO_API_KEY_SID:sid, token=useKey?env.TWILIO_API_KEY_SECRET:env.TWILIO_AUTH_TOKEN;
+  const missingCredentials=twilioMissingCredentials(env);
+  if (missingCredentials.length) return {...empty, status: 'unconfigured', coverage: Object.fromEntries(keys.map(k => [k, 'pending-key'])), missingCredentials, reason: 'Twilio server credentials are incomplete. Configure the account SID and a restricted API key SID/secret.'};
   if (!/^AC[0-9a-fA-F]{32}$/.test(sid)) return {...empty, status: 'error', coverage: Object.fromEntries(keys.map(k => [k, 'invalid-configuration'])), reason: 'Account SID configuration is invalid.'};
+  if (useKey&&!/^SK[0-9a-fA-F]{32}$/.test(username)) return {...empty,status:'error',coverage:Object.fromEntries(keys.map(k=>[k,'invalid-configuration'])),reason:'API key SID configuration is invalid.'};
   const root = 'https://api.twilio.com/2010-04-01/Accounts/' + sid;
   const endpoints = [root + '.json', root + '/Usage/Records/ThisMonth.json?PageSize=100', root + '/Messages.json?PageSize=20', 'https://verify.twilio.com/v2/Services?PageSize=20'];
-  const auth = 'Basic ' + Buffer.from(sid + ':' + token).toString('base64');
+  const auth = 'Basic ' + Buffer.from(username + ':' + token).toString('base64');
   const results = await Promise.all(endpoints.map(url => readJSON(url, auth, fetcher)));
   // A successful HTTP response with a malformed body is not an empty inventory.
   const listFields = [null, 'usage_records', 'messages', 'services'];

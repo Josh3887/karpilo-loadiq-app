@@ -42,3 +42,10 @@ Published, current templates can be sent to one recipient after explicit review.
 variables, unpublished changes and superseded templates prevent sending. Development
 checks use mocked sends; no real email was sent as part of verification. Gmail/inbound
 case management and newsletters remain separate integrations.
+
+## Twilio restricted read access
+Configure TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID and TWILIO_API_KEY_SECRET in the
+dedicated server secret. Only account read, usage read, messages list and Verify
+service list are needed. Legacy auth-token configuration remains supported, but is
+never used as fallback when either API-key field exists. Reads cache 60 seconds,
+failures 15 seconds; no SMS or verification request is sent by connection checks.

@@ -23,6 +23,9 @@
 
 ### Fixed
 
+- Web HQ: added restricted Twilio API-key authentication, fail-closed credential
+  selection and cached read-only observations; existing layout is unchanged.
+
 - Web HQ: Cloudflare now uses the allowlisted AWS provider-secret reader; actual
   per-zone and DNS access determines API connectivity. Added bounded pagination,
   probe failure reporting, safe credential-store errors and observation caching.

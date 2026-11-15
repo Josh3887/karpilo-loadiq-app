@@ -41,3 +41,8 @@ test('Stripe observer rejects live keys before network and live payloads after r
  const result=await readStripeTest({STRIPE_TEST_SECRET_KEY:'rk_test_fixture'},fetcher);assert.equal(result.status,'connected');assert.equal(result.mode,'test');assert.ok(!JSON.stringify(result).includes('rk_test_fixture'));
  assert.equal((await readStripeTest({STRIPE_TEST_SECRET_KEY:'rk_test_fixture'},async()=>({ok:true,json:async()=>({object:'balance',livemode:true,available:[],pending:[]})}))).status,'error');
 });
+
+test('secret allowlist includes restricted Twilio credentials',()=>{
+ const config={TWILIO_ACCOUNT_SID:'ACfixture',TWILIO_API_KEY_SID:'SKfixture',TWILIO_API_KEY_SECRET:'fixture'};
+ assert.deepEqual(selectProviderConfig({...config,UNRELATED_SECRET:'private'}),config);
+});

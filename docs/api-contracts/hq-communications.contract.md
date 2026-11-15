@@ -18,8 +18,11 @@ and subscriber changes are not implemented here.
 ## Authentication and boundaries
 HQ middleware requires founder authentication. Provider credentials remain server-only.
 Resend uses RESEND_API_KEY as Bearer auth; listing requires access beyond a sending-only key.
-Twilio uses TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN for Basic auth over HTTPS.
-SID must match AC plus 32 hex characters before URL construction. No credentials are created.
+Twilio uses TWILIO_ACCOUNT_SID for resource paths and TWILIO_API_KEY_SID /
+TWILIO_API_KEY_SECRET for Basic auth over HTTPS. A legacy TWILIO_AUTH_TOKEN remains
+supported only when neither API-key field is configured; incomplete key pairs fail closed.
+Account SID must match AC plus 32 hex characters; API-key SID must match SK plus 32 hex
+characters before network access. Credential provisioning is a separate operator action.
 Requests use fixed provider hosts, reject redirects, time out after eight seconds, and do not retry.
 Observation responses use private/no-store. The separately documented template composer
 below adds an explicit operator-reviewed send endpoint; inventory routes remain read-only.
@@ -168,3 +171,25 @@ lib/resend-send.mjs; app/api/resend/templates/route.js;
 app/api/resend/send-template/route.js; app/page.jsx; app/hq.css.
 Tests: tests/resend-templates.test.mjs. Drift: template versions/variable semantics,
 publication defaults, sender verification, pagination and provider idempotency retention.
+
+## Twilio restricted HQ credential — November 15, 2026
+Official permission mappings:
+- https://www.twilio.com/docs/iam/api-keys/restricted-api-keys
+- https://docs-resources.prod.twilio.com/documents/Twilio_Restricted_API_Keys_Permissions_-_IAM_Permissons.pdf
+- https://docs-resources.prod.twilio.com/documents/Twilio_Restricted_API_Keys_Permissions_-_Messaging_Permissions.pdf
+- https://docs-resources.prod.twilio.com/documents/Twilio_Restricted_API_Keys_Permissions_-_Verify_Permissions.pdf
+- https://docs-resources.prod.twilio.com/documents/Twilio_Restricted_API_Keys_Permissions_-_Usage_Records_Permissions.pdf
+
+Minimum requested permissions: iam/accounts/read, billing/usage/read,
+messaging/messages/list, verify/service/list. No create/update/delete permissions.
+The account endpoint may return an auth_token; the adapter discards it along with all
+message bodies and phone numbers. The restricted key can access the provider's full
+message-list payload; HQ only returns delivery metadata. Account-wide reads cover
+all services in the selected account, including Argus; no workflows are modified.
+
+API-key credentials take precedence without fallback after denial. Malformed or
+incomplete key configuration never triggers a request with the legacy auth token.
+Secret reader allowlists both new fields. Twilio observations cache for 60 seconds
+(15 seconds for failures), coalesce concurrent reads, and have a 30-second route budget.
+No automatic retry, sending, verification creation or account mutation is implemented.
+Provisioning/live verification remain pending until actual successful endpoint reads.

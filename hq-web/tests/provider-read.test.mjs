@@ -27,3 +27,24 @@ test('provider errors and rate limits expose no error bodies',async()=>{
  assert.equal((await readJSON('https://example.test','secret',async()=>({ok:false,status:429}))).status,'rate-limited');
  assert.deepEqual(await readJSON('https://example.test','secret',async()=>{throw Error('secret')}),{status:'unavailable',data:null});
 });
+
+test('restricted key authenticates all four reads without exposing credentials',async()=>{
+ const keySid='SK'+'b'.repeat(32), secret='restricted-secret';let calls=0;
+ const result=await readTwilio({...env,TWILIO_API_KEY_SID:keySid,TWILIO_API_KEY_SECRET:secret},async(url,options)=>{
+  calls++;assert.equal(options.headers.Authorization,'Basic '+Buffer.from(keySid+':'+secret).toString('base64'));
+  assert.ok(!options.method||options.method==='GET');
+  const data=url.includes('Usage')?{usage_records:[]}:url.includes('Messages')?{messages:[]}:url.includes('verify.twilio')?{services:[]}:{sid,auth_token:'provider-master-secret'};
+  return {ok:true,json:async()=>data};
+ });
+ assert.equal(calls,4);assert.equal(result.status,'connected');
+ for(const value of [keySid,secret,'provider-master-secret'])assert.ok(!JSON.stringify(result).includes(value));
+});
+test('partial or malformed API keys never fall back to the account token',async()=>{
+ let calls=0;const fetcher=async()=>{calls++;return {ok:false,status:401}};
+ for(const fields of [{TWILIO_API_KEY_SID:'SK'+'b'.repeat(32)},{TWILIO_API_KEY_SECRET:'secret'},{TWILIO_API_KEY_SID:'AC'+'b'.repeat(32),TWILIO_API_KEY_SECRET:'secret'}]){
+  const result=await readTwilio({...env,...fields},fetcher);assert.notEqual(result.status,'connected');
+ }
+ assert.equal(calls,0);
+ const result=await readTwilio({...env,TWILIO_API_KEY_SID:'SK'+'b'.repeat(32),TWILIO_API_KEY_SECRET:'denied'},fetcher);
+ assert.equal(result.status,'error');assert.equal(calls,4);
+});
