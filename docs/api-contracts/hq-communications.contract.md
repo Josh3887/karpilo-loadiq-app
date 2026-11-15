@@ -76,7 +76,7 @@ Normalize to latestPeriod/dieselPrice/units (USD per gallon). Publication period
 connection time. No manual price is invented when EIA fails. The customer calculator's
 existing fuel cache and behavior are unchanged.
 
-Redis/EIA/Resend observations cache 60 seconds per warm process, with concurrent request
+Redis/Resend observations cache 60 seconds and EIA one hour per warm process, with concurrent request
 coalescing; no distributed rate-limit guarantee. Registry does not duplicate dedicated
 Resend/Twilio/GitHub/Vercel/Cloudflare checks. Browser payloads are private/no-store.
 HTTP 401/403 maps to access-denied, 429 rate-limited, transport errors unavailable.
@@ -86,3 +86,21 @@ Source: hq-web/lib/provider-config.mjs, provider-cache.mjs, operational-read.mjs
 app/api/providers, app/api/resend, app/api/twilio; app/page.jsx.
 Tests: secret allowlist/cache/failure, Redis URL validation/schema rejection, EIA schema
 and redaction, observation coalescing. Live results must be checked after deployment.
+
+EIA read timeout is 20 seconds; the registry route maximum is 30 seconds. Resend scope
+HTTP statuses are normalized without exposing error bodies. Live checks verified Redis
+PING and existing AWS/GitHub/Vercel connections; reused Resend key denied all inventory
+scopes. This is a credential permission blocker, not a completed Resend connection.
+
+Stripe test observation: https://docs.stripe.com/api/balance/balance_retrieve.
+GET https://api.stripe.com/v1/balance, Basic API-key auth, Stripe-Version
+2026-10-28.endive. STRIPE_TEST_SECRET_KEY only; reject live prefixes before network.
+Require object=balance, livemode=false and available/pending arrays. Discard amounts
+and private fields; render connection and explicit test-mode label. Existing isolated
+test credential is reused in Secrets Manager. Prefer a dedicated balance-read restricted
+key when credentials are provisioned. No customer queries, charges, mutations or live
+payment verification; existing billing webhooks remain unchanged. Cache 60 seconds,
+8-second timeout, no retry or redirect. Test rejects live keys and live-mode payloads.
+
+Failed observations expire after 15 seconds instead of holding a transient failure for
+the full success cache lifetime. No automatic background retry is performed.

@@ -20,7 +20,8 @@
 ### Fixed
 
 - Web HQ: connected dedicated AWS provider-secret loading to Resend, Twilio and the
-  registry; added validated Redis PING and EIA freshness observations, bounded caching,
+  registry; added validated Redis PING, EIA freshness and explicit Stripe test-mode
+  observations, bounded caching,
   credential-store errors and visible missing-credential details.
 
 - Hardened Google Weather endpoint construction so a base URL configured with a

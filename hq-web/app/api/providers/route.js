@@ -1,9 +1,11 @@
 import {NextResponse} from 'next/server';
 import {getProviderConfig} from '../../../lib/provider-config.mjs';
-import {readRedis,readEia} from '../../../lib/operational-read.mjs';
+import {readRedis,readEia,readStripeTest} from '../../../lib/operational-read.mjs';
 import {createObservationCache} from '../../../lib/provider-cache.mjs';
 const observe=createObservationCache();
+const fuelObserve=createObservationCache(3600000);
 export const runtime='nodejs';
+export const maxDuration=30;
 export const dynamic='force-dynamic';
 const specs=[
  {name:'AWS',env:['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_REGION'],url:null,usage:'ECS / RDS / Lambda / CloudWatch',billing:'Cost Explorer'},
@@ -24,8 +26,9 @@ const specs=[
  {name:'Private Network / VPN',env:[],usage:'Traffic/connection health',billing:'Subscription'}
 ];
 async function check(spec,env){
+ if(spec.name==='Stripe')return {name:spec.name,...await observe('Stripe',()=>readStripeTest(env))};
  if(spec.name==='Redis')return {name:spec.name,...await observe('Redis',()=>readRedis(env))};
- if(spec.name==='EIA')return {name:spec.name,...await observe('EIA',()=>readEia(env))};
+ if(spec.name==='EIA')return {name:spec.name,...await fuelObserve('EIA',()=>readEia(env))};
  const missing=spec.env.filter(key=>!env[key]);
  const base={name:spec.name,usageCategory:spec.usage,billingCategory:spec.billing,usageValue:null,billedAmount:null,currency:null,lastBillingSync:null};
  if(!spec.env.length)return {...base,status:'unidentified',checkedAt:null};

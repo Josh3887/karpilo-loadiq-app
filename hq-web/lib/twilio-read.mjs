@@ -4,7 +4,7 @@ export async function readTwilio(env = process.env, fetcher = fetch) {
   const keys = ['account', 'usage', 'messages', 'verifyServices'];
   const empty = {checkedAt, account: null, usage: null, messages: null, verifyServices: null, pagination: {}};
   const sid = env.TWILIO_ACCOUNT_SID, token = env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token) return {...empty, status: 'unconfigured', coverage: Object.fromEntries(keys.map(k => [k, 'pending-key'])), reason: 'API-key setup deferred. No Twilio data is claimed.'};
+  if (!sid || !token) return {...empty, status: 'unconfigured', coverage: Object.fromEntries(keys.map(k => [k, 'pending-key'])), reason: 'Twilio account SID and auth token are missing from the HQ server configuration.'};
   if (!/^AC[0-9a-fA-F]{32}$/.test(sid)) return {...empty, status: 'error', coverage: Object.fromEntries(keys.map(k => [k, 'invalid-configuration'])), reason: 'Account SID configuration is invalid.'};
   const root = 'https://api.twilio.com/2010-04-01/Accounts/' + sid;
   const endpoints = [root + '.json', root + '/Usage/Records/ThisMonth.json?PageSize=100', root + '/Messages.json?PageSize=20', 'https://verify.twilio.com/v2/Services?PageSize=20'];

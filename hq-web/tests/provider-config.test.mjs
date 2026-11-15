@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createConfigReader,selectProviderConfig} from '../lib/provider-config.mjs';
-import {readRedis,readEia} from '../lib/operational-read.mjs';
+import {readRedis,readEia,readStripeTest} from '../lib/operational-read.mjs';
 import {createObservationCache} from '../lib/provider-cache.mjs';
 test('secret allowlist excludes database, auth and unrelated fields',()=>{
  assert.deepEqual(selectProviderConfig({RESEND_API_KEY:'test',AWS_DATABASE_URL:'private',HQ_ADMIN_PASSWORD:'private',EIA_API_KEY:42}),{RESEND_API_KEY:'test'});
@@ -33,4 +33,11 @@ test('observation cache shares concurrent request and does not cache exceptions'
  const cache=createObservationCache();let calls=0;const read=async()=>{calls++;return {status:'connected'}};
  await Promise.all([cache('x',read),cache('x',read)]);assert.equal(calls,1);
  await assert.rejects(()=>cache('bad',async()=>{throw Error()}));assert.equal((await cache('bad',read)).status,'connected');
+});
+
+test('Stripe observer rejects live keys before network and live payloads after read',async()=>{
+ let calls=0;const fetcher=async(url,options)=>{calls++;assert.equal(options.headers['Stripe-Version'],'2026-10-28.endive');return {ok:true,json:async()=>({object:'balance',livemode:false,available:[],pending:[]})}};
+ assert.equal((await readStripeTest({STRIPE_TEST_SECRET_KEY:'sk_live_fixture'},fetcher)).status,'error');assert.equal(calls,0);
+ const result=await readStripeTest({STRIPE_TEST_SECRET_KEY:'rk_test_fixture'},fetcher);assert.equal(result.status,'connected');assert.equal(result.mode,'test');assert.ok(!JSON.stringify(result).includes('rk_test_fixture'));
+ assert.equal((await readStripeTest({STRIPE_TEST_SECRET_KEY:'rk_test_fixture'},async()=>({ok:true,json:async()=>({object:'balance',livemode:true,available:[],pending:[]})}))).status,'error');
 });

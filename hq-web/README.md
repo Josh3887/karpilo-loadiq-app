@@ -16,7 +16,7 @@ HQ IAM identity can GetSecretValue only for that secret; customer database and e
 secrets are excluded. Environment values take precedence, allowlisted fields only, with a
 60-second in-memory cache. Failures return a credential-store error, not an empty success.
 Resend, Twilio and the provider registry use this reader. Redis PING and EIA latest weekly
-diesel checks are live read-only adapters. Provider observations are cached for 60 seconds
+diesel checks are live read-only adapters. Provider observations are cached for 60 seconds (EIA: one hour)
 per warm instance; browser responses remain private/no-store. No background polling.
 Missing credentials remain explicitly listed. Sentry DSNs and PostHog ingestion keys do
 not provide dashboard access. No native bundle installation is part of this web release.
