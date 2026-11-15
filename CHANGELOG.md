@@ -4,6 +4,11 @@
 
 ### Added
 
+- HQ: read-only Twilio account, usage, message status and Verify-service observations;
+  native Mac shared web workspace preserving existing templates and local operator lock.
+- HQ: Resend partial-access and bounded-pagination reporting; provider redaction tests.
+
+
 - Added the server-side Karpilo Weather Intelligence foundation with Google
   Weather, OpenWeather, and NWS/weather.gov provider clients, normalized
   weather types, load-window alignment, route-weather risk scaffolding, and

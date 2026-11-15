@@ -2,3 +2,10 @@
 Separate Next.js app under hq-web/ with dedicated Vercel project. Full iPad Safari UI and iPhone snapshot planned. Founder authentication **fails closed** with 503 until HQ_ADMIN_USER and HQ_ADMIN_PASSWORD (>=16 characters) are set. Temporary HTTPS Basic authentication is for development only; production requires MFA, server sessions and audit. GET /api/providers performs live read-only GET checks of GitHub, Vercel and Resend only when server tokens are configured; remaining providers show unconfigured. The existing static prototype and future Data Center/newsletter/subscriber/Argus/mail workflows are not live integrations. Never expose secrets in browser code. No production actions from untrusted email. See docs/hq/KARPILO-LOADIQ-HQ-SPEC.md for complete requirements.
 ## Version policy
 Karpilo LoadIQ HQ stays **Version 1** throughout prelaunch development. Git commits, pull requests, internal build IDs and deployment IDs distinguish revisions. Do not label prelaunch milestones as v0.x, v1.1 or Version 2. Only introduce a new public product version after launch with founder approval.
+
+## Communications continuation
+Resend Library shows bounded sender/template/delivery/broadcast inventories with partial
+access and additional-page indicators. Providers includes Twilio account, current-month
+usage, recent message status and Verify services. Both are read-only; missing credentials
+remain explicitly unconfigured. See docs/api-contracts/hq-communications.contract.md.
+The native client in hq-mac embeds this same web HQ with separate web authentication.
