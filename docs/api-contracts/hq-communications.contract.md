@@ -49,7 +49,7 @@ Provider error bodies and raw exceptions are never exposed. Twilio 401/403 are a
 hq-web/app/api/resend/route.js; hq-web/app/api/twilio/route.js;
 hq-web/lib/provider-read.mjs; hq-web/lib/twilio-read.mjs; hq-web/app/page.jsx.
 Tests cover missing credentials, SID validation, redaction, denied scopes, malformed
-responses and rate limits. Live credential acceptance remains deferred.
+responses and rate limits. Twilio live credential acceptance remains deferred.
 
 ## Web credential wiring and read-only health — November 15, 2026
 Official references additionally consulted:
@@ -89,8 +89,15 @@ and redaction, observation coalescing. Live results must be checked after deploy
 
 EIA read timeout is 20 seconds; the registry route maximum is 30 seconds. Resend scope
 HTTP statuses are normalized without exposing error bodies. Live checks verified Redis
-PING and existing AWS/GitHub/Vercel connections; reused Resend key denied all inventory
-scopes. This is a credential permission blocker, not a completed Resend connection.
+PING and existing AWS/GitHub/Vercel connections. The original Resend credential denied
+all inventory scopes; this was resolved after deployment on November 15, 2026.
+The handoff records browser verification of domains, templates, emails and broadcasts
+using a dedicated full_access inventory key in the existing HQ secret. HQ routes remain
+read-only. Templates include the five-load snapshot templates and deliveries include prior
+records. Templates/emails are bounded first-page inventories with additional-page notices.
+karpiloliq.com showed Failed; karpilo-liq.com and karpiloloadiq.com showed Verified.
+No DNS changes were made. This does not complete newsletter publishing or two-way mail.
+This continuation has not independently repeated that browser verification.
 
 Stripe test observation: https://docs.stripe.com/api/balance/balance_retrieve.
 GET https://api.stripe.com/v1/balance, Basic API-key auth, Stripe-Version

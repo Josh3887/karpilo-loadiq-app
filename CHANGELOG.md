@@ -19,6 +19,10 @@
 
 ### Fixed
 
+- Web HQ: Cloudflare now uses the allowlisted AWS provider-secret reader; actual
+  per-zone and DNS access determines API connectivity. Added bounded pagination,
+  probe failure reporting, safe credential-store errors and observation caching.
+
 - Web HQ: connected dedicated AWS provider-secret loading to Resend, Twilio and the
   registry; added validated Redis PING, EIA freshness and explicit Stripe test-mode
   observations, bounded caching,
@@ -41,6 +45,9 @@
   and clarified open-ended windows as start/end date context.
 
 ### Documentation
+
+- Corrected the superseded Resend denied-key status from the verified handoff;
+  documented Cloudflare read scopes, fixed zone resources and incomplete coverage.
 
 - Added provider-aligned API contract documentation and governance for external
   integrations, including official documentation links, request/response

@@ -15,8 +15,19 @@ HQ_PROVIDER_SECRET_ARN selects a dedicated AWS Secrets Manager JSON object. The 
 HQ IAM identity can GetSecretValue only for that secret; customer database and enrollment
 secrets are excluded. Environment values take precedence, allowlisted fields only, with a
 60-second in-memory cache. Failures return a credential-store error, not an empty success.
-Resend, Twilio and the provider registry use this reader. Redis PING and EIA latest weekly
+Resend, Twilio, Cloudflare and the provider registry use this reader. Redis PING and EIA latest weekly
 diesel checks are live read-only adapters. Provider observations are cached for 60 seconds (EIA: one hour)
 per warm instance; browser responses remain private/no-store. No background polling.
 Missing credentials remain explicitly listed. Sentry DSNs and PostHog ingestion keys do
 not provide dashboard access. No native bundle installation is part of this web release.
+
+## Cloudflare observations
+Cloudflare uses the dedicated secret reader and validates actual zone/DNS responses.
+A valid token alone is not a connected inventory. Each zone exposes separate zone and
+record access results. Public DNS/HTTPS observations remain separate from API access;
+analytics/security are explicitly not implemented. Inventory is bounded to 100 records
+per zone, with pagination disclosure. See docs/api-contracts/hq-cloudflare.contract.md.
+
+Resend inventory access was browser-verified after the prior deployment per the
+November 15 handoff; the earlier denied-key blocker is resolved. Sender-domain failure,
+newsletter publishing and two-way mail remain separate from inventory connectivity.

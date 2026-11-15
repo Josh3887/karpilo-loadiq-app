@@ -1,18 +1,17 @@
 import {NextResponse} from 'next/server';
+import {getProviderConfig} from '../../../lib/provider-config.mjs';
+import {createObservationCache} from '../../../lib/provider-cache.mjs';
+import {readCloudflare} from '../../../lib/cloudflare-read.mjs';
+import {responseHeaders} from '../../../lib/provider-read.mjs';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-const H={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'};
-const zones=[{name:'karpilo-liq.com',id:'354a61884ea0777e1c8a1a8f01b8aa8a'},{name:'karpiloendeavor.com',id:'b8415789be0c168fb1ef529b2d473f18'},{name:'karpilofleetos.com',id:'1608ce26faf5c48a8723769c755355a5'},{name:'k-atls-aisystems.com',id:'7932894dfdad4636497fe9e4973e05e0'},{name:'project-alter-ego.com',id:'11e3c527f7d03d54b76805da733426db'},{name:'zaharasworld.com',id:'36058f476f19b4c80ebea11186e565b0'}];
-const probes=['hq.karpilo-liq.com','app.karpilo-liq.com','karpilo-liq.com','argus.karpiloendeavor.com'];
-async function cloudflare(path,token){const r=await fetch('https://api.cloudflare.com/client/v4'+path,{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8500)});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();if(!d.success)throw Error('Cloudflare API rejected request');return d.result}
-async function dns(name,type){try{const url=new URL('https://cloudflare-dns.com/dns-query');url.searchParams.set('name',name);url.searchParams.set('type',type);const r=await fetch(url,{headers:{Accept:'application/dns-json'},cache:'no-store',signal:AbortSignal.timeout(6500)});if(!r.ok)throw Error();const d=await r.json();return {status:d.Status,answers:(d.Answer||[]).map(a=>({type:a.type,data:a.data,ttl:a.TTL})).slice(0,12)}}catch{return {status:null,answers:[],error:'DNS probe unavailable'}}}
-async function http(name){try{const r=await fetch('https://'+name,{method:'HEAD',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(7000)});return {status:r.status,reachable:true,redirect:r.headers.get('location')?.slice(0,300)||null}}catch{return {status:null,reachable:false}}}
+export const maxDuration=30;
+const observe=createObservationCache();
 export async function GET(){
- const token=process.env.CLOUDFLARE_API_TOKEN;
- const checks=await Promise.all(probes.map(async name=>{const [cname,a,web]=await Promise.all([dns(name,'CNAME'),dns(name,'A'),http(name)]);return {name,cname,a,http:web}}));
- if(!token)return NextResponse.json({status:'partial',mode:'public-observation',checkedAt:new Date().toISOString(),zones:zones.map(z=>({name:z.name,zoneStatus:'unverified',dnsRecords:null})),checks,coverage:{dns:'connected',http:'connected',zones:'unconfigured',analytics:'unconfigured',security:'unconfigured'},reason:'Public DNS and HTTPS probes are live; private Cloudflare zone inventory and analytics require a scoped API token.'},{headers:H});
- const tasks=await Promise.allSettled([cloudflare('/user/tokens/verify',token),...zones.map(z=>cloudflare('/zones/'+z.id,token)),...zones.map(z=>cloudflare('/zones/'+z.id+'/dns_records?per_page=100',token))]);
- const val=i=>tasks[i].status==='fulfilled'?tasks[i].value:null;
- const result=zones.map((z,i)=>{const zone=val(i+1),records=val(i+1+zones.length);return {name:z.name,zoneStatus:zone?.status||'unavailable',paused:zone?.paused??null,plan:zone?.plan?.name||null,nameServers:zone?.name_servers||null,dnsRecords:Array.isArray(records)?records.map(x=>({id:x.id,type:x.type,name:x.name,content:x.type==='TXT'?'[redacted]':x.content,proxied:x.proxied,ttl:x.ttl})):null}});
- return NextResponse.json({status:val(0)?'connected':'partial',mode:'api',checkedAt:new Date().toISOString(),zones:result,checks,coverage:{token:val(0)?'connected':'unavailable',dns:'connected',http:'connected',zones:result.every(z=>z.zoneStatus!=='unavailable')?'connected':'partial',records:result.every(z=>z.dnsRecords!==null)?'connected':'partial',analytics:'not-implemented',security:'not-implemented'}},{headers:H});
+ try{
+  const config=await getProviderConfig();
+  return NextResponse.json(await observe('cloudflare',()=>readCloudflare(config)),{headers:responseHeaders});
+ }catch{
+  return NextResponse.json({status:'error',reason:'Provider credential store unavailable'},{status:503,headers:responseHeaders});
+ }
 }
