@@ -19,6 +19,8 @@
     "@aws-sdk/client-cloudwatch": "^3.800.0",
     "@aws-sdk/client-eventbridge": "^3.800.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
-    "@aws-sdk/client-cost-explorer": "^3.800.0"
+    "@aws-sdk/client-cost-explorer": "^3.800.0",
+    "@smithy/signature-v4": "^5.0.0",
+    "@aws-crypto/sha256-js": "^5.0.0"
   }
 }
