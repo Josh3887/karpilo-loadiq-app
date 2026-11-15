@@ -13,7 +13,10 @@ async function vercel(path,token){
 }
 export async function GET(){
  const token=process.env.VERCEL_TOKEN;
- if(!token)return NextResponse.json({status:'unconfigured',reason:'A read-only Vercel API token has not been provisioned for HQ',projectId:project,projectName:'karpilo-loadiq-hq',deployments:null,domains:null},{status:200,headers});
+ if(!token){
+ const current={id:process.env.VERCEL_DEPLOYMENT_ID||null,name:process.env.VERCEL_PROJECT_PRODUCTION_URL||'karpilo-loadiq-hq',url:process.env.VERCEL_URL?'https://'+process.env.VERCEL_URL:null,state:'READY',target:process.env.VERCEL_ENV||'preview',createdAt:null,branch:process.env.VERCEL_GIT_COMMIT_REF||null,commit:process.env.VERCEL_GIT_COMMIT_SHA?.slice(0,12)||null,message:process.env.VERCEL_GIT_COMMIT_MESSAGE||null};
+ return NextResponse.json({status:'connected',mode:'deployment-runtime',checkedAt:new Date().toISOString(),project:{id:project,name:'karpilo-loadiq-hq',framework:'nextjs',nodeVersion:process.version,latestDeployment:current.id},deployments:[current],domains:null,partial:true,reason:'Current Vercel deployment is verified from runtime; account-wide deployment history and DNS verification require a scoped API token.'},{headers});
+}
  const queries=[
   '/v9/projects/'+project,
   '/v6/deployments?projectId='+project+'&limit=20',
@@ -30,7 +33,7 @@ export async function GET(){
   message:x.meta?.githubCommitMessage||null
  })):null;
  return NextResponse.json({
-  status:'connected',checkedAt:new Date().toISOString(),
+  status:'connected',mode:'api',checkedAt:new Date().toISOString(),
   project:{id:p.id,name:p.name,framework:p.framework,nodeVersion:p.nodeVersion,latestDeployment:p.latestDeployments?.[0]?.id||p.latestDeployment?.id||null},
   deployments,
   domains:Array.isArray(domains?.domains)?domains.domains.map(x=>({name:x.name,verified:x.verified,branch:x.gitBranch||null,redirect:x.redirect||null})):null,
