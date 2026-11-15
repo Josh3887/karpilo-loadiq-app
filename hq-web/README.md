@@ -31,3 +31,14 @@ per zone, with pagination disclosure. See docs/api-contracts/hq-cloudflare.contr
 Resend inventory access was browser-verified after the prior deployment per the
 November 15 handoff; the earlier denied-key blocker is resolved. Sender-domain failure,
 newsletter publishing and two-way mail remain separate from inventory connectivity.
+
+## Reusable templates in Communications
+Communications now loads Resend templates directly, supports name/alias search and
+publication/category filtering, previews original designs at desktop/mobile widths,
+and applies their variables to an individual message. Use in Communications is also
+available from Resend Library. Provider draft status displays as Unpublished template;
+these are reusable templates, not saved message drafts. Source templates stay unchanged.
+Published, current templates can be sent to one recipient after explicit review. Missing
+variables, unpublished changes and superseded templates prevent sending. Development
+checks use mocked sends; no real email was sent as part of verification. Gmail/inbound
+case management and newsletters remain separate integrations.

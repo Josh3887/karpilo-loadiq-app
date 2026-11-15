@@ -1,7 +1,8 @@
 # HQ communications observations — November 15, 2026
 
-Scope: founder-only read-only HQ provider observations. Sending, verification creation,
-broadcast publishing, webhook ingestion and subscriber changes are not implemented here.
+Scope: founder-only HQ provider observations and an operator-reviewed single-recipient
+Resend template composer. Verification creation, broadcast publishing, webhook ingestion
+and subscriber changes are not implemented here.
 
 ## Official contracts
 - Resend: https://resend.com/docs/api-reference/introduction
@@ -20,7 +21,8 @@ Resend uses RESEND_API_KEY as Bearer auth; listing requires access beyond a send
 Twilio uses TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN for Basic auth over HTTPS.
 SID must match AC plus 32 hex characters before URL construction. No credentials are created.
 Requests use fixed provider hosts, reject redirects, time out after eight seconds, and do not retry.
-Responses use private/no-store. No sending or mutation endpoints are exposed.
+Observation responses use private/no-store. The separately documented template composer
+below adds an explicit operator-reviewed send endpoint; inventory routes remain read-only.
 
 ## Requests and consumed responses
 Resend GET /domains, /templates, /emails, /broadcasts uses limit=20. Consume data and
@@ -111,3 +113,58 @@ payment verification; existing billing webhooks remain unchanged. Cache 60 secon
 
 Failed observations expire after 15 seconds instead of holding a transient failure for
 the full success cache lifetime. No automatic background retry is performed.
+
+## Communications reusable-template interface — November 15, 2026
+Official contracts additionally reviewed:
+- https://resend.com/docs/api-reference/templates/get-template
+- https://resend.com/docs/dashboard/templates/introduction
+- https://resend.com/docs/api-reference/emails/send-email
+
+The existing Resend collection contains 55 templates per live connector read: two
+published, 53 unpublished, including six named SUPERSEDED. These are templates,
+not saved message drafts. Display provider draft status as Unpublished; preserve the
+original provider status and aliases internally. Do not rename or publish templates.
+
+GET /api/resend/templates proxies /templates?limit=100 with optional validated after
+cursor. Explicit Load more only; no automatic traversal. GET with id reads
+/templates/{id}: id/name/alias/status/created_at/updated_at/current_version_id,
+published_at/has_unpublished_versions/from/subject/reply_to/html/text/variables
+(key/type/fallback_value). Reject malformed responses; exclude unrelated fields.
+IDs/aliases allow letters, digits, underscores and hyphens, max 128. Server-only Bearer
+auth uses the existing secret reader. Reads cache 60 seconds (failures 15); one 8-second
+request per page or detail. Cache keys contain identifiers, never personalization.
+
+Communications supports searching loaded templates, HQ name-derived categories,
+publication filtering, selecting, desktop/mobile/plain-text preview and Use template.
+Personalization is held only in component memory; there is no message-draft storage.
+Fields come from provider variables, with string/number validation and fallback values.
+The reusable source is not modified. Missing placeholders stay visible. Undeclared
+placeholders block sending until corrected in Resend; no customer data is inferred.
+Template HTML is isolated in a sandboxed iframe with no scripts, forms, navigation or
+same-origin permission. DOM sanitization strips active elements/attributes; restrictive
+CSP permits inline email styles and only the existing CloudFront image host/data images.
+Variable values are escaped in the preview. Preview is not proof of email-client layout.
+
+POST /api/resend/send-template is founder-authenticated by existing middleware and requires
+same-origin JSON, <=64k characters, explicit confirmed=true, one validated recipient,
+templateId, version, declared variables and requestId. Re-fetch the template before send;
+require published, non-superseded, no unpublished changes, matching version and configured
+sender/subject. No arbitrary HTML, sender or extra variables are accepted. POST /emails
+uses from/subject/reply_to from the template, to=[recipient], and template.id/variables.
+Number variables are finite and within JS safe magnitude; strings max 2000 characters.
+One provider send, ten-second timeout, no automatic retry/redirect. Idempotency-Key is a
+request UUID plus SHA256 of the exact payload; retries of the same message reuse it.
+Resend keys expire after 24 hours. Changing a message starts a new operation.
+Returned id means accepted, never delivered. Timeouts/invalid acceptance responses
+remain unknown; direct users to retry the same operation or inspect delivery history.
+No recipients/content/credentials are logged. Provider error bodies are not exposed.
+No sending occurred during development verification; send tests use a mock provider.
+Resend delivery records provide provider evidence, not a complete HQ case audit.
+
+This does not connect Gmail, replies, inbound cases, attachments or newsletter campaigns.
+It adds no automatic publication, customer lifecycle triggers or provider credentials.
+Source: hq-web/components/CommunicationsTemplates.jsx; lib/resend-templates.mjs;
+lib/resend-send.mjs; app/api/resend/templates/route.js;
+app/api/resend/send-template/route.js; app/page.jsx; app/hq.css.
+Tests: tests/resend-templates.test.mjs. Drift: template versions/variable semantics,
+publication defaults, sender verification, pagination and provider idempotency retention.

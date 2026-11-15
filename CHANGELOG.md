@@ -4,6 +4,10 @@
 
 ### Added
 
+- Web HQ Communications: searchable reusable Resend template library, publication
+  filters, full previews, personalization and operator-reviewed single-email composer;
+  paginated template reads, version checks, duplicate-prevention keys and safe previews.
+
 - HQ: read-only Twilio account, usage, message status and Verify-service observations;
   native Mac provider observations preserving the original SwiftUI layout, templates and local operator lock.
 - HQ: Resend partial-access and bounded-pagination reporting; provider redaction tests.
