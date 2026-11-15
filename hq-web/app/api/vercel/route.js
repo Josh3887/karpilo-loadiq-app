@@ -15,7 +15,12 @@ export async function GET(){
  const token=process.env.VERCEL_TOKEN;
  if(!token){
  const current={id:process.env.VERCEL_DEPLOYMENT_ID||null,name:process.env.VERCEL_PROJECT_PRODUCTION_URL||'karpilo-loadiq-hq',url:process.env.VERCEL_URL?'https://'+process.env.VERCEL_URL:null,state:'READY',target:process.env.VERCEL_ENV||'preview',createdAt:null,branch:process.env.VERCEL_GIT_COMMIT_REF||null,commit:process.env.VERCEL_GIT_COMMIT_SHA?.slice(0,12)||null,message:process.env.VERCEL_GIT_COMMIT_MESSAGE||null};
- return NextResponse.json({status:'connected',mode:'deployment-runtime',checkedAt:new Date().toISOString(),project:{id:project,name:'karpilo-loadiq-hq',framework:'nextjs',nodeVersion:process.version,latestDeployment:current.id},deployments:[current],domains:null,partial:true,reason:'Current Vercel deployment is verified from runtime; account-wide deployment history and DNS verification require a scoped API token.'},{headers});
+ let gitDeployments=null;
+ try{
+  const response=await fetch('https://api.github.com/repos/Josh3887/karpilo-loadiq-app/deployments?per_page=20',{headers:{Accept:'application/vnd.github+json','User-Agent':'Karpilo-LoadIQ-HQ'},cache:'no-store',signal:AbortSignal.timeout(6000)});
+  if(response.ok){const rows=await response.json();gitDeployments=rows.filter(x=>x.environment?.toLowerCase().includes('vercel')||x.payload?.provider==='vercel').map(x=>({id:'github-'+x.id,name:'GitHub deployment event',url:x.payload?.web_url||null,state:'RECORDED',target:x.environment||null,createdAt:x.created_at,branch:x.ref,commit:x.sha?.slice(0,12),message:x.description||null}));}
+ }catch{}
+ return NextResponse.json({status:'connected',mode:'deployment-runtime',checkedAt:new Date().toISOString(),project:{id:project,name:'karpilo-loadiq-hq',framework:'nextjs',nodeVersion:process.version,latestDeployment:current.id},deployments:[current,...(gitDeployments||[])],domains:null,partial:true,reason:'Live current deployment from Vercel runtime. GitHub deployment events are historical records, not Vercel build-status verification. Full account-wide telemetry requires a scoped API token.'},{headers});
 }
  const queries=[
   '/v9/projects/'+project,
