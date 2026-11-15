@@ -5,7 +5,7 @@
 ### Added
 
 - HQ: read-only Twilio account, usage, message status and Verify-service observations;
-  native Mac shared web workspace preserving existing templates and local operator lock.
+  native Mac provider observations preserving the original SwiftUI layout, templates and local operator lock.
 - HQ: Resend partial-access and bounded-pagination reporting; provider redaction tests.
 
 

@@ -5,6 +5,7 @@ struct ProviderObservation: Decodable, Identifiable {
     let observedAt: String?
     let label: String?
     let latencyMs: Int?
+    let partial: Bool?
     let items: [ProviderItem]
     var id: String { provider }
 }
@@ -27,7 +28,7 @@ struct OperationsView: View {
     @State private var conversations: [ConversationSummary] = []
     @State private var busy = false
     @State private var error = ""
-    private let providers = ["Resend", "AWS", "Vercel", "Sentry", "PostHog", "Redis", "Stripe", "Google Workspace", "Cloudflare"]
+    private let providers = ["Resend", "Twilio", "AWS", "Vercel", "GitHub", "Sentry", "PostHog", "Redis", "Stripe", "Google Workspace", "Cloudflare", "Google Maps Platform", "Gemini / Google", "EIA", "Termly"]
     private var settings: [String:String] {
         guard let url = Bundle.main.url(forResource:"OperatorConnection",withExtension:"json"), let data = try? Data(contentsOf:url), let value = try? JSONDecoder().decode([String:String].self,from:data) else { return [:] }
         return value
@@ -99,8 +100,10 @@ struct OperationsView: View {
                 .font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(.secondary)
             if let value {
                 if let label = value.label { Text(label).font(.caption) }
-                ForEach(value.items.prefix(6)) { item in
-                    HStack { Text(item.name).lineLimit(1); Spacer(); Text(item.status ?? "Observed").foregroundStyle(.secondary) }.font(.caption)
+                if let observed = value.observedAt { Text("Checked: " + observed).font(.caption2).foregroundStyle(.secondary) }
+                if value.partial == true { Label("Partial inventory — additional records exist", systemImage: "ellipsis.circle").font(.caption).foregroundStyle(.orange) }
+                ForEach(value.items) { item in
+                    HStack { Text(item.name).textSelection(.enabled); Spacer(); Text(item.status ?? "Observed").foregroundStyle(.secondary) }.font(.caption)
                 }
                 if value.items.isEmpty { Text(value.state == "observed" ? "No results returned" : "No measurements available").font(.caption).foregroundStyle(.secondary) }
             } else { Text("Awaiting an authenticated provider response").font(.caption).foregroundStyle(.secondary) }
@@ -121,7 +124,9 @@ struct OperationsView: View {
                 request.setValue("Bearer " + (try session.token()), forHTTPHeaderField: "Authorization"); request.timeoutInterval = 15
                 let client = URLSession(configuration: .ephemeral, delegate: NoRedirect(), delegateQueue: nil)
                 defer { client.invalidateAndCancel() }
+                let requestToken = session.accessToken
                 let (data, response) = try await client.data(for: request)
+                guard requestToken == session.accessToken else { throw URLError(.userAuthenticationRequired) }
                 guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
                 guard http.statusCode == 200 else {
                     error = http.statusCode == 401 || http.statusCode == 403 ? "The operator service rejected this session. Sign in again or check operator enrollment." : "The operator service is unavailable (HTTP \(http.statusCode))."

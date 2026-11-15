@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct LoadIQHQ: App {
     var body: some Scene {
-        WindowGroup("Karpilo LoadIQ HQ") { OperatorLock() }
+        WindowGroup("LoadIQ HQ") { OperatorLock() }
     }
 }
 

@@ -4,7 +4,7 @@ import WebKit
 
 struct HQWorkspace: View {
     @StateObject private var remoteSession = RemoteSession()
-    @State private var section = "Web HQ"
+    @State private var section = "Templates"
     @State private var search = ""
     @State private var selected: String? = Template.catalog.first?.alias
     @State private var catalog = Template.catalog
@@ -13,8 +13,8 @@ struct HQWorkspace: View {
     @State private var liveCatalog = false
     @State private var remoteBodies: [String:String] = [:]
     @State private var remoteSubjects: [String:String] = [:]
-    let sections = ["Web HQ", "Analysis center", "Templates", "Delivery map", "Integrations", "Customer communications"]
-    let symbols = ["globe", "chart.xyaxis.line", "envelope.open.fill", "arrow.triangle.branch", "network", "bubble.left.and.bubble.right.fill"]
+    let sections = ["Analysis center", "Templates", "Delivery map", "Integrations", "Customer communications"]
+    let symbols = ["chart.xyaxis.line", "envelope.open.fill", "arrow.triangle.branch", "network", "bubble.left.and.bubble.right.fill"]
     private let red = Color(red: 0.96, green: 0.12, blue: 0.16)
     private let panel = Color(red: 0.075, green: 0.08, blue: 0.095)
     private var filtered: [Template] {
@@ -27,7 +27,7 @@ struct HQWorkspace: View {
                     Image(nsImage: image).resizable().scaledToFit().frame(width: 160, height: 160).clipShape(RoundedRectangle(cornerRadius: 24))
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("KARPILO LOADIQ HQ").font(.system(size: 24, weight: .black, design: .rounded))
+                    Text("LOADIQ HQ").font(.system(size: 24, weight: .black, design: .rounded))
                     Text("OPERATOR WORKSPACE").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(2).foregroundStyle(.secondary)
                 }
                 Rectangle().fill(red).frame(height: 2)
@@ -58,9 +58,7 @@ struct HQWorkspace: View {
                         .padding(10).background(red.opacity(0.15)).foregroundStyle(red).clipShape(Capsule())
                 }
                 if let error = Template.loadError { Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange) }
-                if section == "Web HQ" {
-                    SharedWebHQ()
-                } else if section == "Templates" {
+                if section == "Templates" {
                     HStack(spacing: 12) {
                         metric("TEMPLATES", "\(catalog.count)")
                         metric("CURRENT", "\(catalog.filter { !$0.alias.contains("superseded") }.count)")
@@ -128,7 +126,6 @@ struct HQWorkspace: View {
     }
     private var subtitle: String {
         switch section {
-        case "Web HQ": return "Shared web command center • same backend and current provider observations"
         case "Templates": return "Resend template library • rendered previews and saved local drafts"
         case "Delivery map": return "Know which messages belong in email, the subscriber inbox, or both"
         case "Integrations": return "Connection status and observed provider data"

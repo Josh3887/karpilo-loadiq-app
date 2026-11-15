@@ -1,20 +1,42 @@
-# Karpilo LoadIQ HQ — Mac continuation
+# Karpilo LoadIQ HQ — native Mac application
 
-Preserves the November 3 native workspace, device-owner lock, bundled templates, local
-drafts and independent operator sign-in. Adds Web HQ as its initial section, embedding
-https://hq.karpilo-liq.com with the existing web format and backend.
-No provider secrets or Cognito tokens are injected into WebKit. Web authentication stays
-separate, uses HTTPS Basic only for the exact HQ origin, has a three-attempt limit, and
-stores no credentials on disk. WebKit uses an ephemeral data store. Locking destroys the
-workspace; Reload / sign out recreates the web session. Navigation is restricted to the HQ origin and Vercel/GitHub/Google sign-in hosts.
-HTTP Basic credentials are accepted only for the exact HQ origin; Vercel protection
-remains enabled and requires the founder to sign in.
+Continues the original SwiftUI Mac workspace. Original sidebar, red/black/silver
+format, template editor, draft keys, bundle identity and Touch ID lock are retained.
+No embedded website is used. Analysis center and Integrations render native provider
+cards with full returned observations, timestamps and partial-inventory indicators.
 
-Build: sh hq-mac/build.sh. Requires the original private resource bundle copied into
-hq-mac/build/Karpilo LoadIQ HQ.app. The ignored bundle contains existing template snapshots
-and must not be committed. Original app and sources are preserved.
+The independent Cognito operator session authenticates the read-only gateway.
+Provider credentials remain server-side. Web HQ uses a separate frontend; connecting
+both clients requires the same authorized backend, not a web view substitution.
 
-Web HQ inherits the current web deployment's development authentication limitations.
-Production founder MFA/session/audit consolidation is still required. Existing native
-operations API screens continue to use their original separate gateway and are not
-falsely presented as migrated. No email/SMS sends are implemented by this change.
+Build with sh hq-mac/build.sh. Private bundled template snapshots live in ignored
+build/ and are not committed. An original installed app backup is retained there.
+Do not claim live provider access until the gateway and credentials are verified.
+
+## Deployment and permissions
+The gateway uses the existing independent HQ Cognito pool and enrolled subject.
+HTTP API and Lambda both enforce operator access. GET-only routes: /v1/session,
+/v1/analytics, /v1/templates and /v1/templates/{id}. Provider credentials are stored
+in a dedicated retained Secrets Manager secret; no existing secret is read without
+explicit approval. No emails, SMS, publishing or customer writes are enabled.
+
+This account currently has ten Lambda concurrency slots, all unreserved. A two-slot
+reservation would violate the account minimum of ten unreserved slots. The deployment
+therefore leaves concurrency unreserved and retains HTTP API throttling at 2 requests
+per second with burst 5, a 25-second timeout and 60-second provider cache. No account
+quota or existing function settings are changed.
+
+Native credential provisioning and signed-in end-to-end verification are separate
+from infrastructure deployment. Provider coverage is incomplete: AWS, GitHub, Redis,
+Stripe, Workspace, Cloudflare, Maps, Gemini, EIA and Termly remain adapter_pending
+in this gateway. Resend, Vercel, Sentry, PostHog and Twilio have read adapters.
+
+## Verified November 15, 2026
+Gateway deployed: https://8gy1ncxn5k.execute-api.us-east-2.amazonaws.com
+Both isolated CloudFormation stacks CREATE_COMPLETE; Lambda Active with successful
+update. Direct unauthenticated Lambda invocation returns 401. Public session, analytics
+and template requests return 401. Existing operator confirmed with software-token MFA.
+The native bundle now includes the gateway URL. Provider credentials remain empty;
+no signed-in end-to-end verification has been claimed. Native server tests: 16 passed.
+Installing into /Applications was blocked by workspace permissions; original app remains
+unchanged, with backup retained. Existing source secrets have not been read or copied.
