@@ -19,6 +19,10 @@
 
 ### Fixed
 
+- Web HQ: connected dedicated AWS provider-secret loading to Resend, Twilio and the
+  registry; added validated Redis PING and EIA freshness observations, bounded caching,
+  credential-store errors and visible missing-credential details.
+
 - Hardened Google Weather endpoint construction so a base URL configured with a
   trailing `/v1` does not produce double-version request paths, and classified
   Google Weather provider errors with safe operation/path metadata.

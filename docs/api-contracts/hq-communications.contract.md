@@ -50,3 +50,39 @@ hq-web/app/api/resend/route.js; hq-web/app/api/twilio/route.js;
 hq-web/lib/provider-read.mjs; hq-web/lib/twilio-read.mjs; hq-web/app/page.jsx.
 Tests cover missing credentials, SID validation, redaction, denied scopes, malformed
 responses and rate limits. Live credential acceptance remains deferred.
+
+## Web credential wiring and read-only health — November 15, 2026
+Official references additionally consulted:
+- https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+- https://upstash.com/docs/redis/features/restapi
+- https://www.eia.gov/opendata/documentation.php
+- https://resend.com/docs/api-reference/rate-limit
+
+Web configuration: HQ_PROVIDER_SECRET_ARN, AWS_REGION and the existing AWS identity.
+Dedicated secret contains only explicitly reused provider values, not DB URLs or founder
+passwords. IAM GetSecretValue is limited to the dedicated web secret ARN. Config is
+allowlisted and cached 60 seconds; failure returns 503 with a generic message. No raw
+provider exception or credential is rendered. Environment config overrides secret fields.
+
+Redis uses HTTPS *.upstash.io /ping with Bearer auth. Reject userinfo, ports, query,
+fragment, custom paths and other hosts; reject redirects. Consume only result=PONG and
+measure response time. Does not read customer keys, write data, reconcile bills or claim
+memory/CPU/eviction coverage. HTTP 200 with an invalid payload is an error.
+
+EIA uses GET /v2/petroleum/pri/gnd/data/ with server-only api_key, frequency=weekly,
+data[0]=value, facets[series][]=EMD_EPD2DXL0_PTE_NUS_DPG, period descending, offset=0,
+length=1. Consume response.data[0].period/value; require a dated positive numeric price.
+Normalize to latestPeriod/dieselPrice/units (USD per gallon). Publication period is not
+connection time. No manual price is invented when EIA fails. The customer calculator's
+existing fuel cache and behavior are unchanged.
+
+Redis/EIA/Resend observations cache 60 seconds per warm process, with concurrent request
+coalescing; no distributed rate-limit guarantee. Registry does not duplicate dedicated
+Resend/Twilio/GitHub/Vercel/Cloudflare checks. Browser payloads are private/no-store.
+HTTP 401/403 maps to access-denied, 429 rate-limited, transport errors unavailable.
+Resend maintains per-scope failures; sending-only keys may deny every inventory call.
+
+Source: hq-web/lib/provider-config.mjs, provider-cache.mjs, operational-read.mjs;
+app/api/providers, app/api/resend, app/api/twilio; app/page.jsx.
+Tests: secret allowlist/cache/failure, Redis URL validation/schema rejection, EIA schema
+and redaction, observation coalescing. Live results must be checked after deployment.

@@ -8,4 +8,15 @@ Resend Library shows bounded sender/template/delivery/broadcast inventories with
 access and additional-page indicators. Providers includes Twilio account, current-month
 usage, recent message status and Verify services. Both are read-only; missing credentials
 remain explicitly unconfigured. See docs/api-contracts/hq-communications.contract.md.
-The native client in hq-mac embeds this same web HQ with separate web authentication.
+The original native client is separate; web integrations run in this dedicated HQ deployment.
+
+## Server credential connection
+HQ_PROVIDER_SECRET_ARN selects a dedicated AWS Secrets Manager JSON object. The existing
+HQ IAM identity can GetSecretValue only for that secret; customer database and enrollment
+secrets are excluded. Environment values take precedence, allowlisted fields only, with a
+60-second in-memory cache. Failures return a credential-store error, not an empty success.
+Resend, Twilio and the provider registry use this reader. Redis PING and EIA latest weekly
+diesel checks are live read-only adapters. Provider observations are cached for 60 seconds
+per warm instance; browser responses remain private/no-store. No background polling.
+Missing credentials remain explicitly listed. Sentry DSNs and PostHog ingestion keys do
+not provide dashboard access. No native bundle installation is part of this web release.
