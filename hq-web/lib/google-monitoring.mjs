@@ -35,7 +35,7 @@ export async function readGoogleMonitoring(name,range,env,fetcher=fetch,tokenRea
  try{
  const token=await tokenReader(env,fetcher);if(!token)return {...base,status:'unconfigured',reason:'Google monitoring federation is prepared but read-only project access has not been activated.'};
  const end=new Date(Math.floor((now-180000)/3600000)*3600000),start=new Date(+end-(range==='24h'?1:7)*86400000);
- const filter='metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api" AND resource.labels.credential_id="'+LOADIQ_CREDENTIAL+'" AND ('+services.map(s=>'resource.labels.service="'+s+'"').join(' OR ')+')';
+ const filter='metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api" AND resource.labels.credential_id="'+LOADIQ_CREDENTIAL+'" AND resource.labels.service=one_of('+services.map(s=>'"'+s+'"').join(',')+')';
  const query=new URLSearchParams({filter,'interval.startTime':start.toISOString(),'interval.endTime':end.toISOString(),'aggregation.alignmentPeriod':'3600s','aggregation.perSeriesAligner':'ALIGN_SUM','aggregation.crossSeriesReducer':'REDUCE_SUM',view:'FULL',pageSize:'10000'});
  query.append('aggregation.groupByFields','resource.labels.service');query.append('aggregation.groupByFields','metric.labels.response_code_class');
  let diagnostic='';

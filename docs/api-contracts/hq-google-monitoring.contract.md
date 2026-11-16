@@ -52,3 +52,5 @@ provider trust and role binding, project metrics scope, schema drift. Live verif
 before claiming connected; API enablement needs completion; the exact IAM trust is saved and token exchange verified.
 
 Google STS rejects extra signed headers: applyChecksum=false prevents the Smithy x-amz-content-sha256 header. Verified against https://docs.cloud.google.com/iam/docs/troubleshooting-workload-identity-federation . Regression asserts the exact allowed header set.
+
+Metrics selector uses documented one_of for service alternatives, keeping resource label comparisons in one AND expression. https://docs.cloud.google.com/monitoring/api/v3/filters . Provider registry now uses an actual bounded Google monitoring read, rather than looking for an unused Maps key in HQ.

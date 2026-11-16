@@ -1,3 +1,4 @@
+import {readGoogleMonitoring} from '../../../lib/google-monitoring.mjs';
 import {NextResponse} from 'next/server';
 import {twilioMissingCredentials} from '../../../lib/twilio-read.mjs';
 import {getProviderConfig} from '../../../lib/provider-config.mjs';
@@ -27,6 +28,8 @@ const specs=[
  {name:'Private Network / VPN',env:[],usage:'Traffic/connection health',billing:'Subscription'}
 ];
 async function check(spec,env){
+ if(spec.name==='Google Maps Platform'){const r=await observe('Google Maps Platform',()=>readGoogleMonitoring(spec.name,'24h',env));return {name:spec.name,status:r.status,checkedAt:r.checkedAt,reason:r.reason,usageCategory:'LoadIQ-key API requests',billingCategory:'Billing export not connected'};}
+
  if(spec.name==='Stripe')return {name:spec.name,...await observe('Stripe',()=>readStripeTest(env))};
  if(spec.name==='Redis')return {name:spec.name,...await observe('Redis',()=>readRedis(env))};
  if(spec.name==='EIA')return {name:spec.name,...await fuelObserve('EIA',()=>readEia(env))};

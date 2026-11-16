@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- Corrected Google monitoring service selector and connected its registry status to live monitoring reads instead of unused customer API-key settings.
+
 - Added bounded Google metric-read error classification; activated Monitoring API and verified live LoadIQ Twilio summary history after approved read access.
 
 - PostHog cards and inventory now consistently identify customer event capture as deferred until V1 interface refinement.
