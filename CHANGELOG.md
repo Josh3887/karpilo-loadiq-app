@@ -10,6 +10,8 @@
 
 ### Added
 
+- HQ: separate website/HQ Vercel request charts with independent access coverage and complete-hour windows; billing remains separate from request activity.
+
 - HQ: five-minute AWS collector, 30-day retained observations, protected history endpoint, stale-collection status and website/app/HQ probe charts. PostHog capture remains deferred.
 
 - Web HQ: fixed-tag AWS daily cost adapter and billing charts, with partial attribution,

@@ -135,3 +135,7 @@ has no edit action. No broad team token was created.
 
 This is the implementation scope and dependency record, not a claim that all
 provider billing, traffic collection or background monitoring is complete.
+
+## Vercel project traffic
+
+POST /v2/observability/query is verified in official Vercel CLI source (legacy metrics branch): https://github.com/vercel/vercel/blob/main/packages/cli/src/commands/metrics/query.ts . Bearer server token, teamId fixed; metric vercel.request.count, sum, project scope ownerId/projectIds, hourly granularity, last 24h/7d complete hours, limit168. Website and HQ project IDs are fixed; no team-wide fallback. Consume data.timestamp/vercel_request_count_sum; malformed/negative values reject the series. Coverage remains independent per project. This counts all-environment HTTP requests, including assets/bots/probes, never unique visitors. Customer app is separately hosted, not attributed to the isolated frontend. Two parallel queries, 15-second timeout, 60-second success / 15-second failure cache, private/no-store. Billing is a separate nested result. Legacy endpoint drift is a known risk; no automatic alternate endpoint or permission expansion.
