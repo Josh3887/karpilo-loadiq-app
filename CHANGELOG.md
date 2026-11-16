@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- Google federation signing now uses only Google-supported AWS headers; bounded error classifications disclose no credentials or raw upstream bodies.
+
 - HQ Sentry inventory filters the product project before pagination so unrelated issues cannot suppress LoadIQ results.
 
 ### Added

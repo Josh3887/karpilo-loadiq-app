@@ -1,6 +1,6 @@
 # HQ Google monitoring contract
 
-Prepared 2026-11-16; live federation access not yet provisioned.
+Federation and project-only Monitoring Viewer provisioned 2026-11-16; live API verification in progress.
 
 ## Evidence and scope
 Google console identifies `Karpilo LoadIQ - isolated sandbox` key ID
@@ -50,3 +50,5 @@ app/api/monitoring/route.js, components/MonitoringPanel.jsx.
 Risks: label support by service, key rotation changing attribution, empty history,
 provider trust and role binding, project metrics scope, schema drift. Live verify
 before claiming connected; API enablement and exact IAM trust need completion.
+
+Google STS rejects extra signed headers: applyChecksum=false prevents the Smithy x-amz-content-sha256 header. Verified against https://docs.cloud.google.com/iam/docs/troubleshooting-workload-identity-federation . Regression asserts the exact allowed header set.

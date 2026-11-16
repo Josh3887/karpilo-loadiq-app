@@ -7,7 +7,7 @@ export const LOADIQ_CREDENTIAL='apikey:3f4dea78-1edb-4ea7-9a14-440a382eb90d';
 const services=['addressvalidation.googleapis.com','places.googleapis.com','routes.googleapis.com'];
 export async function googleToken(env,fetcher=fetch){
  if(env.HQ_GOOGLE_MONITORING_ENABLED!=='true'||!env.AWS_ACCESS_KEY_ID||!env.AWS_SECRET_ACCESS_KEY)return null;
- const signer=new SignatureV4({service:'sts',region:'us-east-2',sha256:Sha256,credentials:{accessKeyId:env.AWS_ACCESS_KEY_ID,secretAccessKey:env.AWS_SECRET_ACCESS_KEY,...(env.AWS_SESSION_TOKEN?{sessionToken:env.AWS_SESSION_TOKEN}:{})}});
+ const signer=new SignatureV4({service:'sts',applyChecksum:false,region:'us-east-2',sha256:Sha256,credentials:{accessKeyId:env.AWS_ACCESS_KEY_ID,secretAccessKey:env.AWS_SECRET_ACCESS_KEY,...(env.AWS_SESSION_TOKEN?{sessionToken:env.AWS_SESSION_TOKEN}:{})}});
  const host='sts.us-east-2.amazonaws.com';
  const signed=await signer.sign({method:'POST',protocol:'https:',hostname:host,path:'/',query:{Action:'GetCallerIdentity',Version:'2011-06-15'},headers:{host,'x-goog-cloud-target-resource':GOOGLE_AUDIENCE}});
  const subjectToken=encodeURIComponent(JSON.stringify({url:'https://'+host+'/?Action=GetCallerIdentity&Version=2011-06-15',method:'POST',headers:Object.entries(signed.headers).map(([key,value])=>({key:key.toLowerCase()==='authorization'?'Authorization':key,value}))}));
