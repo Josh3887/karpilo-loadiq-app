@@ -28,7 +28,7 @@ def handler(event, context):
         cur.execute("SELECT 1 FROM pg_roles WHERE rolname='karpilo_feedback_gateway'")
         if cur.fetchone() is None:
             cur.execute('CREATE ROLE karpilo_feedback_gateway LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS')
-        cur.execute("SELECT format('ALTER ROLE %%I PASSWORD %%L', %s, %s)", ('karpilo_feedback_gateway', password))
+        cur.execute("SELECT 'ALTER ROLE ' || quote_ident(%s::text) || ' PASSWORD ' || quote_literal(%s::text)", ('karpilo_feedback_gateway', password))
         cur.execute(cur.fetchone()[0])
         cur.execute('GRANT CONNECT ON DATABASE karpilo_isolated_test TO karpilo_feedback_gateway')
         cur.execute('GRANT karpilo_feedback_moderator,karpilo_reviews_public TO karpilo_feedback_gateway')

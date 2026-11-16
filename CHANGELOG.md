@@ -4,6 +4,9 @@
 
 ### Feedback pipeline
 
+- Applied AWS feedback schema and restricted gateway credential; verified public empty-state and unsigned private denial. Removed temporary migration secret permissions. End-to-end UI acceptance remains open.
+- Deferred calculator defects until the end per founder direction; feedback activation remains the active task.
+
 - Added AWS-owned review/feedback conversations, consent-controlled public projection, founder replies and subscriber inbox notices; deployment acceptance remains separately recorded.
 - Added HQ Reviews & Feedback workspace and AWS SigV4 adapter, with no direct provider intake.
 - Recorded project-completion requirement to audit every pipeline through AWS; existing direct HQ provider adapters remain migration work.

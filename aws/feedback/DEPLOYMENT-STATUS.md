@@ -1,3 +1,21 @@
+# Current activation checkpoint — 2026-11-16
+
+Josh directed continuing task 1 and deferred all five calculator defects until the end.
+The prior approval block is resolved for the scoped feedback activation.
+
+- Additive migrations 015/019 committed successfully; restricted feedback login stored server-only.
+- Stack update completed with gateway enabled and migration concurrency fixed at zero.
+- Removed all inline migration-role policies, including master-secret/KMS and target-secret access.
+- Live public endpoint returned HTTP 200 with an empty review list; unsigned private endpoint returned HTTP 403.
+- Authenticated HQ/customer acceptance and feedback email ingestion remain open.
+- Verified archived billing source SHA256 matches 6d082e2c8b45b5ca9fa5ebadd9187ce514960914316980a2b8799d008d8d4bee; feedback patch applied cleanly.
+- Paired customer build 33 is in progress; source archive SHA256 0100b88f263a3bb060c06474fb43ebd7834f4bcfb879a0322fe96e265545a6f2.
+- stack.json now records enabled gateway, disabled migrator and removed secret permissions.
+
+The historical checkpoint below is preserved as history, not current activation status.
+
+---
+
 # Feedback pipeline — implementation and activation status
 
 2026-11-16. Customer source baseline is the verified archived billing candidate;
