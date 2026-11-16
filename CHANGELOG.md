@@ -14,7 +14,9 @@
 
 ### Added
 
-- HQ Redis management-history adapter for the fixed LoadIQ database, read-only server credential support, usage charts and explicit unverified billing units; live access pending.
+- Prepared key-scoped Google Maps monitoring and AWS federation token exchange; activation remains gated on provisioning and live verification. Shared Gemini usage is explicitly unattributed.
+
+- HQ Redis management-history adapter for the fixed LoadIQ database, read-only server credential support, usage charts and explicit unverified billing units; read-only access and five live usage series verified on HQ.
 
 - HQ: separate website/HQ Vercel request charts with independent access coverage and complete-hour windows; billing remains separate from request activity.
 
