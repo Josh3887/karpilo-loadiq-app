@@ -61,3 +61,6 @@ Tests cover missing tokens, scope denial, partial access, malformed results, rat
 redaction, pagination and probe failure. Live private access awaits dashboard provisioning.
 Drift risks: account ownership, fixed zone IDs, API permissions, response schemas and
 pagination. Revalidate against official docs when any change.
+
+### Product boundary — 2026-11-16
+The runtime zone allowlist now contains only karpilo-liq.com. Public probes are apex, app and hq under that domain. Other company/project zones (including Argus) are neither fetched nor displayed. Existing token permissions were not broadened or changed. Zone/DNS API and error/pagination semantics above remain unchanged.

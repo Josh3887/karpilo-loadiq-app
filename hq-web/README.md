@@ -64,3 +64,18 @@ dashboard/saved-insight inventories. Configure POSTHOG_PERSONAL_API_KEY, POSTHOG
 and POSTHOG_PROJECT_ID in the dedicated server secret. Only project:read,
 dashboard:read and insight:read are used. No raw events, replay, queries, flags or
 billing are connected. See docs/api-contracts/hq-posthog.contract.md.
+
+## Command center and branding
+Overview and Integrations use the founder-selected chrome/red truck HQ identity.
+Public static brand assets and manifest support browser/home-screen icons; all
+operational routes retain founder authentication. No service worker or offline
+business-data cache is installed. Existing sections and communications workflows remain.
+Alarm cards derive from current bounded reads: failed/partial provider access,
+CloudWatch ALARM/INSUFFICIENT_DATA, stale successful observations, PostHog ingestion
+gap, unresolved Sentry issues, Resend failed domains and Twilio delivery history.
+Historical issues are labelled; setup gaps are not outages. Refresh is manual and
+there is no notification/acknowledgement persistence or background monitoring.
+
+### Product-scoped workspaces (2026-11-16)
+Each integration opens its own URL-backed page (`?integration=...`) with connection, usage, cost and alarm panels. Unavailable usage/quota/cost figures remain explicit, never zero or company-wide estimates. Cloudflare reads only karpilo-liq.com and its apex/app/HQ probes. Shared Twilio messages/usage and AWS account-wide Cost Explorer totals are excluded pending product allocation. Sentry shows only the explicitly identified karpilo-loadiq-isolated project. Argus is a separate company-wide control plane.
+Communications now has Sent, Received (Resend receiving only), and Templates, message reading, template HTML/subject/name edits with explicit review, and locally selected file/image attachments for reviewed template sends. Saves do not publish templates; this avoids silently activating operational emails. Resend had 2 published and 53 unpublished originals on 2026-11-16, including six superseded. Payment Receipt and Account Deletion are the published originals. Provider data does not establish why others were never published.

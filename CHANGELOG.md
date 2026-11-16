@@ -4,6 +4,10 @@
 
 ### Added
 
+- Web HQ: chrome/red truck HQ identity, web app icons, responsive integration
+  control panel and source-labelled alarm cards derived from existing observations.
+  Provider access, historical issues and current alarms remain distinct.
+
 - Web HQ: restricted PostHog project, dashboard and saved-insight inventory with
   independent access status, bounded pagination and explicit ingestion limitations.
 
@@ -164,3 +168,5 @@
 - No Supabase migrations, billing changes, or environment files were changed.
 - No Supabase files, native iOS/Android files, public assets, or marketing
   assets were restored in this recovery pass.
+- HQ integrations now open dedicated product pages with usage, cost-coverage and alarm panels. Cloudflare is limited to karpilo-liq.com; shared company cost/message data is excluded pending attribution.
+- Communications adds Resend Sent/Received folders, product-domain message readers, reviewed template revisions and bounded file/image attachments. Saving does not publish; delivery still requires explicit review. Source templates are correctly labeled published/unpublished originals.

@@ -1,3 +1,4 @@
+import {productDomains,productMail} from '../../../lib/resend-mail.mjs';
 import {getProviderConfig} from '../../../lib/provider-config.mjs';
 import {createObservationCache} from '../../../lib/provider-cache.mjs';
 const observe=createObservationCache();
@@ -18,10 +19,10 @@ async function readResend(){
  const data=Object.fromEntries(keys.map((k,i)=>[k,settled[i].status==='fulfilled'?settled[i].value:null]));
  const rows=x=>Array.isArray(x?.data)?x.data:Array.isArray(x)?x:[];
  return {status:Object.values(coverage).every(x=>x==='connected')?'connected':Object.values(coverage).some(x=>x==='connected')?'partial':'error',checkedAt:new Date().toISOString(),coverage,httpStatuses:Object.fromEntries(keys.map((k,i)=>[k,settled[i].status==='fulfilled'?200:settled[i].reason?.httpStatus??null])),reason:Object.values(coverage).includes('access-denied')?'Resend denied inventory access. HQ needs an API key permitted to list domains, templates, emails and broadcasts.':null,pagination:Object.fromEntries(keys.map(k=>[k,Boolean(data[k]?.has_more)])),
- domains:data.domains?rows(data.domains).map(x=>({id:x.id,name:x.name,status:x.status,region:x.region,createdAt:x.created_at,capabilities:x.capabilities||null})):null,
- templates:data.templates?rows(data.templates).map(x=>({id:x.id,name:x.name,alias:x.alias,status:x.status,createdAt:x.created_at,updatedAt:x.updated_at})):null,
- emails:data.emails?rows(data.emails).map(x=>({id:x.id,subject:x.subject,status:x.last_event||x.status,createdAt:x.created_at})):null,
- broadcasts:data.broadcasts?rows(data.broadcasts).map(x=>({id:x.id,name:x.name,status:x.status,createdAt:x.created_at,scheduledAt:x.scheduled_at})):null
+ domains:data.domains?rows(data.domains).filter(x=>productDomains.includes(x.name)).map(x=>({id:x.id,name:x.name,status:x.status,region:x.region,createdAt:x.created_at,capabilities:x.capabilities||null})):null,
+ templates:data.templates?rows(data.templates).filter(x=>/loadiq|load iq|^karpilo-/i.test((x.name||'')+' '+(x.alias||''))).map(x=>({id:x.id,name:x.name,alias:x.alias,status:x.status,createdAt:x.created_at,updatedAt:x.updated_at})):null,
+ emails:data.emails?rows(data.emails).filter(x=>productMail(x,'sent')).map(x=>({id:x.id,subject:x.subject,status:x.last_event||x.status,createdAt:x.created_at})):null,
+ broadcasts:data.broadcasts?rows(data.broadcasts).filter(x=>/loadiq|load iq/i.test(x.name||'')).map(x=>({id:x.id,name:x.name,status:x.status,createdAt:x.created_at,scheduledAt:x.scheduled_at})):null
  };
 }
 

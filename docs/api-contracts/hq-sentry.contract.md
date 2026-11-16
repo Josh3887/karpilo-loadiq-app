@@ -46,3 +46,6 @@ hq-web/lib/sentry-read.mjs; app/api/sentry/route.js; components/SentryObservatio
 app/page.jsx; app/api/providers/route.js. Tests cover auth, fixed endpoints, privacy,
 malformed responses, partial denial, missing credentials, pagination and failures.
 Live verification remains pending until credential creation and deployment.
+
+### Product boundary — 2026-11-16
+HQ filters returned project/issue inventories to the explicitly identified karpilo-loadiq-isolated project. Generic or other project names are excluded rather than guessed to belong to LoadIQ. Pagination describes the provider page, so an empty filtered page is not an assertion that the organization has no issues. Organization metadata remains connection evidence only, not product billing or health evidence.

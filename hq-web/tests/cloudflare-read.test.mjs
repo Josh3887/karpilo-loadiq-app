@@ -30,9 +30,9 @@ test('denied private scopes remain errors despite successful public probes',asyn
  const r=await readCloudflare(env,mock(()=>({ok:false,status:403})));
  assert.equal(r.status,'error');assert.equal(r.coverage.zones,'access-denied');assert.equal(r.coverage.http,'connected');assert.equal(r.zones[0].dnsRecords,null);
 });
-test('one denied zone is partial and exposes the denied scope',async()=>{
- const r=await readCloudflare(env,mock(url=>url.includes(zones[0].id)?{ok:false,status:403}:null));
- assert.equal(r.status,'partial');assert.equal(r.zones[0].coverage.records,'access-denied');assert.equal(r.zones[1].coverage.records,'connected');
+test('denied records remain partial for the product zone',async()=>{
+ const r=await readCloudflare(env,mock(url=>url.includes('dns_records')?{ok:false,status:403}:null));
+ assert.equal(r.status,'partial');assert.equal(r.zones.length,1);assert.equal(r.zones[0].name,'karpilo-liq.com');assert.equal(r.zones[0].coverage.records,'access-denied');
 });
 test('malformed API success and rate limits cannot become empty inventories',async()=>{
  const bad=await readCloudflare(env,mock(()=>ok({success:true,result:{}})));

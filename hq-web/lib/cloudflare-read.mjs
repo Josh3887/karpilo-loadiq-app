@@ -1,6 +1,6 @@
 import {readJSON,connectionStatus} from './provider-read.mjs';
-export const zones=[{name:'karpilo-liq.com',id:'354a61884ea0777e1c8a1a8f01b8aa8a'},{name:'karpiloendeavor.com',id:'b8415789be0c168fb1ef529b2d473f18'},{name:'karpilofleetos.com',id:'1608ce26faf5c48a8723769c755355a5'},{name:'k-atls-aisystems.com',id:'7932894dfdad4636497fe9e4973e05e0'},{name:'project-alter-ego.com',id:'11e3c527f7d03d54b76805da733426db'},{name:'zaharasworld.com',id:'36058f476f19b4c80ebea11186e565b0'}];
-const probes=['hq.karpilo-liq.com','app.karpilo-liq.com','karpilo-liq.com','argus.karpiloendeavor.com'];
+export const zones=[{name:'karpilo-liq.com',id:'354a61884ea0777e1c8a1a8f01b8aa8a'}];
+const probes=['hq.karpilo-liq.com','app.karpilo-liq.com','karpilo-liq.com'];
 async function dns(name,type,fetch){try{const url=new URL('https://cloudflare-dns.com/dns-query');url.searchParams.set('name',name);url.searchParams.set('type',type);const r=await fetch(url,{headers:{Accept:'application/dns-json'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(6500)});if(!r.ok)throw Error();const d=await r.json();return {status:d.Status,answers:(d.Answer||[]).map(a=>({type:a.type,data:a.data,ttl:a.TTL})).slice(0,12)}}catch{return {status:null,answers:[],error:'DNS probe unavailable'}}}
 async function http(name,fetch){try{const r=await fetch('https://'+name,{method:'HEAD',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(7000)});return {status:r.status,reachable:true,redirect:r.headers.get('location')?.slice(0,300)||null}}catch{return {status:null,reachable:false}}}
 
