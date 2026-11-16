@@ -24,7 +24,7 @@ test('validated inventories connect, redact and disclose pagination',async()=>{
  const r=await readCloudflare(env,mock());assert.equal(r.status,'connected');
  assert.equal(r.zones[0].hasMore,true);assert.equal(r.zones[0].dnsRecords[0].content,'[redacted]');
  for(const value of ['private-token','private-dns-value','private-comment','private-owner'])assert.ok(!JSON.stringify(r).includes(value));
- assert.equal(r.coverage.analytics,'not-implemented');
+ assert.equal(r.coverage.analytics,'separate-check');
 });
 test('denied private scopes remain errors despite successful public probes',async()=>{
  const r=await readCloudflare(env,mock(()=>({ok:false,status:403})));

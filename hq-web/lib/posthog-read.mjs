@@ -21,5 +21,5 @@ export async function readPosthog(env={},fetcher=fetch){
  project:project?{id:project.id,name:name(project.name),timezone:name(project.timezone),ingestedEvent:typeof project.ingested_event==='boolean'?project.ingested_event:null}:null,
  dashboards:rows(dashboards),insights:rows(insights),
  pagination:{dashboards:dashboards?Boolean(dashboards.next)||dashboards.results.length>50:null,insights:insights?Boolean(insights.next)||insights.results.length>50:null},
- reason:'Read-only project metadata and the first 50 dashboards and saved insights. Event ingestion is provider-reported, not an end-to-end capture test. Live analytics queries, session replay, feature flags and billing are not connected.'};
+ reason:'Read-only project metadata and the first 50 dashboards and saved insights. Event ingestion is provider-reported, not an end-to-end capture test. Hourly event-query access is checked below. Session replay, feature flags and billing are not connected.'};
 }

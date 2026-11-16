@@ -61,3 +61,17 @@ represented as LoadIQ spend. Live Stripe remains outside authorization.
 
 Source: lib/monitoring-read.mjs, app/api/monitoring/route.js,
 app/api/aws/metrics/route.js, components/MonitoringPanel.jsx, ProviderPage.jsx.
+
+## Live verification, November 15, 2026
+
+Deployed HQ rendered seven-day CloudWatch series (up to 168 readings per metric),
+Sentry accepted error-event series (169 inclusive hourly buckets), Resend bounded
+send history and 98 ready Vercel deployments with readiness durations. Cloudflare
+returned an authorization denial for analytics. PostHog trends were unavailable with
+its inventory credential. Vercel billing returned HTTP 404 with the deployed project
+token, although the separate connector could read a team export. Neither result
+establishes product costs. Mobile Sentry page width was 390/390 with no page overflow.
+
+Inventory descriptions now point to the separate history check. Cloudflare inventory
+coverage.analytics is `separate-check`; it does not assert successful analytics access.
+Daily UTC chart labels preserve their date; AWS storage charts display decimal GB.

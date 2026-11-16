@@ -30,9 +30,9 @@ export async function readCloudflare(env={},fetcher=fetch){
  })):Promise.resolve(zones.map(z=>({name:z.name,zoneStatus:'unverified',dnsRecords:null,coverage:{zone:'unconfigured',records:'unconfigured'},hasMore:null})));
  const [checks,result]=await Promise.all([checksPromise,inventoryPromise]);
  const publicCoverage={dns:aggregate(checks.flatMap(c=>[c.cname,c.a]).map(r=>r.status===0?'connected':'unavailable')),http:aggregate(checks.map(c=>c.http.reachable?'connected':'unavailable'))};
- const coverage={...publicCoverage,zones:token?aggregate(result.map(z=>z.coverage.zone)):'unconfigured',records:token?aggregate(result.map(z=>z.coverage.records)):'unconfigured',analytics:'not-implemented',security:'not-implemented'};
+ const coverage={...publicCoverage,zones:token?aggregate(result.map(z=>z.coverage.zone)):'unconfigured',records:token?aggregate(result.map(z=>z.coverage.records)):'unconfigured',analytics:'separate-check',security:'not-implemented'};
  // Public probes and credential validity cannot establish private inventory access.
  const privateStatus=connectionStatus(Object.fromEntries(result.flatMap((z,i)=>[[i+'zone',z.coverage.zone],[i+'records',z.coverage.records]])));
  return {status:token?privateStatus:Object.values(publicCoverage).some(x=>['connected','partial'].includes(x))?'partial':'error',mode:token?'api':'public-observation',checkedAt:new Date().toISOString(),zones:result,checks,coverage,
-  reason:token?'Read-only zone and first-page DNS inventory. Coverage reports endpoint access, not zone health. Analytics and security monitoring are not implemented.':'Public DNS and HTTPS observations only; private zone inventory requires a scoped API token. HTTPS reachability does not prove application health.'};
+  reason:token?'Read-only zone and first-page DNS inventory. Coverage reports endpoint access, not zone health. Traffic analytics access is checked separately in Performance & usage. Security incident monitoring is not connected.':'Public DNS and HTTPS observations only; private zone inventory requires a scoped API token. HTTPS reachability does not prove application health.'};
 }
