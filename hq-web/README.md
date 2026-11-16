@@ -57,3 +57,10 @@ A dedicated internal integration needs only org:read and event:read. The existin
 SENTRY_AUTH_TOKEN secret field is used. Raw error text, stacks and user details are
 omitted; issue links open Sentry for further investigation. No result cache or polling.
 Endpoint coverage and pagination remain explicit. See docs/api-contracts/hq-sentry.contract.md.
+
+## PostHog restricted read access
+Providers shows project identity, provider-reported event ingestion state and bounded
+dashboard/saved-insight inventories. Configure POSTHOG_PERSONAL_API_KEY, POSTHOG_HOST
+and POSTHOG_PROJECT_ID in the dedicated server secret. Only project:read,
+dashboard:read and insight:read are used. No raw events, replay, queries, flags or
+billing are connected. See docs/api-contracts/hq-posthog.contract.md.

@@ -14,7 +14,7 @@ const specs=[
  {name:'Vercel',env:['VERCEL_TOKEN'],url:'https://api.vercel.com/v9/projects?limit=1',headers:()=>({Authorization:'Bearer '+process.env.VERCEL_TOKEN}),usage:'Deployments and observability',billing:'Usage and invoices'},
  {name:'Resend',env:['RESEND_API_KEY'],url:'https://api.resend.com/domains',headers:()=>({Authorization:'Bearer '+process.env.RESEND_API_KEY}),usage:'Email delivery and templates',billing:'Email quotas and invoices'},
  {name:'Twilio',env:['TWILIO_ACCOUNT_SID','TWILIO_API_KEY_SID','TWILIO_API_KEY_SECRET'],usage:'Verification and SMS',billing:'Usage records'},
- {name:'PostHog',env:['POSTHOG_PERSONAL_API_KEY','POSTHOG_HOST','POSTHOG_PROJECT_ID'],url:(env)=>new URL('/api/projects/'+encodeURIComponent(env.POSTHOG_PROJECT_ID)+'/',env.POSTHOG_HOST).toString(),headers:(env)=>({Authorization:'Bearer '+env.POSTHOG_PERSONAL_API_KEY}),usage:'Events and sessions',billing:'Billing/usage'},
+ {name:'PostHog',env:['POSTHOG_PERSONAL_API_KEY','POSTHOG_HOST','POSTHOG_PROJECT_ID'],usage:'Project, dashboards and saved insights',billing:'Not connected'},
  {name:'Sentry',env:['SENTRY_AUTH_TOKEN'],usage:'Projects and unresolved issues',billing:'Not connected'},
  {name:'Cloudflare',env:['CLOUDFLARE_API_TOKEN'],url:'https://api.cloudflare.com/client/v4/user/tokens/verify',headers:()=>({Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN}),usage:'Requests and security',billing:'Subscription and usage'},
  {name:'Redis',env:['UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN'],url:(env)=>new URL('/ping',process.env.UPSTASH_REDIS_REST_URL).toString(),headers:()=>({Authorization:'Bearer '+process.env.UPSTASH_REDIS_REST_TOKEN}),usage:'Commands/storage',billing:'Plan and overages'},
@@ -34,10 +34,9 @@ async function check(spec,env){
  const base={name:spec.name,usageCategory:spec.usage,billingCategory:spec.billing,usageValue:null,billedAmount:null,currency:null,lastBillingSync:null};
  if(!spec.env.length)return {...base,status:'unidentified',checkedAt:null};
  if(missing.length)return {...base,status:'unconfigured',missingCredentials:missing,checkedAt:null};
- if(['AWS','GitHub','Vercel','Resend','Twilio','Cloudflare','Sentry'].includes(spec.name))return {...base,status:'credentials-present',checkedAt:null,note:'Live observations supplied by dedicated provider panel.'};
+ if(['AWS','GitHub','Vercel','Resend','Twilio','Cloudflare','Sentry','PostHog'].includes(spec.name))return {...base,status:'credentials-present',checkedAt:null,note:'Live observations supplied by dedicated provider panel.'};
  if(!spec.url)return {...base,status:'credentials-present',checkedAt:null,note:'Credentials present; operational API verification is not implemented for this provider.'};
  try{
-  if(spec.name==='PostHog'){const host=new URL(env.POSTHOG_HOST);if(!['us.posthog.com','eu.posthog.com','app.posthog.com'].includes(host.hostname)||host.protocol!=='https:'||host.username||host.password||host.port)throw Error('Invalid PostHog host')}
   const url=typeof spec.url==='function'?spec.url(env):spec.url;
   const response=await fetch(url,{headers:spec.headers(env),cache:'no-store',signal:AbortSignal.timeout(6000),redirect:'error'});
   return {...base,status:response.ok?'connected':'error',httpStatus:response.status,checkedAt:new Date().toISOString()};

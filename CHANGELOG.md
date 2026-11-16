@@ -4,6 +4,9 @@
 
 ### Added
 
+- Web HQ: restricted PostHog project, dashboard and saved-insight inventory with
+  independent access status, bounded pagination and explicit ingestion limitations.
+
 - Web HQ: read-only Sentry organization/project inventory and unresolved issue
   metadata with endpoint coverage, pagination disclosure and private-detail omission.
 
