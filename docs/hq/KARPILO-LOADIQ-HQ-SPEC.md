@@ -235,3 +235,7 @@ Each feature requires: `feature_id`, `state` (open/restricted/closed/maintenance
 
 This is the implementation scope and dependency record, not a claim that all
 provider billing, traffic collection or background monitoring is complete.
+
+## Current navigation override — 2026-11-16
+
+Josh's product-specific restructure supersedes older duplicate/cross-company navigation: Overview, Integrations, Communications, HQ Records, Workflows, Feature Control, Data Center, Newsletter Studio, Notifications, Version Control, Usage & Billing, Policies & Instructions, Health Center. See `HQ-WORKSPACE-AUDIT-20261116.md` for implemented responsibilities and remaining API gaps. Subscriber behavior and PostHog capture are deferred. Argus remains the cross-company command center.

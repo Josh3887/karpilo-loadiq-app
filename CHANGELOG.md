@@ -210,3 +210,11 @@
   assets were restored in this recovery pass.
 - HQ integrations now open dedicated product pages with usage, cost-coverage and alarm panels. Cloudflare is limited to karpilo-liq.com; shared company cost/message data is excluded pending attribution.
 - Communications adds Resend Sent/Received folders, product-domain message readers, reviewed template revisions and bounded file/image attachments. Saving does not publish; delivery still requires explicit review. Source templates are correctly labeled published/unpublished originals.
+
+## 2026-11-16 — HQ workspace restructure
+
+- Separated executive Overview from Integrations directory; consolidated records, market references and policy navigation.
+- Added Health Center, functional local feature/banner/policy draft workspaces, workflow schematics and consolidated usage charts.
+- Added newsletter block/template-copy studio with sandbox previews and export; retained retired Resend originals.
+- Deferred subscriber behavior and PostHog capture. Documented live-source coverage and publication/enforcement gaps.
+- Preserved existing provider adapters, founder authentication, customer app and native app boundaries.

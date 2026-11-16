@@ -83,3 +83,13 @@ Communications now has Sent, Received (Resend receiving only), and Templates, me
 ## Monitoring pages
 
 Provider pages include real historical charts where the API allows them, exact readings, period controls and opt-in visible-page refresh. See `docs/api-contracts/hq-monitoring.contract.md` for bounds and scopes. Billing access is distinct from provider connectivity. AWS allocation activation/backfill succeeded; tagged cost reads now distinguish empty allocation from a measured zero; Vercel shared charges are withheld until product allocation is verified. Missing provider access does not display zero cost or healthy performance.
+
+## Workspace restructure — 2026-11-16
+
+Overview is the executive snapshot; Integrations is the provider directory. Records are consolidated into HQ Records, Freight Intelligence into Data Center, address verification into Google Maps, and README into Policies & Instructions. Health Center owns system life support and change context. Subscriber-behavior analytics and PostHog capture remain deferred.
+
+Newsletter Studio supports editable/reorderable blocks, desktop/mobile sandbox previews, Resend template copies (including retired originals), local save and HTML/design export. GrapesJS and Waypoint were evaluated; the official npm registry was unreachable (ENOTFOUND), so no unverified dependency or CDN script was installed. The bundled editor has no campaign delivery backend. Template originals remain unchanged.
+
+Feature, banner and policy editors currently save explicitly labeled local drafts, not enforced/published customer settings. Address Book has no gateway mapping. Detailed audit and remaining backend coverage: `../docs/hq/HQ-WORKSPACE-AUDIT-20261116.md`.
+
+Resend inventory now uses the dedicated full-access key stored server-side, with read-only inventory routes. Earlier denied-key descriptions are historical, superseded by live successful reads. Current template editing and sending routes retain their own explicit validation/review requirements; inventory connectivity alone does not imply all communication workflows are available.

@@ -221,3 +221,7 @@ Reserved Resend contact fields such as FIRST_NAME are no longer misreported as m
 custom variable definitions. HQ one-off sending remains blocked when contact or
 unsubscribe context has not been verified; publication does not establish that context.
 Official reference: https://resend.com/docs/dashboard/templates/template-variables
+
+## Newsletter design copies — 2026-11-16
+
+HQ Newsletter Studio reads the existing template list/detail endpoints. Import creates a local copy only; it does not mutate or publish the original. Local designs can be saved/exported and previewed in a sandbox. Campaign recipient selection, scheduling and delivery are not introduced. Retired originals remain excluded from transactional sends and unchanged in Resend.
