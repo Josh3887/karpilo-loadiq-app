@@ -8,6 +8,10 @@
   V1 interface refinement; continue product-scoped website and app operational
   monitoring, with website traffic separate from customer and HQ activity.
 
+### Fixed
+
+- HQ Sentry inventory filters the product project before pagination so unrelated issues cannot suppress LoadIQ results.
+
 ### Added
 
 - HQ: separate website/HQ Vercel request charts with independent access coverage and complete-hour windows; billing remains separate from request activity.

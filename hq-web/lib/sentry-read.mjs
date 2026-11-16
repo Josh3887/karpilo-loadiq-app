@@ -22,7 +22,7 @@ export async function readSentry(env={},fetcher=fetch){
  const [org,projects,issues]=await Promise.all([
   read('/',env.SENTRY_AUTH_TOKEN,fetcher,x=>x?.slug===sentryOrganization&&id(x.id)),
   read('/projects/?per_page=100',env.SENTRY_AUTH_TOKEN,fetcher,x=>Array.isArray(x)&&x.every(p=>id(p.id)&&slug(p.slug))),
-  read('/issues/?query=is%3Aunresolved&statsPeriod=14d&sort=date&limit=20',env.SENTRY_AUTH_TOKEN,fetcher,x=>Array.isArray(x)&&x.every(i=>id(i.id)&&slug(i.shortId)&&id(i.project?.id)&&slug(i.project?.slug)))
+  read('/issues/?project=4512353987133440&query=is%3Aunresolved&statsPeriod=14d&sort=date&limit=20',env.SENTRY_AUTH_TOKEN,fetcher,x=>Array.isArray(x)&&x.every(i=>id(i.id)&&slug(i.shortId)&&id(i.project?.id)&&slug(i.project?.slug)))
  ]);
  const coverage=Object.fromEntries(keys.map((k,i)=>[k,[org,projects,issues][i].status]));
  return {...empty,status:connectionStatus(coverage),coverage,
