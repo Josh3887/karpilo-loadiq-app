@@ -211,3 +211,27 @@ Each feature requires: `feature_id`, `state` (open/restricted/closed/maintenance
 | Optional weather or fuel benchmark | Manual fuel price and no weather enhancement; label missing reference data |
 
 **State behavior**: Open = normal feature path; Restricted = eligible users get feature, others get approved fallback; Closed = all customers use fallback; Maintenance = temporarily use fallback with notice and restoration check. Do not grant unauthorized paid entitlements or write customer records outside permitted workflows. A fallback must be validated in AWS isolated testing, including correct math, missing-input handling, no fabricated estimates, and no data loss. If the core calculator engine itself is unavailable, do not pretend a successful calculation; show a clear recoverable error and preserve input locally where safe.
+
+## Founder priority update — November 16, 2026
+
+- **PostHog event design and capture: deliberately deferred.** Build only after the
+  customer V1 interface is refined and its interactions are defined. Then define
+  the event catalogue, allowed properties, funnels and privacy boundaries before
+  activating capture. Preserve the working HQ read connection. No synthetic events
+  or customer tracking activation to make an empty dashboard look connected.
+- **All other HQ integrations remain active implementation scope.** Centralize live
+  operations, usage, attributable costs, deployments, errors, delivery, domains,
+  quotas and alarms for the LoadIQ website and customer application.
+- **Surfaces:** karpilo-liq.com (website), app.karpilo-liq.com (customer app), and
+  hq.karpilo-liq.com (back office). Keep website traffic, customer activity and HQ
+  administrative traffic distinct; exclude unrelated company/Argus projects.
+- Website traffic monitoring is required now, independently of future PostHog
+  customer event instrumentation. Verify the hosting/traffic source: Cloudflare
+  DNS-only records cannot supply proxied HTTP traffic analytics. Provider request
+  counts must not be mislabeled as unique visitors or sessions.
+- An inactive customer app can have no customer events while infrastructure and
+  website monitoring continue. Missing metrics, deliberately deferred collection,
+  measured zero activity and failed observations must remain distinct.
+
+This is the implementation scope and dependency record, not a claim that all
+provider billing, traffic collection or background monitoring is complete.

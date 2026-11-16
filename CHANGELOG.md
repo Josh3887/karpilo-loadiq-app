@@ -2,7 +2,15 @@
 
 ## Unreleased
 
+### Documentation
+
+- Recorded founder dependency: defer PostHog event design/capture until customer
+  V1 interface refinement; continue product-scoped website and app operational
+  monitoring, with website traffic separate from customer and HQ activity.
+
 ### Added
+
+- HQ: five-minute AWS collector, 30-day retained observations, protected history endpoint, stale-collection status and website/app/HQ probe charts. PostHog capture remains deferred.
 
 - Web HQ: fixed-tag AWS daily cost adapter and billing charts, with partial attribution,
   hourly caching and explicit empty-allocation status. Refreshed Cloudflare/PostHog

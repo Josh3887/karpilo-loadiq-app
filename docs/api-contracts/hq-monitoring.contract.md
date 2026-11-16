@@ -111,3 +111,27 @@ Vercel minimum-scope investigation confirmed Billing Read is available to a
 private integration, plus mandatory Integration Configuration Read. Registration
 requires an Integration Agreement and an OAuth redirect flow; existing HQ PAT
 has no edit action. No broad team token was created.
+
+## Founder priority update — November 16, 2026
+
+- **PostHog event design and capture: deliberately deferred.** Build only after the
+  customer V1 interface is refined and its interactions are defined. Then define
+  the event catalogue, allowed properties, funnels and privacy boundaries before
+  activating capture. Preserve the working HQ read connection. No synthetic events
+  or customer tracking activation to make an empty dashboard look connected.
+- **All other HQ integrations remain active implementation scope.** Centralize live
+  operations, usage, attributable costs, deployments, errors, delivery, domains,
+  quotas and alarms for the LoadIQ website and customer application.
+- **Surfaces:** karpilo-liq.com (website), app.karpilo-liq.com (customer app), and
+  hq.karpilo-liq.com (back office). Keep website traffic, customer activity and HQ
+  administrative traffic distinct; exclude unrelated company/Argus projects.
+- Website traffic monitoring is required now, independently of future PostHog
+  customer event instrumentation. Verify the hosting/traffic source: Cloudflare
+  DNS-only records cannot supply proxied HTTP traffic analytics. Provider request
+  counts must not be mislabeled as unique visitors or sessions.
+- An inactive customer app can have no customer events while infrastructure and
+  website monitoring continue. Missing metrics, deliberately deferred collection,
+  measured zero activity and failed observations must remain distinct.
+
+This is the implementation scope and dependency record, not a claim that all
+provider billing, traffic collection or background monitoring is complete.
