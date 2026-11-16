@@ -25,7 +25,7 @@ not provide dashboard access. No native bundle installation is part of this web 
 Cloudflare uses the dedicated secret reader and validates actual zone/DNS responses.
 A valid token alone is not a connected inventory. Each zone exposes separate zone and
 record access results. Public DNS/HTTPS observations remain separate from API access;
-analytics/security are explicitly not implemented. Inventory is bounded to 100 records
+analytics is checked separately; security monitoring is not implemented. Inventory is bounded to 100 records
 per zone, with pagination disclosure. See docs/api-contracts/hq-cloudflare.contract.md.
 
 Resend inventory access was browser-verified after the prior deployment per the
@@ -62,8 +62,8 @@ Endpoint coverage and pagination remain explicit. See docs/api-contracts/hq-sent
 Providers shows project identity, provider-reported event ingestion state and bounded
 dashboard/saved-insight inventories. Configure POSTHOG_PERSONAL_API_KEY, POSTHOG_HOST
 and POSTHOG_PROJECT_ID in the dedicated server secret. Only project:read,
-dashboard:read and insight:read are used. No raw events, replay, queries, flags or
-billing are connected. See docs/api-contracts/hq-posthog.contract.md.
+dashboard:read, insight:read and query:read are used. Queries return aggregate
+event counts only. No raw events, replay, flags or billing are connected. See docs/api-contracts/hq-posthog.contract.md.
 
 ## Command center and branding
 Overview and Integrations use the founder-selected chrome/red truck HQ identity.
@@ -82,4 +82,4 @@ Communications now has Sent, Received (Resend receiving only), and Templates, me
 
 ## Monitoring pages
 
-Provider pages include real historical charts where the API allows them, exact readings, period controls and opt-in visible-page refresh. See `docs/api-contracts/hq-monitoring.contract.md` for bounds and scopes. Billing access is distinct from provider connectivity. AWS allocation activation/backfill awaits explicit approval; Vercel shared charges are withheld until product allocation is verified. Missing provider access does not display zero cost or healthy performance.
+Provider pages include real historical charts where the API allows them, exact readings, period controls and opt-in visible-page refresh. See `docs/api-contracts/hq-monitoring.contract.md` for bounds and scopes. Billing access is distinct from provider connectivity. AWS allocation activation/backfill succeeded; tagged cost reads now distinguish empty allocation from a measured zero; Vercel shared charges are withheld until product allocation is verified. Missing provider access does not display zero cost or healthy performance.

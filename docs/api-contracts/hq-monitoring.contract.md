@@ -54,8 +54,9 @@ uses latest 10 workflows; Vercel deployment readiness uses returned HQ deploymen
 created/ready timestamps. These are labelled bounded activity, not invoiced usage,
 latency, uptime or quota. No extrapolated monthly totals.
 
-AWS allocation keys were observed inactive. Automatic approval review blocked
-activation/backfill; no mutation was executed. Product costs remain unavailable.
+AWS allocation keys were activated after explicit approval. The November 1 backfill
+succeeded November 16 at 04:16:45 UTC. A subsequent tagged read returned no groups;
+this is pending cost attribution, not a verified zero bill.
 Other provider costs show exact access/attribution gaps. No company-wide total is
 represented as LoadIQ spend. Live Stripe remains outside authorization.
 
@@ -75,3 +76,31 @@ establishes product costs. Mobile Sentry page width was 390/390 with no page ove
 Inventory descriptions now point to the separate history check. Cloudflare inventory
 coverage.analytics is `separate-check`; it does not assert successful analytics access.
 Daily UTC chart labels preserve their date; AWS storage charts display decimal GB.
+
+## AWS cost adapter, November 16
+GET /api/aws/costs uses existing IAM ce:GetCostAndUsage, us-east-1, DAILY
+UnblendedCost grouped by SERVICE, current month through today exclusive (UTC).
+Fixed OR filter: Project=KarpiloLoadIQ or Karpilo LoadIQ; Application=LoadIQ-HQ
+or KarpiloLoadIQHQ; application=loadiq-hq; aws:ecs:clusterName=karpilo-isolated-test.
+OR prevents double counting resources carrying multiple matching tags. Consume
+ResultsByTime.TimePeriod, Estimated, Groups.Keys, Metrics.UnblendedCost.Amount/Unit.
+Only USD finite amounts are accepted. NextPageToken suppresses totals (partial).
+Empty groups yield connected-empty with null total, never a zero bill. Reported
+values cover only tagged resources: untagged costs and shared credits are excluded.
+No grant-balance claim or account-wide fallback. One request per warm instance/hour
+for successful and empty reads, failure cache 15 seconds; no auto billing refresh,
+20-second deadline, no SDK retries, route max 30, private/no-store.
+Official: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsage.html
+Source: lib/aws-costs.mjs, app/api/aws/costs/route.js, components/MonitoringPanel.jsx.
+Cost Explorer API requests may incur query charges; caching bounds routine reads.
+
+Cloudflare Analytics Read and PostHog query:read were saved with approval and
+verified through live HQ on November 16: successful empty histories, fixed domain
+and project respectively. Old permission-needed copy was removed.
+
+PostHog collection diagnosis: ECS primary task revision 24 has no POSTHOG-named
+environment or secret bindings. The separate Vercel isolated frontend environment
+has NEXT_PUBLIC_POSTHOG_ENABLED=false and no configured ingestion token. The repository client requires
+NEXT_PUBLIC_POSTHOG_ENABLED=true; server capture requires an enabled flag and
+project ingestion token. This is separate from HQ query access. No customer
+deployment or collection enablement was performed during this HQ-only task.

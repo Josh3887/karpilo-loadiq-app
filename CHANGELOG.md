@@ -4,6 +4,10 @@
 
 ### Added
 
+- Web HQ: fixed-tag AWS daily cost adapter and billing charts, with partial attribution,
+  hourly caching and explicit empty-allocation status. Refreshed Cloudflare/PostHog
+  permission notices after live successful queries; documented ingestion diagnosis.
+
 - Web HQ: provider history charts, exact readings and visible-page refresh; explicit
   billing attribution and permission gaps instead of inferred product costs.
 - Communications: separate current templates and retired originals; corrected reserved
