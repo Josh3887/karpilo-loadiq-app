@@ -4,6 +4,9 @@
 
 ### Added
 
+- Web HQ: read-only Sentry organization/project inventory and unresolved issue
+  metadata with endpoint coverage, pagination disclosure and private-detail omission.
+
 - Web HQ Communications: searchable reusable Resend template library, publication
   filters, full previews, personalization and operator-reviewed single-email composer;
   paginated template reads, version checks, duplicate-prevention keys and safe previews.

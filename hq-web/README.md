@@ -49,3 +49,11 @@ dedicated server secret. Only account read, usage read, messages list and Verify
 service list are needed. Legacy auth-token configuration remains supported, but is
 never used as fallback when either API-key field exists. Reads cache 60 seconds,
 failures 15 seconds; no SMS or verification request is sent by connection checks.
+
+## Sentry read-only observations
+The Providers view reads the Karpilo Endeavor Technologies organization, its first
+100 projects and first 20 unresolved issues seen in the last 14 days, all environments.
+A dedicated internal integration needs only org:read and event:read. The existing
+SENTRY_AUTH_TOKEN secret field is used. Raw error text, stacks and user details are
+omitted; issue links open Sentry for further investigation. No result cache or polling.
+Endpoint coverage and pagination remain explicit. See docs/api-contracts/hq-sentry.contract.md.
