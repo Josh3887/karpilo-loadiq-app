@@ -10,11 +10,15 @@
 
 ### Fixed
 
+- PostHog cards and inventory now consistently identify customer event capture as deferred until V1 interface refinement.
+
 - Google federation signing now uses only Google-supported AWS headers; bounded error classifications disclose no credentials or raw upstream bodies.
 
 - HQ Sentry inventory filters the product project before pagination so unrelated issues cannot suppress LoadIQ results.
 
 ### Added
+
+- LoadIQ-only Twilio Verify attempt-history adapter with fixed service attribution, bounded daily summaries and no account-wide billing fallback.
 
 - Prepared key-scoped Google Maps monitoring and AWS federation token exchange; activation remains gated on provisioning and live verification. Shared Gemini usage is explicitly unattributed.
 

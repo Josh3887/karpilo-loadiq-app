@@ -1,6 +1,6 @@
 # HQ Google monitoring contract
 
-Federation and project-only Monitoring Viewer provisioned 2026-11-16; live API verification in progress.
+Federation and project-only Monitoring Viewer provisioned 2026-11-16. Live token exchange succeeded after the signed-header fix. Metrics read returns access-denied; console confirms Cloud Monitoring API is disabled. Activation remains pending.
 
 ## Evidence and scope
 Google console identifies `Karpilo LoadIQ - isolated sandbox` key ID
@@ -16,7 +16,7 @@ Official references:
 - https://cloud.google.com/blog/topics/developers-practitioners/api-keys-are-open-secrets/
 
 ## Authorization
-Planned pool `loadiq-hq`, AWS provider `hq-aws`, account 337058058945.
+Provisioned pool `loadiq-hq`, AWS provider `hq-aws`, account 337058058945.
 Mapping google.subject=assertion.arn; condition restricts exactly
 `arn:aws:iam::337058058945:user/karpilo-hq-preview-readonly`.
 Grant Monitoring Viewer on this project only to that federated subject, not the
@@ -49,6 +49,6 @@ Source: hq-web/lib/google-monitoring.mjs, lib/provider-config.mjs,
 app/api/monitoring/route.js, components/MonitoringPanel.jsx.
 Risks: label support by service, key rotation changing attribution, empty history,
 provider trust and role binding, project metrics scope, schema drift. Live verify
-before claiming connected; API enablement and exact IAM trust need completion.
+before claiming connected; API enablement needs completion; the exact IAM trust is saved and token exchange verified.
 
 Google STS rejects extra signed headers: applyChecksum=false prevents the Smithy x-amz-content-sha256 header. Verified against https://docs.cloud.google.com/iam/docs/troubleshooting-workload-identity-federation . Regression asserts the exact allowed header set.

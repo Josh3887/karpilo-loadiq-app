@@ -1,5 +1,5 @@
 export default function PosthogObservations({data}){
- return <section className="panel"><h2>PostHog · Project and analytics inventory</h2>
+ return <section className="panel"><h2>PostHog · Project and analytics inventory</h2><p>Event design and capture are deferred until the customer V1 interface is refined. This is a planned dependency, not a failed connection.</p>
  <p className="muted">{data?.reason||'Loading read-only PostHog observations.'}</p>
  <div className="item"><strong>PostHog API</strong><span className={'state '+(data?.status||'loading')}>{data?.status||'loading'}</span></div>
  {Object.entries(data?.coverage||{}).map(([scope,status])=><div className="item" key={scope}><span>{scope}</span><span className={'state '+status}>{status}</span></div>)}

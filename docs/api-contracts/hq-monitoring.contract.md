@@ -139,3 +139,22 @@ provider billing, traffic collection or background monitoring is complete.
 ## Vercel project traffic
 
 POST /v2/observability/query is verified in official Vercel CLI source (legacy metrics branch): https://github.com/vercel/vercel/blob/main/packages/cli/src/commands/metrics/query.ts . Bearer server token, teamId fixed; metric vercel.request.count, sum, project scope ownerId/projectIds, hourly granularity, last 24h/7d complete hours, limit168. Website and HQ project IDs are fixed; no team-wide fallback. Consume data.timestamp/vercel_request_count_sum; malformed/negative values reject the series. Coverage remains independent per project. This counts all-environment HTTP requests, including assets/bots/probes, never unique visitors. Customer app is separately hosted, not attributed to the isolated frontend. Two parallel queries, 15-second timeout, 60-second success / 15-second failure cache, private/no-store. Billing is a separate nested result. Legacy endpoint drift is a known risk; no automatic alternate endpoint or permission expansion.
+
+## Twilio Verify service monitoring
+
+Official contract: https://www.twilio.com/docs/verify/api/verification-attempts-summary
+GET https://verify.twilio.com/v2/Attempts/Summary uses existing restricted Basic
+server credential. VerifyServiceSid is pinned to server-only TWILIO_LOADIQ_VERIFY_SERVICE_SID,
+verified by live HQ inventory as Karpilo LoadIQ Test. Existing account credentials
+remain server-only; no client query can override the service mapping.
+DateCreatedAfter/Before are ISO UTC bounds, one or seven daily windows ending at
+the latest complete hour. Consume total_attempts/total_converted/total_unconverted
+only; validate nonnegative safe integers and matching totals. No phone numbers,
+message bodies or account-wide fallback. Any failed window suppresses all history.
+API is public beta, 100 requests/minute, 15-second timeout; maximum seven parallel
+reads per uncached observation. Success caches 60 seconds, failure 15 seconds.
+No verification sends. Counts are attempts, not unique sessions or invoices.
+Billing and delivery-failure attribution remain separate. 401/403 access-denied,
+429 rate-limited, malformed or other failures unavailable. Restricted summary-read
+permission must be live verified; schema/permissions and service identity are drift
+risks. Source: lib/twilio-monitoring.mjs, app/api/monitoring/route.js and MonitoringPanel.
