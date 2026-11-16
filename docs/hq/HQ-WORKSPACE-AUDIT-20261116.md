@@ -37,3 +37,6 @@ Validation results are recorded in the final delivery and changelog. Missing API
 86 tests passed and the Next.js production build passed. ESLint was unavailable, not passed. Deployment dpl_Hz5LMLqRzmsBesvR6Cvhd2zNd43B reached READY with hq.karpilo-liq.com alias. All 13 navigation destinations rendered without a client exception. Live Health Center returned website/app/HQ probes and provider observations. Newsletter block addition and reorder verified in the deployed UI.
 
 Retired FSC template import, six record tiles and 390px mobile records layout verified live. Address Book correctly reports missing gateway; other source indexes return no customer records. Overview labels critical alarms separately from warning details.
+
+## Project-completion pipeline audit — founder requirement
+All integrations must ingest into and distribute through AWS. Audit every provider, webhook, mailbox, store and UI command; HQ, website and app are consumers/command interfaces. Existing direct provider calls in HQ must migrate. Verify tenant boundaries, idempotency, consent, failure handling and separate feedback/general/account mail. Do not mark this final gate complete until the whole product is complete and all paths are evidenced.

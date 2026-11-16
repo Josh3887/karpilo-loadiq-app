@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Feedback pipeline
+
+- Added AWS-owned review/feedback conversations, consent-controlled public projection, founder replies and subscriber inbox notices; deployment acceptance remains separately recorded.
+- Added HQ Reviews & Feedback workspace and AWS SigV4 adapter, with no direct provider intake.
+- Recorded project-completion requirement to audit every pipeline through AWS; existing direct HQ provider adapters remain migration work.
+
+
 ### Documentation
 
 - Verified Google Maps historical request charts and Twilio Verify attempt/conversion charts live after approved API activation and read permission. Billing remains separately unverified.

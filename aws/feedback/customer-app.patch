@@ -1,0 +1,405 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..b9c27bc
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,6 @@
++node_modules/
++.next/
++worker-dist/
++*.tsbuildinfo
++.env*
++!.env.example
+diff --git a/database/aws/019_feedback_conversations.sql b/database/aws/019_feedback_conversations.sql
+new file mode 100644
+index 0000000..de6adaa
+--- /dev/null
++++ b/database/aws/019_feedback_conversations.sql
+@@ -0,0 +1,84 @@
++BEGIN;
++DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='karpilo_feedback_moderator') THEN
++ CREATE ROLE karpilo_feedback_moderator NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END $$;
++GRANT USAGE ON SCHEMA karpilo TO karpilo_feedback_moderator;
++-- AWS is the only authoritative store. Existing invitation responses stay private.
++CREATE TABLE karpilo.feedback_threads (
++ id uuid PRIMARY KEY,
++ owner_id text NOT NULL,
++ request_id uuid NOT NULL,
++ kind text NOT NULL CHECK(kind IN ('feedback','review')),
++ display_name text NOT NULL CHECK(length(display_name) BETWEEN 1 AND 80),
++ rating integer CHECK(rating BETWEEN 1 AND 5),
++ body text NOT NULL CHECK(length(body) BETWEEN 1 AND 4000),
++ public_consent boolean NOT NULL DEFAULT false,
++ publication text NOT NULL DEFAULT 'private' CHECK(publication IN ('private','pending','published','withheld')),
++ moderation_reason text,
++ version integer NOT NULL DEFAULT 1,
++ created_at timestamptz NOT NULL DEFAULT now(),
++ updated_at timestamptz NOT NULL DEFAULT now(),
++ UNIQUE(owner_id,request_id),
++ CHECK(kind='review' OR (NOT public_consent AND publication='private')),
++ CHECK(publication NOT IN ('pending','published') OR (public_consent AND rating IS NOT NULL))
++);
++CREATE INDEX feedback_thread_queue ON karpilo.feedback_threads(created_at DESC,id DESC);
++CREATE TABLE karpilo.feedback_replies (
++ id uuid PRIMARY KEY,
++ thread_id uuid NOT NULL REFERENCES karpilo.feedback_threads(id),
++ owner_id text NOT NULL,
++ request_id uuid NOT NULL,
++ actor text NOT NULL,
++ body text NOT NULL CHECK(length(body) BETWEEN 1 AND 4000),
++ created_at timestamptz NOT NULL DEFAULT now(),
++ read_at timestamptz,
++ UNIQUE(thread_id,request_id)
++);
++CREATE INDEX feedback_reply_inbox ON karpilo.feedback_replies(owner_id,created_at DESC);
++CREATE TABLE karpilo.feedback_audit (
++ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
++ thread_id uuid NOT NULL REFERENCES karpilo.feedback_threads(id),
++ actor text NOT NULL,
++ action text NOT NULL,
++ version integer NOT NULL,
++ created_at timestamptz NOT NULL DEFAULT now()
++);
++ALTER TABLE karpilo.feedback_threads ENABLE ROW LEVEL SECURITY;
++ALTER TABLE karpilo.feedback_threads FORCE ROW LEVEL SECURITY;
++ALTER TABLE karpilo.feedback_replies ENABLE ROW LEVEL SECURITY;
++ALTER TABLE karpilo.feedback_replies FORCE ROW LEVEL SECURITY;
++ALTER TABLE karpilo.feedback_audit ENABLE ROW LEVEL SECURITY;
++ALTER TABLE karpilo.feedback_audit FORCE ROW LEVEL SECURITY;
++REVOKE ALL ON karpilo.feedback_threads,karpilo.feedback_replies,karpilo.feedback_audit FROM PUBLIC;
++CREATE POLICY feedback_threads_owner ON karpilo.feedback_threads TO karpilo_runtime
++ USING(owner_id=current_setting('karpilo.owner_id',true)) WITH CHECK(owner_id=current_setting('karpilo.owner_id',true));
++CREATE POLICY feedback_replies_owner ON karpilo.feedback_replies TO karpilo_runtime
++ USING(owner_id=current_setting('karpilo.owner_id',true)) WITH CHECK(owner_id=current_setting('karpilo.owner_id',true));
++GRANT SELECT,INSERT ON karpilo.feedback_threads TO karpilo_runtime;
++GRANT UPDATE(public_consent,publication,version,updated_at) ON karpilo.feedback_threads TO karpilo_runtime;
++GRANT SELECT ON karpilo.feedback_replies TO karpilo_runtime;
++GRANT UPDATE(read_at) ON karpilo.feedback_replies TO karpilo_runtime;
++CREATE POLICY feedback_threads_moderator ON karpilo.feedback_threads TO karpilo_support,karpilo_feedback_moderator
++ USING(current_setting('karpilo.owner_id',true)='feedback-review') WITH CHECK(current_setting('karpilo.owner_id',true)='feedback-review');
++CREATE POLICY feedback_replies_moderator ON karpilo.feedback_replies TO karpilo_support,karpilo_feedback_moderator
++ USING(current_setting('karpilo.owner_id',true)='feedback-review') WITH CHECK(current_setting('karpilo.owner_id',true)='feedback-review');
++CREATE POLICY feedback_audit_moderator ON karpilo.feedback_audit TO karpilo_support,karpilo_feedback_moderator
++ USING(current_setting('karpilo.owner_id',true)='feedback-review') WITH CHECK(current_setting('karpilo.owner_id',true)='feedback-review');
++GRANT SELECT ON karpilo.feedback_threads TO karpilo_support,karpilo_feedback_moderator;
++GRANT UPDATE(publication,moderation_reason,version,updated_at) ON karpilo.feedback_threads TO karpilo_support,karpilo_feedback_moderator;
++GRANT SELECT,INSERT ON karpilo.feedback_replies,karpilo.feedback_audit TO karpilo_support,karpilo_feedback_moderator;
++GRANT USAGE ON SEQUENCE karpilo.feedback_audit_id_seq TO karpilo_support,karpilo_feedback_moderator;
++-- Public access gets a dedicated role with no grants on private tables/replies.
++DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='karpilo_reviews_public') THEN
++ CREATE ROLE karpilo_reviews_public NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END $$;
++GRANT USAGE ON SCHEMA karpilo TO karpilo_reviews_public;
++GRANT SELECT(id,display_name,rating,body,created_at,kind,publication,public_consent) ON karpilo.feedback_threads TO karpilo_reviews_public;
++CREATE POLICY feedback_public ON karpilo.feedback_threads FOR SELECT TO karpilo_reviews_public
++ USING(kind='review' AND publication='published' AND public_consent);
++GRANT karpilo_reviews_public TO karpilo_support,karpilo_feedback_moderator;
++-- Existing invitation responses are imported as private feedback, never public reviews.
++INSERT INTO karpilo.feedback_threads(id,owner_id,request_id,kind,display_name,rating,body,public_consent,publication,created_at)
++SELECT md5(owner_id||':'||campaign)::uuid,owner_id,md5(owner_id||':'||campaign)::uuid,'feedback','Subscriber',rating,
++ coalesce(nullif(trim(comment),''),'Rating submitted without a written comment.'),false,'private',responded_at
++FROM karpilo.feedback_requests WHERE responded_at IS NOT NULL
++ON CONFLICT(owner_id,request_id) DO NOTHING;
++COMMIT;
+diff --git a/src/app/account/feedback/page.tsx b/src/app/account/feedback/page.tsx
+new file mode 100644
+index 0000000..e7e903c
+--- /dev/null
++++ b/src/app/account/feedback/page.tsx
+@@ -0,0 +1,6 @@
++import { ReviewsPage } from '@/components/aws-account/reviews';
++import { awsPageData } from '@/server/aws-backend/page-client';
++import { redirect } from 'next/navigation';
++import { AccountError } from '@/server/aws-backend/account-service';
++export const dynamic='force-dynamic';
++export default async function Page(){try{await awsPageData('communications');}catch(e){if(e instanceof AccountError&&e.status===401)redirect('/api/aws/auth/login');throw e;}return <ReviewsPage/>;}
+diff --git a/src/app/account/inbox/page.tsx b/src/app/account/inbox/page.tsx
+index d1644f2..8877c67 100644
+--- a/src/app/account/inbox/page.tsx
++++ b/src/app/account/inbox/page.tsx
+@@ -1,3 +1,4 @@
++import {FeedbackInbox} from '@/components/aws-account/reviews';
+ import {FeedbackCard} from '@/components/aws-account/feedback-card';
+ import Link from "next/link";
+ import { redirect } from "next/navigation";
+@@ -28,6 +29,7 @@ export default async function SubscriberInboxPage() {
+       {enabled ? (
+         <>
+           <FeedbackCard />
++          <FeedbackInbox />
+           <CommunicationsInbox />
+           <EmailPreferences />
+         </>
+diff --git a/src/app/api/aws/account/reviews/[[...path]]/route.ts b/src/app/api/aws/account/reviews/[[...path]]/route.ts
+new file mode 100644
+index 0000000..4ed3aae
+--- /dev/null
++++ b/src/app/api/aws/account/reviews/[[...path]]/route.ts
+@@ -0,0 +1,37 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { z } from 'zod';
++import { verifyAccess, requireSameOrigin } from '@/server/aws-backend/auth';
++import { postgresDatabase } from '@/server/aws-backend/database';
++import { subscriberReviews, moderatorReviews, requireReviews, ReviewError } from '@/server/aws-backend/reviews-service';
++import { requireFounder } from '@/server/aws-backend/support-access';
++import { accountJsonBody } from '@/server/aws-backend/request-body';
++import { AccountError } from '@/server/aws-backend/account-service';
++import { enforceRequestLimit } from '@/lib/request-limit';
++export const runtime='nodejs';
++export const dynamic='force-dynamic';
++async function handle(req:NextRequest,ctx:{params:Promise<{path?:string[]}>}){
++ const headers={'Cache-Control':'private, no-store'};
++ try{
++  requireReviews();if(req.method!=='GET')requireSameOrigin(req);
++  const claims=await verifyAccess(req.cookies.get('karpilo_aws_access')?.value??'');
++  await enforceRequestLimit(claims.sub,'account');
++  const path=(await ctx.params).path??[];let data:unknown;
++  if(path[0]==='admin'){
++   requireFounder(claims);const service=moderatorReviews(postgresDatabase('support'),claims.sub);
++   if(path.length===1&&req.method==='GET')data=await service.list(Number(req.nextUrl.searchParams.get('offset')??0));
++   else if(path.length===3&&req.method==='POST'&&path[2]==='replies')data=await service.reply(path[1],await accountJsonBody(req));
++   else if(path.length===3&&req.method==='PUT'&&path[2]==='publication')data=await service.moderate(path[1],await accountJsonBody(req));
++   else throw new AccountError(404,'Not found');
++  }else{
++   const service=subscriberReviews(postgresDatabase(),claims.sub);
++   if(path.length===0&&req.method==='GET')data=await service.list(Number(req.nextUrl.searchParams.get('offset')??0));
++   else if(path.length===0&&req.method==='POST')data=await service.submit(await accountJsonBody(req));
++   else if(path.length===1&&path[0]==='inbox'&&req.method==='GET')data=await service.inbox();
++   else if(path.length===2&&path[1]==='withdraw'&&req.method==='POST')data=await service.withdraw(path[0]);
++   else if(path.length===2&&path[1]==='read'&&req.method==='PUT')data=await service.read(path[0]);
++   else throw new AccountError(404,'Not found');
++  }
++  return NextResponse.json(data,{headers});
++ }catch(e){const status=(e instanceof AccountError||e instanceof ReviewError)?e.status:e instanceof z.ZodError?400:503;return NextResponse.json({error:(e instanceof AccountError||e instanceof ReviewError)?e.message:status===400?'Invalid feedback request':'Feedback unavailable'},{status,headers});}
++}
++export {handle as GET,handle as POST,handle as PUT};
+diff --git a/src/components/aws-account/reviews.tsx b/src/components/aws-account/reviews.tsx
+new file mode 100644
+index 0000000..13b8d1a
+--- /dev/null
++++ b/src/components/aws-account/reviews.tsx
+@@ -0,0 +1,27 @@
++'use client';
++import Link from 'next/link';
++import { useEffect, useRef, useState } from 'react';
++type Thread={id:string;kind:string;display_name:string;rating:number|null;body:string;publication:string;public_consent:boolean;created_at:string};
++type Reply={id:string;thread_id:string;body:string;created_at:string;read_at:string|null};
++type Data={threads:Thread[];replies:Reply[];nextOffset:number|null};
++const box='rounded-xl border border-slate-700 bg-[#17191d] p-5';
++const control='min-h-11 rounded-lg border border-slate-500 bg-[#111216] p-3';
++async function api(path='',method='GET',body?:unknown){const r=await fetch('/api/aws/account/reviews'+path,{method,cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(d.error??'Feedback unavailable');return d;}
++export function ReviewsPage(){
++ const [data,setData]=useState<Data|null>(null),[kind,setKind]=useState('feedback'),[rating,setRating]=useState(''),[name,setName]=useState(''),[body,setBody]=useState(''),[consent,setConsent]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[offset,setOffset]=useState(0);
++ const key=useRef<string|null>(null),lock=useRef(false);
++ async function load(page=offset){setData(await api('?offset='+page));}
++ useEffect(()=>{let active=true;api('?offset='+offset).then(d=>{if(active)setData(d);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false};},[offset]);
++ function changed(){key.current=null;setNotice('');}
++ async function send(e:React.FormEvent){e.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');try{key.current??=crypto.randomUUID();await api('','POST',{requestId:key.current,kind,displayName:name,rating:rating?Number(rating):undefined,body,publicConsent:kind==='review'&&consent});key.current=null;setBody('');setConsent(false);setNotice(kind==='review'?'Review received for moderation.':'Private feedback received. Replies will appear here and in your inbox.');setOffset(0);await load(0);}catch(e){setError(e instanceof Error?e.message:'Unable to send');}finally{setBusy(false);lock.current=false;}}
++ async function withdraw(id:string){setError('');try{await api('/'+id+'/withdraw','POST');await load();}catch(e){setError(e instanceof Error?e.message:'Unable to withdraw');}}
++ return <main className="mx-auto max-w-4xl space-y-6 p-5 text-white"><nav className="flex flex-wrap gap-5"><Link href="/dashboard">Dashboard</Link><Link href="/account/inbox">Inbox</Link></nav><header><p className="text-red-300">KARPILO LOADIQ</p><h1 className="my-3 text-3xl font-bold">Reviews &amp; feedback</h1><p>Help shape the app. Send a private suggestion or share your experience as a public review.</p></header><section className={box}><form onSubmit={send}><fieldset disabled={busy} className="grid gap-4"><legend className="mb-3 text-xl font-semibold">What would you like to share?</legend><label>Message type<select className={control+' mt-2 w-full'} value={kind} onChange={e=>{setKind(e.target.value);setConsent(false);changed();}}><option value="feedback">Private feedback</option><option value="review">Public review</option></select></label><label>{kind==='review'?'Public display name':'Your name'}<input required maxLength={80} className={control+' mt-2 w-full'} value={name} onChange={e=>{setName(e.target.value);changed();}}/></label><label>Rating {kind==='feedback'?'(optional)':''}<select required={kind==='review'} className={control+' mt-2 w-full'} value={rating} onChange={e=>{setRating(e.target.value);changed();}}><option value="">Choose a rating</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n} / 5</option>)}</select></label><label>Your experience or suggestion<textarea required maxLength={4000} rows={5} className={control+' mt-2 w-full'} value={body} onChange={e=>{setBody(e.target.value);changed();}}/></label>{kind==='review'?<label className="flex gap-3"><input type="checkbox" required checked={consent} onChange={e=>{setConsent(e.target.checked);changed();}}/>I allow my display name, rating and review to appear publicly on the Karpilo LoadIQ website after moderation. I can withdraw it here.</label>:<p className="text-slate-300">Private feedback and founder replies are visible only to you and authorized staff. They are not published as reviews.</p>}<button className="min-h-11 rounded-lg bg-red-700 p-3 font-bold" type="submit">{busy?'Sending…':'Send '+(kind==='review'?'review':'feedback')}</button></fieldset></form></section>{error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}<section className={box}><h2 className="mb-4 text-xl font-bold">Your conversations</h2>{!data&&!error&&<p>Loading conversations…</p>}{data?.threads.length===0&&<p>No feedback submitted yet.</p>}{data?.threads.map(t=><article key={t.id} id={t.id} className="mb-5 border-b border-slate-600 pb-5"><p className="text-sm text-slate-300">{t.kind==='review'?'Review':'Private feedback'} · {t.publication} · {t.rating?t.rating+' / 5':'No rating'}</p><p className="my-3 whitespace-pre-wrap">{t.body}</p>{data.replies.filter(r=>r.thread_id===t.id).map(r=><div key={r.id} className="mt-3 rounded-lg border-l-4 border-red-600 bg-black/30 p-4"><strong>Josh · Karpilo LoadIQ</strong><p className="mt-2 whitespace-pre-wrap">{r.body}</p></div>)}{t.public_consent&&<button className={control+' mt-3'} onClick={()=>void withdraw(t.id)}>Withdraw public permission</button>}</article>)}<div className="flex gap-4">{offset>0&&<button className={control} onClick={()=>setOffset(Math.max(0,offset-50))}>Previous</button>}{data?.nextOffset!=null&&<button className={control} onClick={()=>setOffset(data.nextOffset!)}>Next</button>}</div></section><FeedbackContact/></main>;
++}
++export function FeedbackContact(){return <aside className={box}><h2 className="font-bold">Prefer email?</h2><a className="my-2 block break-all underline" href="mailto:feedback@karpilo-liq.com">feedback@karpilo-liq.com</a><p className="text-sm text-slate-300">Product feedback only. Use account support for access, security or billing. Messages submitted on this page are saved to your account; email ingestion is a separate delivery channel.</p></aside>;}
++export function FeedbackInbox(){
++ const [items,setItems]=useState<Reply[]>([]),[unread,setUnread]=useState(0),[error,setError]=useState('');
++ async function load(){const d=await api('/inbox');setItems(d.notifications);setUnread(d.unread);}
++ useEffect(()=>{void load().catch(e=>setError(e.message));},[]);
++ async function read(id:string){try{await api('/'+id+'/read','PUT');await load();}catch(e){setError(e instanceof Error?e.message:'Unable to update');}}
++ return <section className={box}><h2 className="text-xl font-bold">Feedback replies {unread>0&&<span>· {unread} unread</span>}</h2><Link className="my-3 block underline" href="/account/feedback">Open reviews &amp; feedback</Link>{error&&<p role="alert">{error}</p>}{!error&&!items.length&&<p>No feedback replies.</p>}{items.map(r=><article key={r.id} className="mt-4 border-t border-slate-600 pt-4"><strong>Josh replied to your feedback</strong><p className="my-3 whitespace-pre-wrap">{r.body}</p><Link href={'/account/feedback#'+r.thread_id} className="mr-4 underline">View conversation</Link>{!r.read_at&&<button className={control} onClick={()=>void read(r.id)}>Mark read</button>}</article>)}</section>;
++}
+diff --git a/src/components/dashboard/dashboard-nav.tsx b/src/components/dashboard/dashboard-nav.tsx
+index d233f8c..0474d8f 100644
+--- a/src/components/dashboard/dashboard-nav.tsx
++++ b/src/components/dashboard/dashboard-nav.tsx
+@@ -28,6 +28,7 @@ const navItems = [
+   { label: "Templates", href: "/dashboard/templates", icon: LayoutTemplate },
+   { label: "Billing", href: "/dashboard/billing", icon: CircleDollarSign },
+   { label: "Inbox", href: "/account/inbox", icon: Inbox },
++  { label: "Feedback", href: "/account/feedback", icon: Inbox },
+   { label: "Settings", href: "/dashboard/settings", icon: Settings },
+   { label: "Support", href: "/dashboard/support", icon: Headset },
+ ] as const;
+diff --git a/src/server/aws-backend/feedback-service.ts b/src/server/aws-backend/feedback-service.ts
+index 9502f00..751352f 100644
+--- a/src/server/aws-backend/feedback-service.ts
++++ b/src/server/aws-backend/feedback-service.ts
+@@ -32,6 +32,9 @@ export function feedbackService(db:Database,owner:string) {
+     if(data.action==='shown')await sql.query('UPDATE karpilo.feedback_requests SET shown_at=coalesce(shown_at,now()) WHERE owner_id=$1',[owner]);
+     else if(data.action==='dismiss')await sql.query('UPDATE karpilo.feedback_requests SET dismissed_at=now(),reminder_payload=NULL WHERE owner_id=$1',[owner]);
+     else await sql.query('UPDATE karpilo.feedback_requests SET responded_at=now(),rating=$2,comment=$3,response_source=$4,reminder_payload=NULL WHERE owner_id=$1',[owner,data.rating??null,data.comment??null,data.source]);
++    if(data.action==='respond' && process.env.AWS_REVIEWS_ENABLED==='true')await sql.query(`INSERT INTO karpilo.feedback_threads(id,owner_id,request_id,kind,display_name,rating,body,public_consent,publication,created_at)
++     SELECT md5(owner_id||':'||campaign)::uuid,owner_id,md5(owner_id||':'||campaign)::uuid,'feedback','Subscriber',rating,coalesce(nullif(trim(comment),''),'Rating submitted without a written comment.'),false,'private',responded_at
++     FROM karpilo.feedback_requests WHERE owner_id=$1 AND responded_at IS NOT NULL ON CONFLICT(owner_id,request_id) DO NOTHING`,[owner]);
+     return {ok:true,closed:data.action!=='shown'};
+    });
+   },
+diff --git a/src/server/aws-backend/reviews-gateway.ts b/src/server/aws-backend/reviews-gateway.ts
+new file mode 100644
+index 0000000..0669630
+--- /dev/null
++++ b/src/server/aws-backend/reviews-gateway.ts
+@@ -0,0 +1,41 @@
++// AWS Lambda supplies the SDK; bundle with this package external.
++const {SecretsManagerClient,GetSecretValueCommand}=require('@aws-sdk/client-secrets-manager');
++import { Pool } from 'pg';
++import { z } from 'zod';
++import { moderatorReviews, publicReviews } from './reviews-service';
++import type { Database, SqlClient } from './database';
++import { ReviewError } from './reviews-service';
++const sm=new SecretsManagerClient({region:'us-east-2'});
++let pool:Pool|undefined;
++async function database(publicOnly:boolean):Promise<Database>{
++ if(!pool){
++  const arn=process.env.REVIEWS_DATABASE_SECRET_ARN;
++  if(!arn||!arn.startsWith('arn:aws:secretsmanager:us-east-2:337058058945:secret:karpilo-feedback/'))throw Error('Dedicated feedback secret required');
++  const secret=JSON.parse((await sm.send(new GetSecretValueCommand({SecretId:arn}))).SecretString??'{}');
++  const u=new URL(secret.connection);if(u.protocol!=='postgresql:'||u.search||!secret.ca)throw Error('Invalid database configuration');
++  pool=new Pool({host:u.hostname,port:Number(u.port)||5432,database:u.pathname.slice(1),user:decodeURIComponent(u.username),password:decodeURIComponent(u.password),ssl:{rejectUnauthorized:true,ca:secret.ca,servername:u.hostname},max:2,connectionTimeoutMillis:4000,idleTimeoutMillis:10000});
++ }
++ const current=pool;
++ return {transaction:async(owner,fn)=>{const c=await current.connect();try{await c.query('BEGIN');const role=(await c.query('SELECT rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];if(role.rolsuper||role.rolbypassrls)throw Error('Unsafe database role');await c.query(publicOnly?'SET LOCAL ROLE karpilo_reviews_public':'SET LOCAL ROLE karpilo_feedback_moderator');await c.query("SELECT set_config('karpilo.owner_id',$1,true)",[owner]);await c.query("SET LOCAL statement_timeout='5000ms'");const r=await fn(c as SqlClient);await c.query('COMMIT');return r;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}};
++}
++type Event={rawPath:string;body?:string;isBase64Encoded?:boolean;queryStringParameters?:Record<string,string>;requestContext:{http:{method:string};authorizer?:{iam?:{userArn?:string}}}};
++export async function handler(e:Event){
++ const response=(statusCode:number,body:unknown)=>({statusCode,headers:{'content-type':'application/json','cache-control':'no-store'},body:JSON.stringify(body)});
++ try{
++  if(process.env.AWS_REVIEWS_ENABLED!=='true')return response(503,{error:'Feedback not enabled'});
++  const method=e.requestContext.http.method;
++  if(e.rawPath==='/v1/reviews'&&method==='GET')return response(200,await publicReviews(await database(true),Number(e.queryStringParameters?.offset??0)));
++  if(e.rawPath!=='/v1/feedback'||!['GET','POST'].includes(method))return response(404,{error:'Not found'});
++  // API Gateway AWS_IAM is mandatory; Lambda also pins the authorized principal.
++  const actor=e.requestContext.authorizer?.iam?.userArn;
++  if(!actor||!process.env.REVIEWS_HQ_PRINCIPAL_ARN||actor!==process.env.REVIEWS_HQ_PRINCIPAL_ARN)return response(403,{error:'Founder gateway access required'});
++  const service=moderatorReviews(await database(false),actor);
++  if(method==='GET')return response(200,await service.list(Number(e.queryStringParameters?.offset??0)));
++  const raw=e.isBase64Encoded?Buffer.from(e.body??'','base64').toString('utf8'):e.body??'';
++  if(Buffer.byteLength(raw)>20000)return response(413,{error:'Request too large'});
++  const input=JSON.parse(raw),{action,id,...payload}=input;
++  if(action==='reply')return response(200,await service.reply(id,payload));
++  if(action==='moderate')return response(200,await service.moderate(id,payload));
++  return response(400,{error:'Invalid action'});
++ }catch(e){const status=e instanceof ReviewError?e.status:e instanceof z.ZodError||e instanceof SyntaxError?400:503;return response(status,{error:status===409?'Conversation changed':status===400?'Invalid request':'Feedback unavailable'});}
++}
+diff --git a/src/server/aws-backend/reviews-service.ts b/src/server/aws-backend/reviews-service.ts
+new file mode 100644
+index 0000000..2503773
+--- /dev/null
++++ b/src/server/aws-backend/reviews-service.ts
+@@ -0,0 +1,68 @@
++import { randomUUID } from 'node:crypto';
++import { z } from 'zod';
++export class ReviewError extends Error { constructor(public status:number,message:string){super(message);} }
++import { accountOwnerSchema } from './identity';
++import type { Database } from './database';
++
++const submission = z.object({requestId:z.uuid(),kind:z.enum(['feedback','review']),displayName:z.string().trim().min(1).max(80),rating:z.number().int().min(1).max(5).optional(),body:z.string().trim().min(1).max(4000),publicConsent:z.boolean()}).strict().superRefine((d,c)=>{
++ if(d.kind==='feedback' && d.publicConsent)c.addIssue({code:'custom',message:'Private feedback cannot be published'});
++ if(d.kind==='review' && (!d.publicConsent || !d.rating))c.addIssue({code:'custom',message:'A public review requires a rating and explicit consent'});
++});
++const page = (offset: number) => z.number().int().min(0).max(100000).parse(offset);
++export function requireReviews(env=process.env){if(env.AWS_REVIEWS_ENABLED!=='true')throw new ReviewError(503,'Reviews and feedback are not enabled yet');}
++export function subscriberReviews(db:Database,owner:string){
++ accountOwnerSchema.parse(owner);
++ return {
++  async list(offset=0){page(offset);return db.transaction(owner,async sql=>{
++   const threads=(await sql.query(`SELECT id,kind,display_name,rating,body,public_consent,publication,version,created_at FROM karpilo.feedback_threads WHERE owner_id=$1 ORDER BY created_at DESC,id DESC LIMIT 51 OFFSET $2`,[owner,offset])).rows;
++   const replies=(await sql.query(`SELECT id,thread_id,body,created_at,read_at FROM karpilo.feedback_replies WHERE owner_id=$1 AND thread_id=ANY($2::uuid[]) ORDER BY created_at,id`,[owner,threads.slice(0,50).map(t=>t.id)])).rows;
++   return {threads:threads.slice(0,50),replies,nextOffset:threads.length>50?offset+50:null};
++  });},
++  async submit(input:unknown){const d=submission.parse(input);return db.transaction(owner,async sql=>{
++   // Serialize duplicate keys and per-account limits; never overwrite the original message.
++   await sql.query('SELECT pg_advisory_xact_lock(hashtext($1))',['feedback:'+owner]);
++   const prior=(await sql.query('SELECT * FROM karpilo.feedback_threads WHERE owner_id=$1 AND request_id=$2',[owner,d.requestId])).rows[0];
++   if(prior){if(prior.kind!==d.kind||prior.body!==d.body||prior.display_name!==d.displayName||prior.rating!==(d.rating??null)||prior.public_consent!==d.publicConsent)throw new ReviewError(409,'Submission key already used');return {id:prior.id,duplicate:true};}
++   const count=(await sql.query("SELECT count(*)::int n FROM karpilo.feedback_threads WHERE owner_id=$1 AND created_at>now()-interval '1 day'",[owner])).rows[0];
++   if(Number(count?.n)>=10)throw new ReviewError(429,'Daily feedback limit reached');
++   const id=randomUUID();await sql.query('INSERT INTO karpilo.feedback_threads(id,owner_id,request_id,kind,display_name,rating,body,public_consent,publication) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,owner,d.requestId,d.kind,d.displayName,d.rating??null,d.body,d.publicConsent,d.kind==='review'?'pending':'private']);
++   return {id,duplicate:false};
++  });},
++  async withdraw(id:string){z.uuid().parse(id);return db.transaction(owner,async sql=>{const r=await sql.query("UPDATE karpilo.feedback_threads SET public_consent=false,publication='private',version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 RETURNING id",[id,owner]);if(!r.rows.length)throw new ReviewError(404,'Review not found');return {ok:true};});},
++  async inbox(){return db.transaction(owner,async sql=>({notifications:(await sql.query('SELECT id,thread_id,body,created_at,read_at FROM karpilo.feedback_replies WHERE owner_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100',[owner])).rows,unread:Number((await sql.query('SELECT count(*)::int n FROM karpilo.feedback_replies WHERE owner_id=$1 AND read_at IS NULL',[owner])).rows[0]?.n??0)}));},
++  async read(id:string){z.uuid().parse(id);return db.transaction(owner,async sql=>{const r=await sql.query('UPDATE karpilo.feedback_replies SET read_at=coalesce(read_at,now()) WHERE id=$1 AND owner_id=$2 RETURNING id',[id,owner]);if(!r.rows.length)throw new ReviewError(404,'Reply not found');return {ok:true};});}
++ };
++}
++
++// Only authenticated founder routes or an IAM-authorized AWS gateway may call this service.
++export function moderatorReviews(db:Database,actor:string){
++ accountOwnerSchema.parse(actor);
++ return {
++  async list(offset=0){page(offset);return db.transaction('feedback-review',async sql=>{
++   const threads=(await sql.query('SELECT * FROM karpilo.feedback_threads ORDER BY created_at DESC,id DESC LIMIT 51 OFFSET $1',[offset])).rows;
++   const replies=(await sql.query('SELECT id,thread_id,body,created_at,read_at FROM karpilo.feedback_replies WHERE thread_id=ANY($1::uuid[]) ORDER BY created_at,id',[threads.slice(0,50).map(t=>t.id)])).rows;
++   return {threads:threads.slice(0,50),replies,nextOffset:threads.length>50?offset+50:null};
++  });},
++  async reply(id:string,input:unknown){z.uuid().parse(id);const d=z.object({requestId:z.uuid(),body:z.string().trim().min(1).max(4000)}).strict().parse(input);return db.transaction('feedback-review',async sql=>{
++   const thread=(await sql.query('SELECT owner_id,version FROM karpilo.feedback_threads WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!thread)throw new ReviewError(404,'Feedback not found');
++   const prior=(await sql.query('SELECT id,body FROM karpilo.feedback_replies WHERE thread_id=$1 AND request_id=$2',[id,d.requestId])).rows[0];
++   if(prior){if(prior.body!==d.body)throw new ReviewError(409,'Reply key already used');return {id:prior.id,duplicate:true};}
++   const replyId=randomUUID();
++   // The reply IS the durable inbox notification: a single transaction, no second delivery hop.
++   await sql.query('INSERT INTO karpilo.feedback_replies(id,thread_id,owner_id,request_id,actor,body) VALUES($1,$2,$3,$4,$5,$6)',[replyId,id,thread.owner_id,d.requestId,actor,d.body]);
++   await sql.query("INSERT INTO karpilo.feedback_audit(thread_id,actor,action,version) VALUES($1,$2,'reply',$3)",[id,actor,thread.version]);
++   return {id:replyId,duplicate:false,inbox:'saved'};
++  });},
++  async moderate(id:string,input:unknown){z.uuid().parse(id);const d=z.object({publication:z.enum(['published','withheld']),reason:z.string().trim().min(1).max(500),expectedVersion:z.number().int().positive()}).strict().parse(input);return db.transaction('feedback-review',async sql=>{
++   const row=(await sql.query('SELECT kind,public_consent,version FROM karpilo.feedback_threads WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!row)throw new ReviewError(404,'Review not found');
++   if(row.version!==d.expectedVersion)throw new ReviewError(409,'Review changed. Reload before moderating');
++   if(row.kind!=='review'||!row.public_consent)throw new ReviewError(409,'Subscriber has not consented to publication');
++   await sql.query('UPDATE karpilo.feedback_threads SET publication=$2,moderation_reason=$3,version=version+1,updated_at=now() WHERE id=$1',[id,d.publication,d.reason]);
++   await sql.query('INSERT INTO karpilo.feedback_audit(thread_id,actor,action,version) VALUES($1,$2,$3,$4)',[id,actor,d.publication,d.expectedVersion+1]);return {ok:true};
++  });}
++ };
++}
++export async function publicReviews(db:Database,offset=0){page(offset);return db.transaction('feedback-public',async sql=>{
++ const rows=(await sql.query("SELECT id,display_name,rating,body,created_at FROM karpilo.feedback_threads WHERE kind='review' AND publication='published' AND public_consent ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET $1",[offset])).rows;
++ return {reviews:rows.slice(0,20),nextOffset:rows.length>20?offset+20:null};
++});}
+diff --git a/tests/integrations/reviews.test.ts b/tests/integrations/reviews.test.ts
+new file mode 100644
+index 0000000..4cee82e
+--- /dev/null
++++ b/tests/integrations/reviews.test.ts
+@@ -0,0 +1,45 @@
++import {test} from 'node:test';
++import assert from 'node:assert/strict';
++import {readFile} from 'node:fs/promises';
++import {randomUUID} from 'node:crypto';
++import {PGlite} from '@electric-sql/pglite';
++import type {Database,SqlClient} from '../../src/server/aws-backend/database';
++import {subscriberReviews,moderatorReviews,publicReviews} from '../../src/server/aws-backend/reviews-service';
++async function fixture(run:(p:PGlite,owner:(id:string)=>ReturnType<typeof subscriberReviews>,admin:ReturnType<typeof moderatorReviews>,pub:()=>ReturnType<typeof publicReviews>)=>Promise<void>){
++ const p=new PGlite();try{
++  await p.exec('CREATE SCHEMA karpilo; CREATE ROLE karpilo_runtime; CREATE ROLE karpilo_support; GRANT USAGE ON SCHEMA karpilo TO karpilo_runtime,karpilo_support;');
++  await p.exec("CREATE TABLE karpilo.feedback_requests(owner_id text,campaign text,rating integer,comment text,responded_at timestamptz);");
++  await p.exec(await readFile('database/aws/019_feedback_conversations.sql','utf8'));
++  const db=(role:string):Database=>({transaction:async(owner,fn)=>p.transaction(async tx=>{await tx.exec('SET LOCAL ROLE '+role);await tx.query("SELECT set_config('karpilo.owner_id',$1,true)",[owner]);return fn({query:async(sql,v)=>sql.includes('pg_advisory_xact_lock')?{rows:[]}:tx.query(sql,v)} as SqlClient);})});
++  await run(p,id=>subscriberReviews(db('karpilo_runtime'),id),moderatorReviews(db('karpilo_support'),'founder'),()=>publicReviews(db('karpilo_reviews_public')));
++ }finally{await p.close();}
++}
++const message=(kind='feedback')=>({requestId:randomUUID(),kind,displayName:'Driver',body:'Useful feedback',rating:3,publicConsent:kind==='review'});
++test('private feedback stays private and tenant isolated; duplicate submissions do not duplicate',()=>fixture(async(_p,owner,admin,pub)=>{
++ const d=message(),a=owner('a'),b=owner('b');const r=await a.submit(d);assert.equal((await a.submit(d)).duplicate,true);
++ assert.equal((await a.list()).threads.length,1);assert.equal((await b.list()).threads.length,0);assert.equal((await admin.list()).threads.length,1);assert.equal((await pub()).reviews.length,0);
++ await assert.rejects(a.submit({...d,body:'changed'}));await assert.rejects(admin.moderate(String(r.id),{publication:'published',expectedVersion:1,reason:'publish'}));
++}));
++test('moderation needs consent and current version; withdrawal immediately removes public review',()=>fixture(async(_p,owner,admin,pub)=>{
++ const a=owner('a');await assert.rejects(a.submit({...message('review'),publicConsent:false}));const r=await a.submit(message('review'));
++ assert.equal((await pub()).reviews.length,0);await admin.moderate(String(r.id),{publication:'published',expectedVersion:1,reason:'Relevant first-hand review'});
++ const published=(await pub()).reviews[0];assert.equal(published.rating,3);assert.deepEqual(Object.keys(published).sort(),['body','created_at','display_name','id','rating']);
++ await assert.rejects(admin.moderate(String(r.id),{publication:'withheld',expectedVersion:1,reason:'stale'}));
++ await a.withdraw(String(r.id));assert.equal((await pub()).reviews.length,0);await assert.rejects(admin.moderate(String(r.id),{publication:'published',expectedVersion:3,reason:'cannot override withdrawal'}));
++}));
++test('reply is exactly one durable inbox notice, only owner may read it',()=>fixture(async(_p,owner,admin)=>{
++ const a=owner('a'),b=owner('b'),r=await a.submit(message());const d={requestId:randomUUID(),body:'Thank you. I am working on this.'};
++ const reply=await admin.reply(String(r.id),d);assert.equal((await admin.reply(String(r.id),d)).duplicate,true);
++ assert.equal((await a.inbox()).unread,1);assert.equal((await a.inbox()).notifications.length,1);assert.equal((await b.inbox()).notifications.length,0);
++ await assert.rejects(b.read(String(reply.id)));await a.read(String(reply.id));assert.equal((await a.inbox()).unread,0);
++ await assert.rejects(admin.reply(String(r.id),{...d,body:'mutated retry'}));
++}));
++test('audit failure rolls back reply and notification together',()=>fixture(async(p,owner,admin)=>{
++ const a=owner('a'),r=await a.submit(message());await p.exec('REVOKE INSERT ON karpilo.feedback_audit FROM karpilo_support');
++ await assert.rejects(admin.reply(String(r.id),{requestId:randomUUID(),body:'Must roll back'}));assert.equal((await a.inbox()).notifications.length,0);
++}));
++test('public role cannot read private fields or replies and runtime cannot insert founder replies',()=>fixture(async(p)=>{
++ await assert.rejects(p.transaction(async tx=>{await tx.exec('SET LOCAL ROLE karpilo_reviews_public');await tx.query('SELECT owner_id FROM karpilo.feedback_threads');}));
++ await assert.rejects(p.transaction(async tx=>{await tx.exec('SET LOCAL ROLE karpilo_reviews_public');await tx.query('SELECT * FROM karpilo.feedback_replies');}));
++ await assert.rejects(p.transaction(async tx=>{await tx.exec('SET LOCAL ROLE karpilo_runtime');await tx.query('INSERT INTO karpilo.feedback_replies(id) VALUES($1)',[randomUUID()]);}));
++}));
