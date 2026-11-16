@@ -104,3 +104,10 @@ has NEXT_PUBLIC_POSTHOG_ENABLED=false and no configured ingestion token. The rep
 NEXT_PUBLIC_POSTHOG_ENABLED=true; server capture requires an enabled flag and
 project ingestion token. This is separate from HQ query access. No customer
 deployment or collection enablement was performed during this HQ-only task.
+
+Founder clarified that PostHog event structure/collection has never been set up.
+The HQ alarm now labels this as setup pending, not a broken integration.
+Vercel minimum-scope investigation confirmed Billing Read is available to a
+private integration, plus mandatory Integration Configuration Read. Registration
+requires an Integration Agreement and an OAuth redirect flow; existing HQ PAT
+has no edit action. No broad team token was created.
