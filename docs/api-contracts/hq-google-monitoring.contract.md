@@ -1,6 +1,6 @@
 # HQ Google monitoring contract
 
-Federation and project-only Monitoring Viewer provisioned 2026-11-16. Live token exchange succeeded after the signed-header fix. Metrics read returns access-denied; console confirms Cloud Monitoring API is disabled. Activation remains pending.
+Federation and project-only Monitoring Viewer provisioned 2026-11-16. Live token exchange succeeded after the signed-header fix. Cloud Monitoring API enabled with approval. Metrics read now reaches a separate query error; bounded HTTP/status/category diagnostics expose no upstream bodies. Live metrics verification continues.
 
 ## Evidence and scope
 Google console identifies `Karpilo LoadIQ - isolated sandbox` key ID

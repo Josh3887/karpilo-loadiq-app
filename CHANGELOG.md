@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- Added bounded Google metric-read error classification; activated Monitoring API and verified live LoadIQ Twilio summary history after approved read access.
+
 - PostHog cards and inventory now consistently identify customer event capture as deferred until V1 interface refinement.
 
 - Google federation signing now uses only Google-supported AWS headers; bounded error classifications disclose no credentials or raw upstream bodies.

@@ -158,3 +158,5 @@ Billing and delivery-failure attribution remain separate. 401/403 access-denied,
 429 rate-limited, malformed or other failures unavailable. Restricted summary-read
 permission must be live verified; schema/permissions and service identity are drift
 risks. Source: lib/twilio-monitoring.mjs, app/api/monitoring/route.js and MonitoringPanel.
+
+Twilio summary-read permission saved with approval November 16. Live HQ returned seven daily windows, three attempts, three converted and zero unconverted for LoadIQ Test. No messages sent.
