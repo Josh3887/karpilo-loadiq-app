@@ -9,6 +9,7 @@ export function integrationAlarms({entries=[],awsOperations,posthog,sentry,resen
   if(p.status==='connected'&&Number.isFinite(age)&&age>15*60000)add('stale-'+p.name,p.name,'warning','Observation is stale','Last check is older than 15 minutes. Refresh services to recheck.',p.checkedAt);
  }
  if(awsOperations?.status==='connected')for(const a of awsOperations.alarms||[]){
+  if(a.state==='ALARM'&&/^TargetTracking-/.test(a.name)){add('aws-'+a.name,'AWS','warning','Autoscaling threshold crossed',a.name+' · Scaling-policy signal; not by itself a service incident.',awsOperations.checkedAt);continue;}
   if(a.state==='ALARM'||a.state==='INSUFFICIENT_DATA')add('aws-'+a.name,'AWS',a.state==='ALARM'?'critical':'warning',a.state==='ALARM'?'CloudWatch alarm':'CloudWatch needs data',a.name+(a.metric?' · '+a.metric:''),awsOperations.checkedAt);
  }
  else if(awsOperations?.status&&awsOperations.status!=='loading')add('aws-monitoring','AWS','warning','Alarm feed unavailable','CloudWatch alarm state could not be verified.',awsOperations.checkedAt);

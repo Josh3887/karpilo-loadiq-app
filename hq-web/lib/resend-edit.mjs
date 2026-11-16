@@ -7,7 +7,8 @@ export async function editTemplate(env,input,fetcher=fetch){
  if(!productAddress(t.from)||templateCategory(t)==='Superseded')return {status:'blocked',reason:'Only current LoadIQ sender templates can be edited here.'};
  if(!t.version||t.version!==input.version)return {status:'blocked',reason:'The template changed. Reload it before editing.'};
  const declared=new Set(t.variables.map(v=>v.key));
- if([...((input.html||'')+input.subject).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].some(m=>!declared.has(m[1])))return {status:'blocked',reason:'New template variables must first be defined in Resend.'};
+ const existing=new Set([...((t.html||'')+(t.subject||'')).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].map(m=>m[1]));
+ if([...((input.html||'')+input.subject).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].some(m=>!declared.has(m[1])&&!existing.has(m[1])))return {status:'blocked',reason:'New template variables must first be defined in Resend.'};
  try{
   const response=await fetcher('https://api.resend.com/templates/'+encodeURIComponent(t.id),{method:'PATCH',headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({name:input.name.trim(),subject:input.subject,html:input.html}),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(10000)});
   if(!response.ok)return {status:response.status===429?'rate-limited':'error',reason:'Resend did not confirm the template update. Reload before retrying.'};
