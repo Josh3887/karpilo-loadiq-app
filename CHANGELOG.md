@@ -14,6 +14,8 @@
 
 ### Added
 
+- HQ Redis management-history adapter for the fixed LoadIQ database, read-only server credential support, usage charts and explicit unverified billing units; live access pending.
+
 - HQ: separate website/HQ Vercel request charts with independent access coverage and complete-hour windows; billing remains separate from request activity.
 
 - HQ: five-minute AWS collector, 30-day retained observations, protected history endpoint, stale-collection status and website/app/HQ probe charts. PostHog capture remains deferred.
