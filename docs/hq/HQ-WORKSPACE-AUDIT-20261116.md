@@ -31,3 +31,9 @@ Reviewed official open-source projects https://github.com/GrapesJS/preset-newsle
 Old section URLs resolve to consolidated destinations. Browser back/forward is supported. Overview and Integrations have distinct rendering branches. Existing providers, authentication and private/no-store responses remain intact. No schema, customer data or permission mutations are part of this change.
 
 Validation results are recorded in the final delivery and changelog. Missing APIs are implementation gaps, not completed live controls.
+
+## Verified release
+
+86 tests passed and the Next.js production build passed. ESLint was unavailable, not passed. Deployment dpl_Hz5LMLqRzmsBesvR6Cvhd2zNd43B reached READY with hq.karpilo-liq.com alias. All 13 navigation destinations rendered without a client exception. Live Health Center returned website/app/HQ probes and provider observations. Newsletter block addition and reorder verified in the deployed UI.
+
+Retired FSC template import, six record tiles and 390px mobile records layout verified live. Address Book correctly reports missing gateway; other source indexes return no customer records. Overview labels critical alarms separately from warning details.

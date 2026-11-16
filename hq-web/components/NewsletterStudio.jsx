@@ -27,7 +27,7 @@ export default function NewsletterStudio(){
 <div className="workspace-toolbar">
 <label>Resend design source<select value={selected} onChange={e=>setSelected(e.target.value)}>
 <option value="">Choose a template</option>{templates.map(t=>
-<option key={t.id} value={t.id}>{t.name} · {t.status}</option>)}</select>
+<option key={t.id} value={t.id}>{t.name} · {t.status==='published'?'Published':'Unpublished template'}</option>)}</select>
 </label>
 <button disabled={!selected||busy} onClick={importTemplate}>Copy into HTML editor</button>{cursor&&<button disabled={busy} onClick={()=>load(cursor)}>Load more templates</button>}</div>{notice&&<p role="status">{notice}</p>}
 </Block>
