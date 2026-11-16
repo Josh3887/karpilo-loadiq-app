@@ -1,0 +1,10 @@
+{
+  "account": "337058058945",
+  "region": "us-east-2",
+  "stack": "loadiq-hq-isolated-identity",
+  "status": "UPDATE_COMPLETE",
+  "operatorPoolId": "us-east-2_8qoSv09kl",
+  "operatorClientId": "1kcpiqvjpo6ck6pl2f7k595ddn",
+  "operatorSubject": "91fb1500-f011-7008-00b0-8a27a0722c85",
+  "operatorEmail": "j.karpilo@karpilo-liq.com"
+}

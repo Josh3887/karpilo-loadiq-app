@@ -1,0 +1,3 @@
+export const metadata={title:'Karpilo LoadIQ HQ',applicationName:'Karpilo LoadIQ HQ',robots:{index:false,follow:false},manifest:'/manifest.webmanifest',icons:{icon:[{url:'/brand/favicon.png',sizes:'32x32',type:'image/png'},{url:'/brand/hq-icon-512.jpg',sizes:'512x512',type:'image/jpeg'}],apple:[{url:'/brand/apple-touch-icon.png',sizes:'180x180',type:'image/png'}]},appleWebApp:{capable:true,title:'LoadIQ HQ',statusBarStyle:'black-translucent'}};
+export const viewport={width:'device-width',initialScale:1,themeColor:'#080809'};
+export default function RootLayout({children}){return <html lang="en"><body style={{margin:0}}>{children}</body></html>}

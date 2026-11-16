@@ -1,0 +1,328 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Isolated LoadIQ HQ read-only operator gateway. No customer writes, sends, or publishes.",
+  "Parameters": {
+    "ArtifactBucket": {
+      "Type": "String",
+      "AllowedPattern": "[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]"
+    },
+    "ArtifactKey": {
+      "Type": "String",
+      "AllowedPattern": "hq/[a-f0-9]{64}\\.zip"
+    }
+  },
+  "Resources": {
+    "ProviderCredentials": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Description": "LoadIQ HQ provider read credentials; no credentials are included in the client app",
+        "SecretString": "{}"
+      }
+    },
+    "GatewayLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-gateway"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "GatewayRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ReadHQCredentialsAndWriteLogs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": {
+                    "Ref": "ProviderCredentials"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "GatewayLogs",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Gateway": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+        "GatewayLogs"
+      ],
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-gateway"
+        },
+        "Runtime": "nodejs22.x",
+        "Architectures": [
+          "arm64"
+        ],
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "GatewayRole",
+            "Arn"
+          ]
+        },
+        "MemorySize": 256,
+        "Timeout": 25,
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Ref": "ArtifactKey"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "HQ_PROVIDER_SECRET_ARN": {
+              "Ref": "ProviderCredentials"
+            },
+            "HQ_OPERATOR_SUBJECTS": "91fb1500-f011-7008-00b0-8a27a0722c85",
+            "RESEND_ENABLED": "false",
+            "RESEND_BILLING_ALERTS_ENABLED": "false",
+            "AWS_COMMUNICATIONS_ENABLED": "true"
+          }
+        }
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-api"
+        },
+        "ProtocolType": "HTTP",
+        "DisableExecuteApiEndpoint": false
+      }
+    },
+    "OperatorAuthorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "Name": "HQOperatorOnly",
+        "JwtConfiguration": {
+          "Audience": [
+            "1kcpiqvjpo6ck6pl2f7k595ddn"
+          ],
+          "Issuer": "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_8qoSv09kl"
+        }
+      }
+    },
+    "GatewayIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationMethod": "POST",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Gateway",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 25000
+      }
+    },
+    "SessionRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /v1/session",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "OperatorAuthorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "GatewayIntegration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "AnalyticsRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /v1/analytics",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "OperatorAuthorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "GatewayIntegration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "TemplatesRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /v1/templates",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "OperatorAuthorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "GatewayIntegration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "TemplateRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /v1/templates/{id}",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "OperatorAuthorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "GatewayIntegration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "DefaultStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingBurstLimit": 5,
+          "ThrottlingRateLimit": 2
+        }
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Gateway"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        },
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/v1/*"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "GatewayURL": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "ProviderSecretARN": {
+      "Value": {
+        "Ref": "ProviderCredentials"
+      }
+    }
+  }
+}

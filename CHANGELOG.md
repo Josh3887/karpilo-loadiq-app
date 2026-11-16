@@ -2,7 +2,76 @@
 
 ## Unreleased
 
+### Feedback pipeline
+
+- Applied AWS feedback schema and restricted gateway credential; verified public empty-state and unsigned private denial. Removed temporary migration secret permissions. End-to-end UI acceptance remains open.
+- Deferred calculator defects until the end per founder direction; feedback activation remains the active task.
+
+- Added AWS-owned review/feedback conversations, consent-controlled public projection, founder replies and subscriber inbox notices; deployment acceptance remains separately recorded.
+- Added HQ Reviews & Feedback workspace and AWS SigV4 adapter, with no direct provider intake.
+- Recorded project-completion requirement to audit every pipeline through AWS; existing direct HQ provider adapters remain migration work.
+
+
+### Documentation
+
+- Verified Google Maps historical request charts and Twilio Verify attempt/conversion charts live after approved API activation and read permission. Billing remains separately unverified.
+
+- Recorded founder dependency: defer PostHog event design/capture until customer
+  V1 interface refinement; continue product-scoped website and app operational
+  monitoring, with website traffic separate from customer and HQ activity.
+
+### Fixed
+
+- Corrected Google monitoring service selector and connected its registry status to live monitoring reads instead of unused customer API-key settings.
+
+- Added bounded Google metric-read error classification; activated Monitoring API and verified live LoadIQ Twilio summary history after approved read access.
+
+- PostHog cards and inventory now consistently identify customer event capture as deferred until V1 interface refinement.
+
+- Google federation signing now uses only Google-supported AWS headers; bounded error classifications disclose no credentials or raw upstream bodies.
+
+- HQ Sentry inventory filters the product project before pagination so unrelated issues cannot suppress LoadIQ results.
+
 ### Added
+
+- LoadIQ-only Twilio Verify attempt-history adapter with fixed service attribution, bounded daily summaries and no account-wide billing fallback.
+
+- Prepared key-scoped Google Maps monitoring and AWS federation token exchange; activation remains gated on provisioning and live verification. Shared Gemini usage is explicitly unattributed.
+
+- HQ Redis management-history adapter for the fixed LoadIQ database, read-only server credential support, usage charts and explicit unverified billing units; read-only access and five live usage series verified on HQ.
+
+- HQ: separate website/HQ Vercel request charts with independent access coverage and complete-hour windows; billing remains separate from request activity.
+
+- HQ: five-minute AWS collector, 30-day retained observations, protected history endpoint, stale-collection status and website/app/HQ probe charts. PostHog capture remains deferred.
+
+- Web HQ: fixed-tag AWS daily cost adapter and billing charts, with partial attribution,
+  hourly caching and explicit empty-allocation status. Refreshed Cloudflare/PostHog
+  permission notices after live successful queries; documented ingestion diagnosis.
+
+- Web HQ: provider history charts, exact readings and visible-page refresh; explicit
+  billing attribution and permission gaps instead of inferred product costs.
+- Communications: separate current templates and retired originals; corrected reserved
+  Resend contact-field handling. Authorized publication verified 49 current published
+  templates and six superseded unpublished originals, without sending messages.
+
+- Web HQ: chrome/red truck HQ identity, web app icons, responsive integration
+  control panel and source-labelled alarm cards derived from existing observations.
+  Provider access, historical issues and current alarms remain distinct.
+
+- Web HQ: restricted PostHog project, dashboard and saved-insight inventory with
+  independent access status, bounded pagination and explicit ingestion limitations.
+
+- Web HQ: read-only Sentry organization/project inventory and unresolved issue
+  metadata with endpoint coverage, pagination disclosure and private-detail omission.
+
+- Web HQ Communications: searchable reusable Resend template library, publication
+  filters, full previews, personalization and operator-reviewed single-email composer;
+  paginated template reads, version checks, duplicate-prevention keys and safe previews.
+
+- HQ: read-only Twilio account, usage, message status and Verify-service observations;
+  native Mac provider observations preserving the original SwiftUI layout, templates and local operator lock.
+- HQ: Resend partial-access and bounded-pagination reporting; provider redaction tests.
+
 
 - Added the server-side Karpilo Weather Intelligence foundation with Google
   Weather, OpenWeather, and NWS/weather.gov provider clients, normalized
@@ -13,6 +82,18 @@
   delta in the Karpilo Atlas Intelligence Readout.
 
 ### Fixed
+
+- Web HQ: added restricted Twilio API-key authentication, fail-closed credential
+  selection and cached read-only observations; existing layout is unchanged.
+
+- Web HQ: Cloudflare now uses the allowlisted AWS provider-secret reader; actual
+  per-zone and DNS access determines API connectivity. Added bounded pagination,
+  probe failure reporting, safe credential-store errors and observation caching.
+
+- Web HQ: connected dedicated AWS provider-secret loading to Resend, Twilio and the
+  registry; added validated Redis PING, EIA freshness and explicit Stripe test-mode
+  observations, bounded caching,
+  credential-store errors and visible missing-credential details.
 
 - Hardened Google Weather endpoint construction so a base URL configured with a
   trailing `/v1` does not produce double-version request paths, and classified
@@ -31,6 +112,9 @@
   and clarified open-ended windows as start/end date context.
 
 ### Documentation
+
+- Corrected the superseded Resend denied-key status from the verified handoff;
+  documented Cloudflare read scopes, fixed zone resources and incomplete coverage.
 
 - Added provider-aligned API contract documentation and governance for external
   integrations, including official documentation links, request/response
@@ -134,3 +218,13 @@
 - No Supabase migrations, billing changes, or environment files were changed.
 - No Supabase files, native iOS/Android files, public assets, or marketing
   assets were restored in this recovery pass.
+- HQ integrations now open dedicated product pages with usage, cost-coverage and alarm panels. Cloudflare is limited to karpilo-liq.com; shared company cost/message data is excluded pending attribution.
+- Communications adds Resend Sent/Received folders, product-domain message readers, reviewed template revisions and bounded file/image attachments. Saving does not publish; delivery still requires explicit review. Source templates are correctly labeled published/unpublished originals.
+
+## 2026-11-16 — HQ workspace restructure
+
+- Separated executive Overview from Integrations directory; consolidated records, market references and policy navigation.
+- Added Health Center, functional local feature/banner/policy draft workspaces, workflow schematics and consolidated usage charts.
+- Added newsletter block/template-copy studio with sandbox previews and export; retained retired Resend originals.
+- Deferred subscriber behavior and PostHog capture. Documented live-source coverage and publication/enforcement gaps.
+- Preserved existing provider adapters, founder authentication, customer app and native app boundaries.

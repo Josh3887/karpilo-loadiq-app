@@ -1,0 +1,5 @@
+{
+  "GatewayURL": "https://8gy1ncxn5k.execute-api.us-east-2.amazonaws.com",
+  "Stack": "loadiq-hq-isolated-gateway",
+  "ArtifactBucket": "loadiq-hq-isolated-artifacts-artifacts-tv9bm0zss5dy"
+}

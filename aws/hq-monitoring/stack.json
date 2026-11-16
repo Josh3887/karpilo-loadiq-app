@@ -1,0 +1,236 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "LoadIQ HQ read-only provider monitoring and 30-day history",
+  "Resources": {
+    "Logs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/karpilo-hq-monitor",
+        "RetentionInDays": 14
+      }
+    },
+    "DeadLetters": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "karpilo-hq-monitor-dlq",
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true
+      }
+    },
+    "CollectorRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "MonitorOnly",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": "arn:aws:secretsmanager:us-east-2:337058058945:secret:karpilo-hq-web/provider-readonly-r3QBk8"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:PutItem"
+                  ],
+                  "Resource": "arn:aws:dynamodb:us-east-2:337058058945:table/karpilo-hq-monitoring-history"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Logs",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "DeadLetters",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Collector": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "karpilo-hq-monitor",
+        "Runtime": "python3.13",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 45,
+        "Role": {
+          "Fn::GetAtt": [
+            "CollectorRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "ZipFile": "\"\"\"Read-only provider observations. No messages, customer records or PostHog capture.\"\"\"\nimport concurrent.futures, datetime, json, os, time, urllib.request, urllib.error, urllib.parse\nimport boto3\nfrom botocore.config import Config\nREGION='us-east-2'\nCONFIG=Config(connect_timeout=3,read_timeout=8,retries={'max_attempts':1})\nclass NoRedirect(urllib.request.HTTPRedirectHandler):\n    def redirect_request(self,*args,**kwargs): return None\nOPENER=urllib.request.build_opener(NoRedirect())\ndef request(url,token=None):\n    headers={'Accept':'application/json','User-Agent':'Karpilo-LoadIQ-HQ-Monitor/1.0'}\n    if token: headers['Authorization']=token\n    started=time.monotonic()\n    try:\n        with OPENER.open(urllib.request.Request(url,headers=headers),timeout=8) as r:\n            status=r.status\n            body=r.read(1048577)\n        data=json.loads(body) if len(body)<=1048576 else None\n        return status,data,round((time.monotonic()-started)*1000)\n    except urllib.error.HTTPError as e: return e.code,None,round((time.monotonic()-started)*1000)\n    except Exception: return None,None,round((time.monotonic()-started)*1000)\ndef probe(host,surface):\n    started=time.monotonic()\n    try:\n        with OPENER.open(urllib.request.Request('https://'+host,method='HEAD',headers={'User-Agent':'Karpilo-LoadIQ-HQ-Monitor/1.0'}),timeout=8) as r: status=r.status\n    except urllib.error.HTTPError as e: status=e.code\n    except Exception: status=None\n    # A protected HQ 401 is expected; redirects establish reachability only.\n    good=status is not None and (200<=status<400 or surface=='hq' and status==401)\n    return {'id':surface,'provider':'Web','label':host,'status':'connected' if good else 'unavailable','httpStatus':status,'latencyMs':round((time.monotonic()-started)*1000),'detail':'HTTPS HEAD probe; not a customer workflow or traffic measurement.'}\ndef provider(name,env):\n    if name=='Redis':\n        u=urllib.parse.urlparse(env.get('UPSTASH_REDIS_REST_URL',''))\n        if u.scheme!='https' or not (u.hostname or '').endswith('.upstash.io') or u.username or u.password or u.port or u.path not in ('','/') or u.query or u.fragment: return {'id':'redis','provider':name,'status':'unconfigured','detail':'Valid Redis REST endpoint required.'}\n        key=env.get('UPSTASH_REDIS_REST_TOKEN');url=env['UPSTASH_REDIS_REST_URL'].rstrip('/')+'/ping'\n    elif name=='Resend': key=env.get('RESEND_API_KEY');url='https://api.resend.com/domains?limit=100'\n    elif name=='Cloudflare': key=env.get('CLOUDFLARE_API_TOKEN');url='https://api.cloudflare.com/client/v4/zones/354a61884ea0777e1c8a1a8f01b8aa8a/dns_records?per_page=100'\n    elif name=='Sentry': key=env.get('SENTRY_AUTH_TOKEN');url='https://sentry.io/api/0/projects/karpilo-endeavor-technologies/karpilo-loadiq-isolated/issues/?query=is%3Aunresolved&statsPeriod=14d&limit=20'\n    if not key: return {'id':name.lower(),'provider':name,'status':'unconfigured','detail':'Provider credential missing.'}\n    status,data,latency=request(url,'Bearer '+key)\n    result={'id':name.lower(),'provider':name,'httpStatus':status,'latencyMs':latency,'status':'connected' if status==200 else 'access-denied' if status in (401,403) else 'unavailable'}\n    if status!=200: return result\n    if name=='Redis':\n        if not isinstance(data,dict) or data.get('result')!='PONG':result['status']='unavailable'\n        result['detail']='Read-only PING; no customer keys inspected.'\n    elif name=='Resend':\n        if not isinstance(data,dict) or not isinstance(data.get('data'),list):result['status']='unavailable'\n        else:\n            domains=[{'name':d['name'],'status':d.get('status','unknown')} for d in data['data'] if d.get('name') in ('karpilo-liq.com','karpiloliq.com','karpiloloadiq.com')]\n            result['domains']=domains;result['status']='attention' if any(d['status']=='failed' for d in domains) else 'connected'\n            result['detail']='LoadIQ sender domains only; domain verification is separate from delivery.'\n    elif name=='Cloudflare':\n        if not isinstance(data,dict) or data.get('success') is not True or not isinstance(data.get('result'),list):result['status']='unavailable'\n        else:\n            result['recordCount']=len(data['result']);result['partial']=data.get('result_info',{}).get('total_pages',1)>1\n            result['detail']='karpilo-liq.com DNS inventory; values excluded. Not traffic analytics.'\n    elif name=='Sentry':\n        if not isinstance(data,list):result['status']='unavailable'\n        else:\n            result['issueCount']=len(data);result['status']='attention' if data else 'connected'\n            result['detail']='Up to 20 unresolved issues, last 14 days; not new incidents. Payloads excluded.'\n    return result\ndef handler(event,context):\n    now=datetime.datetime.now(datetime.timezone.utc);checked=now.isoformat().replace('+00:00','Z')\n    env={};secret_status='connected'\n    try:env=json.loads(boto3.client('secretsmanager',region_name=REGION,config=CONFIG).get_secret_value(SecretId=os.environ['SECRET_ARN'])['SecretString'])\n    except Exception:secret_status='unavailable'\n    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as pool:\n        jobs=[pool.submit(probe,h,s) for h,s in [('karpilo-liq.com','website'),('app.karpilo-liq.com','app'),('hq.karpilo-liq.com','hq')]]\n        jobs += [pool.submit(provider,n,env) for n in ['Redis','Resend','Cloudflare','Sentry']]\n        observations=[j.result() for j in jobs]\n    snapshot={'checkedAt':checked,'intervalSeconds':300,'secretStatus':secret_status,'observations':observations}\n    # Same scheduled event retries cannot duplicate a time bucket.\n    bucket=str(int(now.timestamp())//300*300).zfill(12)\n    boto3.client('dynamodb',region_name=REGION,config=CONFIG).put_item(TableName=os.environ['TABLE'],Item={'pk':{'S':'loadiq'},'sk':{'S':bucket},'expiresAt':{'N':str(int(now.timestamp())+30*86400)},'payload':{'S':json.dumps(snapshot,separators=(',',':'))}})\n    return {'stored':True,'checkedAt':checked,'observations':len(observations)}\n"
+        },
+        "Environment": {
+          "Variables": {
+            "TABLE": "karpilo-hq-monitoring-history",
+            "SECRET_ARN": "arn:aws:secretsmanager:us-east-2:337058058945:secret:karpilo-hq-web/provider-readonly-r3QBk8"
+          }
+        },
+        "DeadLetterConfig": {
+          "TargetArn": {
+            "Fn::GetAtt": [
+              "DeadLetters",
+              "Arn"
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "LoadIQ-HQ"
+          }
+        ]
+      }
+    },
+    "SchedulerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "scheduler.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "InvokeMonitorOnly",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Collector",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "DeadLetters",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Schedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {
+        "Name": "karpilo-hq-monitor-five-minute",
+        "ScheduleExpression": "rate(5 minutes)",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "State": "ENABLED",
+        "Target": {
+          "Arn": {
+            "Fn::GetAtt": [
+              "Collector",
+              "Arn"
+            ]
+          },
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "SchedulerRole",
+              "Arn"
+            ]
+          },
+          "Input": "{}",
+          "RetryPolicy": {
+            "MaximumRetryAttempts": 1,
+            "MaximumEventAgeInSeconds": 300
+          },
+          "DeadLetterConfig": {
+            "Arn": {
+              "Fn::GetAtt": [
+                "DeadLetters",
+                "Arn"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "HQReadPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "HQMonitoringHistoryRead",
+        "Users": [
+          "karpilo-hq-preview-readonly"
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Query"
+              ],
+              "Resource": "arn:aws:dynamodb:us-east-2:337058058945:table/karpilo-hq-monitoring-history"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

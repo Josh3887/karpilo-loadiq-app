@@ -1,0 +1,7 @@
+{
+  "name": "loadiq-hq-operator-gateway", "version": "0.1.0", "private": true, "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test *.test.mjs", "bundle": "esbuild lambda.mjs --bundle --platform=node --target=node22 --format=cjs --outfile=../distribution/gateway/index.cjs" },
+  "dependencies": { "@aws-sdk/client-secrets-manager": "3.1161.0", "aws-jwt-verify": "5.2.1" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}

@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sections,recordTiles,resolveSection} from '../lib/hq-navigation.mjs';
+import {newsletterHtml,safeUrl} from '../lib/newsletter.mjs';
+test('legacy workspace links resolve without duplicate navigation',()=>{assert.equal(new Set(sections).size,sections.length);assert.equal(resolveSection('Freight Intelligence'),'Data Center');assert.equal(resolveSection('Address Verification'),'Google Maps Platform');assert.equal(resolveSection('Resend'),'Communications');for(const name of ['Subscribers','Vehicle Profiles','Load Lifecycle'])assert.equal(resolveSection(name),'HQ Records');assert.equal(recordTiles.length,6)});
+test('newsletter text and URL attributes cannot inject markup or script URLs',()=>{const html=newsletterHtml({title:'<script>x</script>',blocks:[{type:'text',text:'<img onerror=alert(1)>'},{type:'button',text:'Open',url:'javascript:alert(1)'},{type:'image',text:'" onerror="x',url:'https://example.com/a.png'}]});assert(!html.includes('<script>'));assert(!html.includes('javascript:'));assert(html.includes('&lt;img'));assert.equal(safeUrl('data:text/html,test'),'');assert.equal(safeUrl('https://example.com'),'https://example.com/')});
