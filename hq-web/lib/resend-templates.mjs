@@ -46,10 +46,13 @@ export function variableValues(template,values={}){
 }
 const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function fillTemplate(source,values,html=false){return (source||'').replace(/\{\{\{\s*(\w+)\s*\}\}\}/g,(whole,key)=>Object.hasOwn(values,key)?html?escapeHTML(values[key]):String(values[key]):whole);}
+export const reservedTemplateFields=new Set(['FIRST_NAME','LAST_NAME','EMAIL','UNSUBSCRIBE_URL','RESEND_UNSUBSCRIBE_URL','contact','this']);
 export function sendBlocker(template){
  const declared=new Set(template.variables.map(v=>v.key));
- const undeclared=[...new Set([...((template.html||'')+(template.text||'')+(template.subject||'')).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].map(m=>m[1]).filter(k=>!declared.has(k)))];
+ const undeclared=[...new Set([...((template.html||'')+(template.text||'')+(template.subject||'')).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].map(m=>m[1]).filter(k=>!declared.has(k)&&!reservedTemplateFields.has(k)))];
  if(undeclared.length)return 'Define these template fields in Resend before sending: '+undeclared.join(', ')+'.';
+ const contactFields=[...new Set([...((template.html||'')+(template.text||'')+(template.subject||'')).matchAll(/\{\{\{\s*(\w+)\s*\}\}\}/g)].map(m=>m[1]).filter(k=>reservedTemplateFields.has(k)))];
+ if(contactFields.length)return 'This template uses Resend contact fields ('+contactFields.join(', ')+'). Contact personalization and unsubscribe context must be verified before a one-off send from HQ. The template itself is valid and may be published.';
  if(templateCategory(template)==='Superseded')return 'This template is superseded.';
  if(template.status!=='published')return 'Publish this reusable template in Resend before sending it.';
  if(template.hasUnpublishedVersions)return 'This template has unpublished changes. Publish or resolve them in Resend before sending the previewed content.';

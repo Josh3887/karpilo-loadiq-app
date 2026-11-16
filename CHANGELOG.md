@@ -4,6 +4,12 @@
 
 ### Added
 
+- Web HQ: provider history charts, exact readings and visible-page refresh; explicit
+  billing attribution and permission gaps instead of inferred product costs.
+- Communications: separate current templates and retired originals; corrected reserved
+  Resend contact-field handling. Authorized publication verified 49 current published
+  templates and six superseded unpublished originals, without sending messages.
+
 - Web HQ: chrome/red truck HQ identity, web app icons, responsive integration
   control panel and source-labelled alarm cards derived from existing observations.
   Provider access, historical issues and current alarms remain distinct.

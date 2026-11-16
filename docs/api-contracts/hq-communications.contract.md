@@ -206,3 +206,18 @@ Provisioning/live verification remain pending until actual successful endpoint r
 
 ### Shared-account attribution — 2026-11-16
 The Twilio HQ route excludes account-wide message and usage inventories from its response and only displays LoadIQ-named Verify services. Read-only adapter authentication checks retain the four existing bounded calls; shared account usage is not exposed or assigned to LoadIQ. Product costs, delivery counts and remaining quotas require a verified product-specific attribution source. Resend domain/message inventory is filtered to the three product sender domains; broadcasts require an explicit LoadIQ name. No company-wide billing total is shown as product spend. The AWS cost route returns an explicit unconfigured allocation state and does not call paid Cost Explorer until product allocation is defined.
+
+### Publication audit — November 15, 2026 (America/Chicago)
+
+The operator explicitly authorized publication. All 47 current unpublished originals
+were published through Resend and the full 55-template list was re-read: **49 published,
+6 superseded unpublished**. No email was sent. The six retired educational originals
+are FSC Education, Deadhead Education, Cost Per Mile, Owner Earnings, Downtime and
+Market Positioning. Their names establish retirement; no replacement mapping is verified.
+The earlier two-published snapshot above is historical, not current.
+
+HQ defaults to current templates, with retired originals in a separate reference view.
+Reserved Resend contact fields such as FIRST_NAME are no longer misreported as missing
+custom variable definitions. HQ one-off sending remains blocked when contact or
+unsubscribe context has not been verified; publication does not establish that context.
+Official reference: https://resend.com/docs/dashboard/templates/template-variables

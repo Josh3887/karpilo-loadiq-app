@@ -45,5 +45,5 @@ test('ambiguous send timeout never claims delivered or accepted',async()=>{
 });
 
 test('undeclared placeholders cannot be sent as customer-facing content',async()=>{
- const r=await sendTemplateMessage(env,input,async()=>ok({...template,html:'Hi {{{FIRST_NAME}}}'}));assert.equal(r.status,'blocked');assert.ok(r.reason.includes('FIRST_NAME'));
+ const r=await sendTemplateMessage(env,input,async()=>ok({...template,html:'Hi {{{UNDECLARED_FIELD}}}'}));assert.equal(r.status,'blocked');assert.ok(r.reason.includes('UNDECLARED_FIELD'));
 });
