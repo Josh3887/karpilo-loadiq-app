@@ -1,6 +1,6 @@
 # HQ Google monitoring contract
 
-Federation and project-only Monitoring Viewer provisioned 2026-11-16. Live token exchange succeeded after the signed-header fix. Cloud Monitoring API enabled with approval. Metrics read now reaches a separate query error; bounded HTTP/status/category diagnostics expose no upstream bodies. Live metrics verification continues.
+Federation and project-only Monitoring Viewer provisioned 2026-11-16. Live token exchange succeeded after the signed-header fix. Cloud Monitoring API enabled with approval. Corrected one_of service selector verified live on HQ: seven-day history returned 226 Address Validation, 10 Places and 238 Routes requests, all in 2xx series. The 24-hour registry read returned no series, independently of the seven-day history. No synthetic requests were sent.
 
 ## Evidence and scope
 Google console identifies `Karpilo LoadIQ - isolated sandbox` key ID
@@ -49,7 +49,7 @@ Source: hq-web/lib/google-monitoring.mjs, lib/provider-config.mjs,
 app/api/monitoring/route.js, components/MonitoringPanel.jsx.
 Risks: label support by service, key rotation changing attribution, empty history,
 provider trust and role binding, project metrics scope, schema drift. Live verify
-before claiming connected; API enablement needs completion; the exact IAM trust is saved and token exchange verified.
+before claiming connected; API activation, exact IAM trust, token exchange and product-filtered reads are verified. Billing export and latency/quota coverage remain outstanding.
 
 Google STS rejects extra signed headers: applyChecksum=false prevents the Smithy x-amz-content-sha256 header. Verified against https://docs.cloud.google.com/iam/docs/troubleshooting-workload-identity-federation . Regression asserts the exact allowed header set.
 

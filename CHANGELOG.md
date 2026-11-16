@@ -4,6 +4,8 @@
 
 ### Documentation
 
+- Verified Google Maps historical request charts and Twilio Verify attempt/conversion charts live after approved API activation and read permission. Billing remains separately unverified.
+
 - Recorded founder dependency: defer PostHog event design/capture until customer
   V1 interface refinement; continue product-scoped website and app operational
   monitoring, with website traffic separate from customer and HQ activity.
